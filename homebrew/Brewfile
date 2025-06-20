@@ -1,0 +1,169 @@
+tap "microsoft/git"
+# Clone of cat(1) with syntax highlighting and Git integration
+brew "bat"
+# Vector graphics library with cross-device output support
+brew "cairo"
+# Cross-platform make
+brew "cmake"
+# Console Matrix
+brew "cmatrix"
+# Get a file from an HTTP, HTTPS or FTP server
+brew "curl"
+# Simple, fast and user-friendly alternative to find
+brew "fd"
+# Play, record, convert, and stream audio and video
+brew "ffmpeg"
+# Command-line fuzzy finder written in Go
+brew "fzf"
+# GitHub command-line tool
+brew "gh"
+# Distributed revision control system
+brew "git"
+# Lightweight and flexible command-line JSON processor
+brew "jq"
+# Simple terminal UI for git commands
+brew "lazygit"
+# Interpreted, interactive, object-oriented programming language
+brew "python@3.13"
+# Clone of ls with colorful output, file type icons, and more
+brew "lsd"
+# Java-based project management
+brew "maven"
+# Platform built on V8 to build network applications
+brew "node"
+# Package compiler and linker metadata toolkit
+brew "pkgconf"
+# Protocol buffers (Google's data interchange format)
+brew "protobuf"
+# Python version management
+brew "pyenv"
+# Safe, concurrent, practical language
+brew "rust"
+# Unsupervised text tokenizer and detokenizer
+brew "sentencepiece"
+# User interface to the TELNET protocol
+brew "telnet"
+# Programmatically correct mistyped console commands
+brew "thefuck"
+# Simplified and community-driven man pages
+brew "tldr"
+# Terminal multiplexer
+brew "tmux"
+# Display directories as trees (with optional color/HTML output)
+brew "tree"
+# Internet file retriever
+brew "wget"
+# Blazing fast terminal file manager written in Rust, based on async I/O
+brew "yazi"
+# Shell extension to navigate your filesystem faster
+brew "zoxide"
+# Fish-like fast/unobtrusive autosuggestions for zsh
+brew "zsh-autosuggestions"
+# Additional completion definitions for zsh
+brew "zsh-completions"
+# Fish shell like syntax highlighting for zsh
+brew "zsh-syntax-highlighting"
+# Enable Windows-like alt-tab
+cask "alt-tab"
+# Multi-track audio editor and recorder
+cask "audacity"
+# Display management tool
+cask "betterdisplay"
+# OpenAI's official ChatGPT desktop app
+cask "chatgpt"
+# Write, edit, and chat about your code with AI
+cask "cursor"
+cask "font-meslo-lg-nerd-font"
+# Terminal emulator that uses platform-native UI and GPU acceleration
+cask "ghostty"
+# Free and open-source image editor
+cask "gimp"
+# Cross-platform Git credential storage for multiple hosting providers
+cask "git-credential-manager"
+# Desktop client for GitHub repositories
+cask "github"
+# Utility to hide menu bar items
+cask "hiddenbar"
+# Keyboard customiser
+cask "karabiner-elements"
+# Full TeX Live distribution without GUI applications
+cask "mactex-no-gui"
+# Utility to extend trackpad functionality
+cask "middleclick"
+# App to write, plan, collaborate, and get organised
+cask "notion"
+# Control your tools with a few keystrokes
+cask "raycast"
+# Move and resize windows using keyboard shortcuts or snap areas
+cask "rectangle"
+# Music streaming service
+cask "spotify"
+# System monitor for the menu bar
+cask "stats"
+# JDK from the Eclipse Foundation (Adoptium)
+cask "temurin@21"
+# Open-source code editor
+cask "visual-studio-code"
+vscode "aaron-bond.better-comments"
+vscode "adpyke.codesnap"
+vscode "bierner.markdown-mermaid"
+vscode "bilalekrem.scenebuilderextension"
+vscode "bpruitt-goddard.mermaid-markdown-syntax-highlighting"
+vscode "chunsen.bracket-select"
+vscode "davidanson.vscode-markdownlint"
+vscode "docker.docker"
+vscode "donjayamanne.githistory"
+vscode "dotjoshjohnson.xml"
+vscode "eamodio.gitlens"
+vscode "formulahendry.code-runner"
+vscode "george-alisson.html-preview-vscode"
+vscode "github.copilot"
+vscode "github.copilot-chat"
+vscode "github.vscode-github-actions"
+vscode "gustavomarquesdemello.copy-file-syntax"
+vscode "james-yu.latex-workshop"
+vscode "jebbs.plantuml"
+vscode "kevinkyang.auto-comment-blocks"
+vscode "koehlma.markdown-math"
+vscode "mechatroner.rainbow-csv"
+vscode "mikeburgh.xml-format"
+vscode "mindaro-dev.file-downloader"
+vscode "ms-azuretools.vscode-containers"
+vscode "ms-dotnettools.csdevkit"
+vscode "ms-dotnettools.csharp"
+vscode "ms-dotnettools.vscode-dotnet-runtime"
+vscode "ms-python.black-formatter"
+vscode "ms-python.debugpy"
+vscode "ms-python.python"
+vscode "ms-python.vscode-pylance"
+vscode "ms-toolsai.jupyter"
+vscode "ms-toolsai.jupyter-keymap"
+vscode "ms-toolsai.jupyter-renderers"
+vscode "ms-toolsai.vscode-jupyter-cell-tags"
+vscode "ms-toolsai.vscode-jupyter-slideshow"
+vscode "ms-vscode-remote.remote-containers"
+vscode "ms-vscode-remote.remote-wsl"
+vscode "ms-vscode.cmake-tools"
+vscode "ms-vscode.cpptools"
+vscode "ms-vscode.cpptools-extension-pack"
+vscode "ms-vscode.cpptools-themes"
+vscode "openai.chatgpt"
+vscode "oracle.oracle-java"
+vscode "quantconnect.quantconnect"
+vscode "redhat.java"
+vscode "redhat.vscode-xml"
+vscode "sohibe.java-generate-setters-getters"
+vscode "stackbreak.comment-divider"
+vscode "tomoki1207.pdf"
+vscode "usernamehw.errorlens"
+vscode "vadimcn.vscode-lldb"
+vscode "visualstudioexptteam.intellicode-api-usage-examples"
+vscode "visualstudioexptteam.vscodeintellicode"
+vscode "vscjava.vscode-gradle"
+vscode "vscjava.vscode-java-debug"
+vscode "vscjava.vscode-java-dependency"
+vscode "vscjava.vscode-java-pack"
+vscode "vscjava.vscode-java-test"
+vscode "vscjava.vscode-maven"
+vscode "wakatime.vscode-wakatime"
+vscode "yzhang.markdown-all-in-one"

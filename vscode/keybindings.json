@@ -1,0 +1,41 @@
+[
+	{
+		"key": "cmd+enter",
+		"command": "workbench.action.debug.run",
+		"when": "editorLangId == java"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "python.execInTerminal",
+		"when": "editorLangId == python"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "notebook.cell.execute",
+		"when": "notebookCellListFocused || notebookEditorFocused"
+	},
+	{
+		"key": "shift+enter",
+		"command": "notebook.cell.executeAndSelectBelow",
+		"when": "notebookCellListFocused || notebookEditorFocused"
+	},
+	{
+		"key": "shift+cmd+enter",
+		"command": "notebook.execute",
+		"when": "config.notebook.globalToolbar && !notebookHasSomethingRunning || config.notebook.globalToolbar && notebookInterruptibleKernel && !notebookHasSomethingRunning || config.notebook.globalToolbar && !notebookHasSomethingRunning && !notebookInterruptibleKernel"
+	},
+	{
+		"key": "cmd+[Semicolon]",
+		"command": "workbench.action.terminal.toggleTerminal",
+		"when": "terminal.active"
+	},
+	{
+		"key": "ctrl+shift+[Equal]",
+		"command": "-workbench.action.terminal.toggleTerminal",
+		"when": "terminal.active"
+	},
+	{
+		"key": "cmd+'",
+		"command": "codesnap.start"
+	},
+]
