@@ -1,0 +1,11 @@
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[user]
+	name = Anders Bekkevard
+	email = anders.bekkevard@gmail.com
+[credential]
+	helper = !gh auth git-credential

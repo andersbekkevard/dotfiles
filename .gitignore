@@ -1,0 +1,7 @@
+# Sensitive files (contain API keys)
+.wakatime.cfg
+.secrets
+
+# Sensitive files in backups (contains tokens)
+backups/sources/sensitive/
+backups/*/gh/

@@ -1,0 +1,10 @@
+# Backups folder - not for stowing
+backups
+
+# Standard ignores
+\.git
+\.gitignore
+\.stow-local-ignore
+manifest\.json
+TODO\.md
+README.*

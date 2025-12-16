@@ -1,0 +1,135 @@
+{
+  "created": "2025-12-16",
+  "description": "Dotfiles backup manifest - tracks original locations of all files",
+  "home_directory": "/Users/andersbekkevard",
+
+  "stowable_files": {
+    "description": "Files that can be symlinked with GNU Stow (run 'stow .' from ~/.dotfiles)",
+    "files": [
+      {
+        "original_path": "~/.zshrc",
+        "dotfiles_path": ".zshrc",
+        "description": "Main zsh configuration"
+      },
+      {
+        "original_path": "~/.zprofile",
+        "dotfiles_path": ".zprofile",
+        "description": "Zsh profile (login shell)"
+      },
+      {
+        "original_path": "~/.zshenv",
+        "dotfiles_path": ".zshenv",
+        "description": "Zsh environment variables"
+      },
+      {
+        "original_path": "~/.profile",
+        "dotfiles_path": ".profile",
+        "description": "Shell profile"
+      },
+      {
+        "original_path": "~/.p10k.zsh",
+        "dotfiles_path": ".p10k.zsh",
+        "description": "Powerlevel10k theme configuration"
+      },
+      {
+        "original_path": "~/.gitconfig",
+        "dotfiles_path": ".gitconfig",
+        "description": "Git configuration"
+      },
+      {
+        "original_path": "~/.wakatime.cfg",
+        "dotfiles_path": ".wakatime.cfg",
+        "description": "WakaTime tracking configuration (gitignored)"
+      },
+      {
+        "original_path": "~/.config/nvim",
+        "dotfiles_path": ".config/nvim",
+        "description": "Neovim configuration"
+      },
+      {
+        "original_path": "~/.config/karabiner",
+        "dotfiles_path": ".config/karabiner",
+        "description": "Karabiner keyboard remapping"
+      },
+      {
+        "original_path": "~/.config/linearmouse",
+        "dotfiles_path": ".config/linearmouse",
+        "description": "LinearMouse configuration"
+      },
+      {
+        "original_path": "~/.config/fd",
+        "dotfiles_path": ".config/fd",
+        "description": "fd file search configuration"
+      },
+      {
+        "original_path": "~/.oh-my-zsh/custom",
+        "dotfiles_path": ".oh-my-zsh/custom",
+        "description": "Oh My Zsh custom plugins and themes"
+      },
+      {
+        "original_path": "~/.scripts",
+        "dotfiles_path": ".scripts",
+        "description": "Custom shell scripts"
+      }
+    ]
+  },
+
+  "backup_files": {
+    "description": "Non-stowable files stored in backups/ folder. Run backups/snapshot.sh to create timestamped snapshots.",
+    "sources": [
+      {
+        "original_path": "~/Library/Application Support/Cursor/User/settings.json",
+        "description": "Cursor editor settings"
+      },
+      {
+        "original_path": "~/Library/Application Support/Cursor/User/keybindings.json",
+        "description": "Cursor editor keybindings"
+      },
+      {
+        "original_path": "cursor --list-extensions",
+        "description": "Cursor installed extensions"
+      },
+      {
+        "original_path": "~/Library/Application Support/Code/User/settings.json",
+        "description": "VS Code editor settings"
+      },
+      {
+        "original_path": "~/Library/Application Support/Code/User/keybindings.json",
+        "description": "VS Code editor keybindings"
+      },
+      {
+        "original_path": "code --list-extensions",
+        "description": "VS Code installed extensions"
+      },
+      {
+        "original_path": "~/Library/Application Support/com.mitchellh.ghostty/config",
+        "description": "Ghostty terminal config"
+      },
+      {
+        "original_path": "brew bundle dump --describe",
+        "description": "Homebrew packages"
+      },
+      {
+        "original_path": "npm list -g --depth=0",
+        "description": "Global npm packages"
+      },
+      {
+        "original_path": "pip list --user",
+        "description": "User pip packages"
+      },
+      {
+        "original_path": "cargo install --list",
+        "description": "Cargo installed packages"
+      },
+      {
+        "original_path": "~/.config/gh/hosts.yml",
+        "description": "GitHub CLI auth hosts (gitignored)"
+      }
+    ]
+  },
+
+  "notes": {
+    "stow_usage": "Run 'stow .' from ~/.dotfiles to create symlinks for stowable files",
+    "backup_usage": "Run 'backups/snapshot.sh' to create a timestamped backup of non-stowable files"
+  }
+}

@@ -1,0 +1,8 @@
+/nix/
+/System/
+/Library/
+/private/
+/usr/
+/Users/andersbekkevard/Library/*
+/Users/andersbekkevard/!/Library/CloudStorage/
+/Users/andersbekkevard/**/*.photoslibrary/
