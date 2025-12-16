@@ -48,8 +48,8 @@ progress_bar() {
     local filled=$(( current * PROGRESS_WIDTH / total ))
     
     printf "\r${CYAN}Progress: [${NC}"
-    printf "█%.0s" $(seq 1 $filled)
-    printf "░%.0s" $(seq 1 $(( PROGRESS_WIDTH - filled )))
+    (( filled > 0 )) && printf "█%.0s" $(seq 1 $filled)
+    (( filled < PROGRESS_WIDTH )) && printf "░%.0s" $(seq 1 $(( PROGRESS_WIDTH - filled )))
     printf "${CYAN}] %d%% (%d/%d)${NC}" $percentage $current $total
 }
 
