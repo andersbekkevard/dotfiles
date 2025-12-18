@@ -34,3 +34,8 @@ warp() {
   open -a "Warp" "$target_path"
 }
 
+
+# Create a directory and cd into it (alternative to mcd)
+take() {
+  mkdir -p "$1" && cd "$1"
+}

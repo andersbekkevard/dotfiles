@@ -66,7 +66,7 @@ print_separator() {
 }
 
 # Header
-echo -e "${BOLD}${BLUE}node_modules Analyzer${NC}"
+echo -e "${BOLD}${BLUE}Python Virtual Environment Analyzer${NC}"
 print_separator "═"
 echo
 echo -e "${CYAN}Analyzing directory:${NC} $(basename "$(pwd)")"
@@ -74,31 +74,32 @@ echo -e "${CYAN}Full path:${NC} $(pwd)"
 echo
 
 # Find directories using fd
-echo -e "${YELLOW}Scanning for node_modules directories...${NC}"
+echo -e "${YELLOW}Scanning for virtual environments...${NC}"
 
 dirs=()
 if command -v fd &> /dev/null; then
-    # fd with all ignore files disabled, prune to avoid nested node_modules
-    while IFS= read -r dir; do
-        dirs+=("$dir")
-    done < <(fd -I -H --no-global-ignore-file -t d --prune '^node_modules$' . 2>/dev/null)
+    # Search for pyvenv.cfg files and take their parent directories
+    # Exclude backups to speed up search
+    while IFS= read -r file; do
+        dirs+=("$(dirname "$file")")
+    done < <(fd -I -H --no-global-ignore-file -t f '^pyvenv\.cfg$' --exclude backups . 2>/dev/null)
 fi
 
 # Fallback to find if fd not available or found nothing
 if [ ${#dirs[@]} -eq 0 ]; then
     echo -e "${YELLOW}Using find...${NC}"
-    while IFS= read -r dir; do
-        dirs+=("$dir")
-    done < <(find . -name "node_modules" -type d -prune 2>/dev/null)
+    while IFS= read -r file; do
+        dirs+=("$(dirname "$file")")
+    done < <(find . -name "pyvenv.cfg" -type f -not -path "*/backups/*" 2>/dev/null)
 fi
 
 # Check if any found
 if [ ${#dirs[@]} -eq 0 ]; then
-    echo -e "${RED}No node_modules directories found.${NC}"
+    echo -e "${RED}No virtual environments found.${NC}"
     exit 0
 fi
 
-echo -e "${GREEN}Found ${#dirs[@]} node_modules directories${NC}"
+echo -e "${GREEN}Found ${#dirs[@]} virtual environments${NC}"
 echo
 
 # Calculate sizes
@@ -108,17 +109,19 @@ tmp_file=$(mktemp)
 if [ "$HAS_DUA" = true ]; then
     echo -e "${CYAN}Using dua for accelerated calculation...${NC}"
     # Use dua for parallel processing
-    # Convert array to null-delimited stream for xargs
-    # sed commands:
-    # 1. Strip ANSI colors
-    # 2. Filter out "total" lines
-    # 3. Parse "SIZE b PATH" to "PATH|SIZE"
-    # 4. Strip leading ./ from path
-    printf "%s\0" "${dirs[@]}" | xargs -0 dua -f bytes 2>/dev/null | \
-        sed 's/\x1b\[[0-9;]*m//g' | \
-        grep -v ' total$' | \
-        sed -nE 's/^[[:space:]]*([0-9]+)[[:space:]]+b[[:space:]]+(.*)$/\2|\1/p' | \
-        sed 's/^\.\///' >> "$tmp_file"
+    if [ ${#dirs[@]} -eq 1 ]; then
+        size_output=$(dua -f bytes "${dirs[0]}" 2>/dev/null | grep ' total$')
+        size_bytes=$(echo "$size_output" | sed 's/\x1b\[[0-9;]*m//g' | sed -nE 's/^[[:space:]]*([0-9]+)[[:space:]]+b[[:space:]]+total$/\1/p')
+        if [ -n "$size_bytes" ]; then
+            echo "${dirs[0]#./}|$size_bytes" >> "$tmp_file"
+        fi
+    else
+        printf "%s\0" "${dirs[@]}" | xargs -0 dua -f bytes 2>/dev/null | \
+            sed 's/\x1b\[[0-9;]*m//g' | \
+            grep -v ' total$' | \
+            sed -nE 's/^[[:space:]]*([0-9]+)[[:space:]]+b[[:space:]]+(.*)$/\2|\1/p' | \
+            sed 's/^\.\///' >> "$tmp_file"
+    fi
 else
     current=0
     for dir in "${dirs[@]}"; do
@@ -188,7 +191,7 @@ print_separator "═"
 IFS='|' read -r largest_dir largest_size < "$tmp_file"
 
 printf "%-20s%60s\n" \
-    "Total directories:" "$total_count" \
+    "Total environments:" "$total_count" \
     "Total size:" "$(format_bytes $total_size)" \
     "Average size:" "$(format_bytes $((total_size / total_count)))"
 
@@ -200,7 +203,8 @@ else
 fi
 
 printf "%-20s%60s\n" \
-    "Largest directory:" "$largest_display ($(format_bytes $largest_size))"
+    "Largest environment:" "$largest_display ($(format_bytes $largest_size))"
 
 rm -f "$tmp_file"
 print_separator "═"
+

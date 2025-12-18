@@ -36,12 +36,76 @@ if [[ "$ZSH_THEME" == "powerlevel10k/powerlevel10k" ]]; then
 fi
 
 # ================================= Terminal setup ================================ #
+# Add Homebrew completions to fpath (must be before compinit)
+if type brew &>/dev/null; then
+  FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
+fi
+
 autoload -Uz compinit
 compinit
 
+# ================================= Environment ================================ #
+export EDITOR='cursor'
+
+# User local binaries
+export PATH="$HOME/.local/bin:$PATH"
+
+# Perl local setup
+eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)"
+
+# ================================= Languages ================================ #
+# Activate Python environment
+# source ~/.globalpy/bin/activate
+export UV_PYTHON_PREFERENCE=managed
+export UV_PYTHON=3.13
+
+# Export Java Home
+export JAVA_HOME=$(/usr/libexec/java_home)
+export PATH="$JAVA_HOME/bin:$PATH"
+
+# Rust / Cargo
+. "$HOME/.cargo/env"
+
+# Bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "/Users/andersbekkevard/.bun/_bun" ] && source "/Users/andersbekkevard/.bun/_bun"
+
+# NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# ================================= Scripts ================================== #
+# Source all zsh scripts from .scripts folder
+for config_file in ~/.scripts/*.zsh; do source "$config_file"; done
+
+alias nodesize='bash ~/.scripts/nodesize.sh'
+alias pysize='bash ~/.scripts/pysize.sh'
+
+# ================================= API-keys ================================= #
+[ -f ~/.secrets ] && source ~/.secrets
+alias secrets="cursor ~/.secrets"
+
+# Claude Code Router / Antigravity / Other Exports
+export OLLAMA_API_BASE=http://127.0.0.1:11434
+export PATH="/Users/andersbekkevard/.antigravity/antigravity/bin:$PATH"
+
+# ================================= CLI-tools ================================ #
+# zoxide (smarter cd)
+eval "$(zoxide init --cmd cd zsh)"
+
+# thefuck
+eval "$(thefuck --alias fuck)"
+alias tf="fuck"
+
+# Kiro
+[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
+
+# .local/bin/env? (Keeping as it was in original)
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+
 # ================================= Aliases ================================ #
-
-
 # General
 alias zrc="cursor ~/.zshrc"
 alias src="source ~/.zshrc"
@@ -51,13 +115,12 @@ alias nv="nvim"
 alias ..="cd .."
 alias c.="cursor ."
 
-# # lsd
+# lsd
 alias ls='lsd --ignore-glob "__pycache__" --ignore-glob "venv" --ignore-glob "node_modules"'
 alias l='ls -l'
 alias la='lsd -A'
 alias lla='lsd -lA'
 alias lt='lsd --tree --ignore-glob "__pycache__" --ignore-glob "venv" --ignore-glob "node_modules"'
-
 
 # git
 alias g='git'
@@ -69,86 +132,22 @@ alias gp='git pull'
 alias gpo='git push'
 alias gbm='git branch -M main'
 alias glog='git log --oneline --graph --decorate --all'
-
+alias lg="lazygit"
 
 # other
 alias nrd='npm run dev'
 alias nrt='npm run test'
 alias nrb='npm run build'
 alias nrl='npm run lint'
+alias prd='pnpm dev'
 alias cat='bat'
 alias ghc='gh copilot'
-alias lg="lazygit"
 alias fzfc="fzf --preview 'bat --style=numbers --color=always {}' --preview-window=right:60%"
 alias llm="ollama run gemma3n:latest"
 alias aider-run="aider --model ollama_chat/gpt-oss:20b ."
 alias cr="cargo run"
 alias c-a="cursor-agent"
 alias lc="rm -f *.aux *.log *.pytxcode && rm -rf pythontex-files-*/"
-
-# ================================= Scripts ================================== #
-# Source all zsh scripts from .scripts folder
-for config_file in ~/.scripts/*.zsh; do source "$config_file"; done
-
-alias nodesize='bash ~/.scripts/nodesize.sh'
-
-export EDITOR='cursor'
-
-# ================================= Languages ================================ #
-# Activate Python environment
-source ~/.globalpy/bin/activate
-
-# Export Java Home
-export JAVA_HOME=$(/usr/libexec/java_home)
-export PATH="$JAVA_HOME/bin:$PATH"
-. "$HOME/.cargo/env"
-
-# ================================= API-keys ================================= #
-[ -f ~/.secrets ] && source ~/.secrets
-alias secrets="cursor ~/.secrets"
-
-
-# ================================= CLI-tools ================================ #
-# Let zoxide use cd
-eval "$(zoxide init --cmd cd zsh)"
-
-# bun completions
-[ -s "/Users/andersbekkevard/.bun/_bun" ] && source "/Users/andersbekkevard/.bun/_bun"
-
-# export bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-# thefuck
-eval "$(thefuck --alias fuck)"
-alias tf="fuck"
-
-# Use Emacs key‑bindings
-bindkey -e
-
-# Undo/redo on Meta‑Z and Meta‑Y
-bindkey '^[z' undo     # Alt+z triggers undo
-bindkey '^[y' redo     # Alt+y triggers redo
-. "$HOME/.local/bin/env"
-# ================================= Enhancements ================================ #
-source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
-[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
-
-
-# For Claude Code Router
-# export ANTHROPIC_BASE_URL="http://127.0.0.1:3456"
-# export ANTHROPIC_API_KEY="anything-nonempty"
-# export OPENROUTER_API_KEY="(...) check .secrets"
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# Ollama API endpoint for aider
-export OLLAMA_API_BASE=http://127.0.0.1:11434
-
 
 # ================================= History ================================ #
 HISTFILE=~/.zsh_history
@@ -161,13 +160,14 @@ setopt SHARE_HISTORY
 setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_REDUCE_BLANKS
 
+# ================================= Keybindings ================================ #
+# Use Emacs key‑bindings
+bindkey -v
 
-export PATH="$HOME/.local/bin:$PATH"
-export PERL5LIB=$HOME/.perl5/lib/perl5:$PERL5LIB
-export PATH=$HOME/.perl5/bin:$PATH
-export PATH="$HOME/.local/bin:$PATH"
+# Undo/redo on Meta‑Z and Meta‑Y
+bindkey '^[z' undo     # Alt+z triggers undo
+bindkey '^[y' redo     # Alt+y triggers redo
 
-# Added by Antigravity
-export PATH="/Users/andersbekkevard/.antigravity/antigravity/bin:$PATH"
-
-eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)"
+# ================================= Enhancements ================================ #
+source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
