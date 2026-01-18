@@ -42,17 +42,34 @@ Not all configurations are suitable for symlinking (e.g., VS Code extension list
 
 ## Usage
 
-### Stowing
-To apply configurations to your home directory:
+### 1. Stowing (Symlinking)
+
+#### Simulate (Dry Run / Visual Mode)
+Before applying changes, always simulate to see exactly what `stow` will do. The `-v` (verbose) flag shows you every action.
 ```bash
 cd ~/.dotfiles
-stow .
+stow -nv .
 ```
 
-### Backing up
-To create a new snapshot of external configs:
+#### Apply Changes
+Once you're happy with the simulation, run the command to create the symlinks.
+```bash
+stow -v .
+```
+
+#### When do I need to run this?
+- **Only Once**: Once linked, changes are live immediately. You do **not** need to re-run `stow` just because you edited a file (e.g., `.zshrc`).
+- **New Files**: Run it if you add a *new* file to this repo that isn't yet linked in your home folder.
+- **Restoring Links**: Run it if a symlink in your home directory is accidentally deleted or overwritten.
+- **New Machine**: Run it after cloning this repo to a new computer.
+
+> [!IMPORTANT]
+> **About `--adopt`**: Only use the `--adopt` flag during initial setup to pull existing local configs into the repo. **Do not use it for daily updates**, as it can overwrite your repo files with local versions.
+
+### 2. External Backups
+To create a new snapshot of external configs (VSCode, Brew, etc.):
 ```bash
 ./backups/snapshot.sh
 ```
 
-Raycast isnt backed up automatically, and must be done manually
+Raycast isn't backed up automatically and must be done manually via the app settings.

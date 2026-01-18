@@ -1,0 +1,303 @@
+// Place your key bindings in this file to override the defaults
+[
+	{
+		"key": "cmd+i",
+		"command": "composerMode.agent"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "workbench.action.debug.run",
+		"when": "editorLangId == java"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "code-runner.run",
+		"when": "editorLangId == python"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "code-runner.run",
+		"when": "editorLangId == javascript || editorLangId == typescript"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "code-runner.run",
+		"when": "editorLangId == cpp || editorLangId == c"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "notebook.cell.execute",
+		"when": "notebookCellListFocused || notebookEditorFocused"
+	},
+	{
+		"key": "shift+enter",
+		"command": "notebook.cell.executeAndSelectBelow",
+		"when": "notebookCellListFocused || notebookEditorFocused"
+	},
+	{
+		"key": "cmd+[Semicolon]",
+		"command": "workbench.action.terminal.toggleTerminal",
+		"when": "terminal.active"
+	},
+	{
+		"key": "ctrl+shift+[Equal]",
+		"command": "-workbench.action.terminal.toggleTerminal",
+		"when": "terminal.active"
+	},
+	{
+		"key": "ctrl+alt+cmd+enter",
+		"command": "editor.action.inlineDiffs.acceptAll",
+		"when": "editorTextFocus && @inlineDiffs.acceptAllEdits.isActiveEditorWithDiffs"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "-editor.action.inlineDiffs.acceptAll",
+		"when": "editorTextFocus && @inlineDiffs.acceptAllEdits.isActiveEditorWithDiffs"
+	},
+	{
+		"key": "ctrl+alt+cmd+enter",
+		"command": "refactorPreview.apply",
+		"when": "refactorPreview.enabled && refactorPreview.hasCheckedChanges && focusedView == 'refactorPreview'"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "-refactorPreview.apply",
+		"when": "refactorPreview.enabled && refactorPreview.hasCheckedChanges && focusedView == 'refactorPreview'"
+	},
+	{
+		"key": "alt+tab",
+		"command": "editor.action.inlineSuggest.acceptNextWord",
+		"when": "cppSuggestion && !editorReadonly || inlineSuggestionVisible && !editorReadonly"
+	},
+	{
+		"key": "cmd+right",
+		"command": "-editor.action.inlineSuggest.acceptNextWord",
+		"when": "cppSuggestion && !editorReadonly || inlineSuggestionVisible && !editorReadonly"
+	},
+	{
+		"key": "shift+cmd+i",
+		"command": "-composer.newAgentChat"
+	},
+	{
+		"key": "cmd+b",
+		"command": "-markdown.extension.editing.toggleBold",
+		"when": "editorTextFocus && !editorReadonly && editorLangId =~ /^markdown$|^rmd$|^quarto$/"
+	},
+	{
+		"key": "cmd+i",
+		"command": "-markdown.extension.editing.toggleItalic",
+		"when": "editorTextFocus && !editorReadonly && editorLangId =~ /^markdown$|^rmd$|^quarto$/"
+	},
+	{
+		"key": "cmd+'",
+		"command": "editor.cpp.toggle"
+	},
+	{
+		"key": "ctrl+alt+n",
+		"command": "-code-runner.run"
+	},
+	{
+		"key": "cmd+1",
+		"command": "-workbench.action.focusFirstEditorGroup"
+	},
+	{
+		"key": "cmd+1",
+		"command": "workbench.action.openEditorAtIndex1"
+	},
+	{
+		"key": "ctrl+1",
+		"command": "-workbench.action.openEditorAtIndex1"
+	},
+	{
+		"key": "cmd+3",
+		"command": "-workbench.action.focusThirdEditorGroup"
+	},
+	{
+		"key": "cmd+6",
+		"command": "-workbench.action.focusSixthEditorGroup"
+	},
+	{
+		"key": "cmd+7",
+		"command": "-workbench.action.focusSeventhEditorGroup"
+	},
+	{
+		"key": "cmd+2",
+		"command": "-workbench.action.focusSecondEditorGroup"
+	},
+	{
+		"key": "cmd+4",
+		"command": "-workbench.action.focusFourthEditorGroup"
+	},
+	{
+		"key": "cmd+5",
+		"command": "-workbench.action.focusFifthEditorGroup"
+	},
+	{
+		"key": "cmd+8",
+		"command": "-workbench.action.focusEighthEditorGroup"
+	},
+	{
+		"key": "cmd+2",
+		"command": "workbench.action.openEditorAtIndex2"
+	},
+	{
+		"key": "ctrl+2",
+		"command": "-workbench.action.openEditorAtIndex2"
+	},
+	{
+		"key": "cmd+3",
+		"command": "workbench.action.openEditorAtIndex3"
+	},
+	{
+		"key": "ctrl+3",
+		"command": "-workbench.action.openEditorAtIndex3"
+	},
+	{
+		"key": "cmd+4",
+		"command": "workbench.action.openEditorAtIndex4"
+	},
+	{
+		"key": "ctrl+4",
+		"command": "-workbench.action.openEditorAtIndex4"
+	},
+	{
+		"key": "cmd+5",
+		"command": "workbench.action.openEditorAtIndex5"
+	},
+	{
+		"key": "ctrl+5",
+		"command": "-workbench.action.openEditorAtIndex5"
+	},
+	{
+		"key": "cmd+6",
+		"command": "workbench.action.openEditorAtIndex6"
+	},
+	{
+		"key": "ctrl+6",
+		"command": "-workbench.action.openEditorAtIndex6"
+	},
+	{
+		"key": "cmd+7",
+		"command": "workbench.action.openEditorAtIndex7"
+	},
+	{
+		"key": "ctrl+7",
+		"command": "-workbench.action.openEditorAtIndex7"
+	},
+	{
+		"key": "cmd+8",
+		"command": "workbench.action.openEditorAtIndex8"
+	},
+	{
+		"key": "ctrl+8",
+		"command": "-workbench.action.openEditorAtIndex8"
+	},
+	{
+		"key": "cmd+9",
+		"command": "workbench.action.openEditorAtIndex9"
+	},
+	{
+		"key": "ctrl+9",
+		"command": "-workbench.action.openEditorAtIndex9"
+	},
+	{
+		"key": "shift+cmd+m",
+		"command": "workbench.view.extension.project-manager"
+	},
+	{
+		"key": "shift+cmd+m",
+		"command": "-workbench.actions.view.problems",
+		"when": "workbench.panel.markers.view.active"
+	},
+	{
+		"key": "shift+cmd+t",
+		"command": "-workbench.action.reopenClosedEditor"
+	},
+	{
+		"key": "shift+cmd+t",
+		"command": "workbench.files.action.createFileFromExplorer",
+		"when": "view == 'workbench.explorer.fileView'"
+	},
+	{
+		"key": "alt+cmd+r",
+		"command": "-toggleFindRegex",
+		"when": "editorFocus"
+	},
+	{
+		"key": "alt+cmd+r",
+		"command": "references-view.findReferences",
+		"when": "editorHasReferenceProvider && editorFocus"
+	},
+	{
+		"key": "shift+alt+f12",
+		"command": "-references-view.findReferences",
+		"when": "editorHasReferenceProvider"
+	},
+	{
+		"key": "shift+cmd+g",
+		"command": "-editor.action.previousMatchFindAction",
+		"when": "editorFocus"
+	},
+	{
+		"key": "shift+cmd+g",
+		"command": "-workbench.action.terminal.findPrevious",
+		"when": "terminalFindFocused && terminalHasBeenCreated || terminalFindFocused && terminalProcessSupported || terminalFocusInAny && terminalHasBeenCreated || terminalFocusInAny && terminalProcessSupported"
+	},
+	{
+		"key": "shift+cmd+g",
+		"command": "-workbench.action.terminal.openDetectedLink",
+		"when": "accessibleViewIsShown && terminalHasBeenCreated && accessibleViewCurrentProviderId == 'terminal'"
+	},
+	{
+		"key": "shift+cmd+c",
+		"command": "chatgpt.openSidebar"
+	},
+	{
+		"key": "shift+cmd+c",
+		"command": "-workbench.action.terminal.openNativeConsole",
+		"when": "!terminalFocus"
+	},
+	{
+		"key": "shift+cmd+enter",
+		"command": "workbench.action.debug.start",
+		"when": "debuggersAvailable && debugState == 'inactive'"
+	},
+	{
+		"key": "f5",
+		"command": "-workbench.action.debug.start",
+		"when": "debuggersAvailable && debugState == 'inactive'"
+	},
+	{
+		"key": "cmd+y",
+		"command": "-aichat.newfollowupaction"
+	},
+	{
+		"key": "shift+cmd+i",
+		"command": "composer.openModelToggle",
+		"when": "composerFocused && !editorTextFocus"
+	},
+	{
+		"key": "shift+cmd+7",
+		"command": "-composer.openModelToggle",
+		"when": "composerFocused && !editorTextFocus"
+	},
+	{
+		"key": "shift+cmd+g",
+		"command": "workbench.view.scm",
+		"when": "workbench.scm.active"
+	},
+	{
+		"key": "ctrl+shift+g",
+		"command": "-workbench.view.scm",
+		"when": "workbench.scm.active"
+	},
+	{
+		"key": "ctrl+shift+m cmd+t",
+		"command": "-latex-workshop.shortcut.mathtt",
+		"when": "editorTextFocus && !editorReadonly && editorLangId =~ /^bibtex$|^latex$|^context$|^latex-expl3$|^doctex$|^rsweave$|^jlweave$|^pweave$/"
+	},
+	{
+		"key": "shift+alt+t",
+		"command": "workbench.files.action.createFolderFromExplorer"
+	}
+]
