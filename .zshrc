@@ -107,7 +107,7 @@ alias tf="fuck"
 
 # ================================= Aliases ================================ #
 # General
-alias zrc="cursor ~/.zshrc"
+alias zrc="cursor ~/.dotfiles/.zshrc"
 alias src="source ~/.zshrc"
 alias c="clear"
 alias vim="nvim"
@@ -171,3 +171,25 @@ bindkey '^[y' redo     # Alt+y triggers redo
 # ================================= Enhancements ================================ #
 source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+export ZSH_AI_PROVIDER="openai"
+
+# PAI (Personal AI Infrastructure) Configuration
+# Added by pai-setup on 2025-12-24
+export PAI_DIR="/Users/andersbekkevard/.claude"
+export DA="Hal"
+export DA_COLOR="red"
+export ENGINEER_NAME="Anders Bekkevard"
+# End PAI Configuration
+
+
+# Zsh-ai Configuration
+source $(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh
+ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
+# ZSH_HIGHLIGHT_STYLES[comment]='fg=#af87ff,bold'
+export ZSH_AI_MODEL="openai/gpt-5-nano"
+export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
+- Use 'rg' (ripgrep) instead of 'grep' for all text searches.
+- Use 'fd' instead of 'find' for finding files and directories.
+- Use 'bat' instead of 'cat' for reading files.
+- Use 'lsd' instead of 'ls' for listing files."
