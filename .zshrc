@@ -80,8 +80,8 @@ export NVM_DIR="$HOME/.nvm"
 # Source all zsh scripts from .scripts folder
 for config_file in ~/.scripts/*.zsh; do source "$config_file"; done
 
-alias nodesize='bash ~/.scripts/nodesize.sh'
-alias pysize='bash ~/.scripts/pysize.sh'
+alias nodesize='bash ~/.scripts/nodesize.sh' # Is this needed?
+alias pysize='bash ~/.scripts/pysize.sh' # Is this needed?
 
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
@@ -111,6 +111,7 @@ alias zrc="cursor ~/.dotfiles/.zshrc"
 alias src="source ~/.zshrc"
 alias c="clear"
 alias vim="nvim"
+alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
 alias c.="cursor ."
@@ -187,9 +188,15 @@ export ENGINEER_NAME="Anders Bekkevard"
 source $(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh
 ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
 # ZSH_HIGHLIGHT_STYLES[comment]='fg=#af87ff,bold'
-export ZSH_AI_MODEL="openai/gpt-5-nano"
+# export ZSH_AI_MODEL="openai/gpt-5-mini"
+export ZSH_AI_MODEL="openai/gpt-5.2"
+# alias 52="export ZSH_AI_MODEL='openai/gpt-5.2'"
 export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
 - Use 'rg' (ripgrep) instead of 'grep' for all text searches.
 - Use 'fd' instead of 'find' for finding files and directories.
 - Use 'bat' instead of 'cat' for reading files.
 - Use 'lsd' instead of 'ls' for listing files."
+
+
+# School
+alias sql="sqlite3"
