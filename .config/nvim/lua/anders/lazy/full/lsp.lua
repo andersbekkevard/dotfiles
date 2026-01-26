@@ -52,6 +52,17 @@ return {
 				filetypes = { 'python' },
 				root_markers = { 'pyproject.toml', 'setup.py', 'setup.cfg', 'requirements.txt', 'Pipfile' },
 				capabilities = capabilities,
+				on_init = function(client)
+					local root = client.workspace_folders[1].name
+					local venv = vim.fs.find({ '.venv', 'venv', 'env', '.env' },
+						{ path = root, upward = false })[1]
+					if venv then
+						client.config.settings.python.pythonPath = vim.fs.joinpath(venv, 'bin',
+							'python')
+						client.notify('workspace/didChangeConfiguration',
+							{ settings = client.config.settings })
+					end
+				end,
 			}
 			vim.lsp.enable('pyright')
 

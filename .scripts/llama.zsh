@@ -2,7 +2,8 @@
 _llama_serve_model() {
     local model_path="$1"
     local port="$2"
-    shift 2
+    local context="${3:-32768}" # Default to 32k if not provided
+    shift 3
 
     if ! command -v llama-server &> /dev/null; then
         echo "✗ llama-server not found"
@@ -15,18 +16,17 @@ _llama_serve_model() {
         return 1
     fi
 
-    echo "🚀 Starting optimized llama-server on port $port..."
+    echo "🚀 Starting optimized llama-server on port $port (Context: $context)..."
     echo "📦 Model: $(basename $model_path)"
     
     # M4 Pro Optimized Flags:
-    # -c 32768: Sets context to 32k
     # -np 1: Single slot for max speed
     # -fa on: Force Flash Attention
     # --mlock: Lock in RAM
     llama-server \
         -m "$model_path" \
         --port "$port" \
-        -c 32768 \
+        -c "$context" \
         -np 1 \
         -fa on \
         --mlock \
@@ -36,7 +36,29 @@ _llama_serve_model() {
 # Host the Aprilia model
 llama-host-aprilia() {
     local model="/Users/andersbekkevard/.ollama/models/blobs/sha256-00bea8063ebdbfab1537572106912c9849dee347eb245a72eaac6f9ea3af5f69"
-    _llama_serve_model "$model" 8080 "$@"
+    _llama_serve_model "$model" 8080 32768 "$@"
+}
+
+# Host the GLM 4.7 Flash model
+llama-host-glm() {
+    local model="/Users/andersbekkevard/.ollama/models/blobs/sha256-924e61ddfa5f33126585950eb9867f1d6b169eba93d15c342b8199f5e5c5a8b6"
+    local log_file="/tmp/llama-glm-$(date +%Y%m%d_%H%M%S).log"
+
+    echo "Logging to: $log_file"
+
+    _llama_serve_model "$model" 8080 32768 \
+        --alias glm-4.7-flash \
+        --jinja \
+        --verbose \
+        --temp 1.0 \
+        --top-p 0.95 \
+        --min-p 0.01 \
+        --sleep-idle-seconds 300 \
+        --host 127.0.0.1 \
+        "$@" > "$log_file" 2>&1 &
+
+    echo "Server PID: $!"
+    echo "Tail logs: tail -f $log_file"
 }
 
 # Host the GPT OS (Oss) model using a dedicated Ollama server instance

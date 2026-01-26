@@ -200,3 +200,10 @@ export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
 
 # School
 alias sql="sqlite3"
+# pnpm
+export PNPM_HOME="/Users/andersbekkevard/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
