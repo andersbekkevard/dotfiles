@@ -5,3 +5,6 @@
 # Sensitive files in backups (contains tokens)
 backups/sources/sensitive/
 backups/*/gh/
+
+# Plugin files for OMZ
+.oh-my-zsh/custom/plugins/
