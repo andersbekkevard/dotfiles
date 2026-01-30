@@ -74,6 +74,25 @@ return {
 				capabilities = capabilities,
 			}
 			vim.lsp.enable('jdtls')
+
+			-- SQL (uses global config at ~/.config/sqls/config.yml)
+			vim.lsp.config.sqls = {
+				cmd = { 'sqls' },
+				filetypes = { 'sql', 'mysql' },
+				root_markers = { '.sqls', '.git' },
+				capabilities = capabilities,
+				on_attach = function(client, bufnr)
+					local ok, sqls = pcall(require, 'sqls')
+					if ok then
+						sqls.on_attach(client, bufnr)
+					end
+
+					-- Execute SQL query (overrides diagnostic float in SQL files)
+					vim.keymap.set({ 'n', 'v' }, '<leader>e', ':SqlsExecuteQuery<CR>',
+						{ buffer = bufnr, desc = 'Execute SQL query' })
+				end,
+			}
+			vim.lsp.enable('sqls')
 		end
 	},
 
@@ -95,10 +114,16 @@ return {
 		build = ':TSUpdate',
 		config = function()
 			require('nvim-treesitter.configs').setup({
-				ensure_installed = { 'python', 'rust', 'java', 'lua', 'vim', 'vimdoc' },
+				ensure_installed = { 'python', 'rust', 'java', 'lua', 'vim', 'vimdoc', 'sql' },
 				highlight = { enable = true },
 				indent = { enable = true },
 			})
 		end,
+	},
+
+	-- sqls.nvim - SQL client extension for sqls LSP
+	{
+		'nanotee/sqls.nvim',
+		lazy = false, -- Load eagerly so it's available when LSP attaches
 	},
 }

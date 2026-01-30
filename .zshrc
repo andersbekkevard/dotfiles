@@ -45,7 +45,8 @@ autoload -Uz compinit
 compinit
 
 # ================================= Environment ================================ #
-export EDITOR='cursor'
+# export EDITOR='cursor'
+export EDITOR='nvim'
 
 # User local binaries
 export PATH="$HOME/.local/bin:$PATH"
@@ -208,3 +209,6 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+#
+
+export PATH="$HOME/go/bin:$PATH"

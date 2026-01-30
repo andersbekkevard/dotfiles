@@ -83,6 +83,34 @@ if not vim.g.vscode then
 	-- LazyGit
 	vim.keymap.set('n', '<leader>lg', ":LazyGit<enter>", { desc = '[L]azy [G]it' })
 
+	-- Window navigation (for splits)
+	vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move to left window' })
+	vim.keymap.set('n', '<C-j>', '<C-w>j', { desc = 'Move to bottom window' })
+	vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = 'Move to top window' })
+	vim.keymap.set('n', '<C-l>', '<C-w>l', { desc = 'Move to right window' })
+
+	-- Resize splits with Ctrl + arrow keys
+	vim.keymap.set('n', '<C-Up>', ':resize +1<CR>', { desc = 'Increase window height' })
+	vim.keymap.set('n', '<C-Down>', ':resize -1<CR>', { desc = 'Decrease window height' })
+	vim.keymap.set('n', '<C-Left>', ':vertical resize -1<CR>', { desc = 'Decrease window width' })
+	vim.keymap.set('n', '<C-Right>', ':vertical resize +1<CR>', { desc = 'Increase window width' })
+
+	-- Move splits to different positions with Ctrl + Shift + hjkl
+	vim.keymap.set('n', '<C-S-h>', '<C-w>H', { desc = 'Move window to far left' })
+	vim.keymap.set('n', '<C-S-j>', '<C-w>J', { desc = 'Move window to bottom' })
+	vim.keymap.set('n', '<C-S-k>', '<C-w>K', { desc = 'Move window to top' })
+	vim.keymap.set('n', '<C-S-l>', '<C-w>L', { desc = 'Move window to far right' })
+
+	-- Move splits with Ctrl + Shift + arrow keys
+	vim.keymap.set('n', '<C-S-Left>', '<C-w>H', { desc = 'Move window to far left' })
+	vim.keymap.set('n', '<C-S-Down>', '<C-w>J', { desc = 'Move window to bottom' })
+	vim.keymap.set('n', '<C-S-Up>', '<C-w>K', { desc = 'Move window to top' })
+	vim.keymap.set('n', '<C-S-Right>', '<C-w>L', { desc = 'Move window to far right' })
+
+	-- Create splits
+	vim.keymap.set('n', '<C-s>', '<C-w>v', { desc = 'Split vertically' })
+	vim.keymap.set('n', '<C-S-s>', '<C-w>s', { desc = 'Split horizontally' })
+
 	-- Buffer navigation (like Jon's setup)
 	-- <leader><leader> toggles between current and previous buffer
 	vim.keymap.set('n', '<leader><leader>', '<c-^>', { desc = 'Toggle between buffers' })

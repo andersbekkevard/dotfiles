@@ -25,26 +25,24 @@ return {
 			})
 
 			local builtin = require('telescope.builtin')
-			-- Buffer and file navigation
-			vim.keymap.set('n', '<leader>f', builtin.buffers, { desc = 'Find existing buffers' })
-			vim.keymap.set('n', '<leader>?', builtin.oldfiles, { desc = 'Find recently opened files' })
-			
-			-- File finding
-			vim.keymap.set('n', '<leader>sf', builtin.find_files, {})
-			
-			-- Search functionality
-			vim.keymap.set('n', '<leader>sws', function()
-				local word = vim.fn.expand("<cword>")
-				builtin.grep_string({ search = word })
-			end)
-			vim.keymap.set('n', '<leader>sWs', function()
-				local word = vim.fn.expand("<cWORD>")
-				builtin.grep_string({ search = word })
-			end)
-			vim.keymap.set('n', '<leader>sg', function()
-				builtin.grep_string({ search = vim.fn.input("Grep > ") })
-			end)
-			vim.keymap.set('n', '<leader>vh', builtin.help_tags, {})
+
+			-- Quick access to telescope builtins
+			vim.keymap.set('n', '<C-t>', builtin.builtin, { desc = 'Telescope builtins' })
+
+			-- Find keybinds (<leader>f*)
+			vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Find files' })
+			vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Find grep (live)' })
+			vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Find buffers' })
+			vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Find help' })
+			vim.keymap.set('n', '<leader>fw', function()
+				builtin.grep_string({ search = vim.fn.expand("<cword>") })
+			end, { desc = 'Find word under cursor' })
+			vim.keymap.set('n', '<leader>fr', builtin.oldfiles, { desc = 'Find recent files' })
+
+			-- Commented out: grep with command-line input (use <leader>fg live_grep instead)
+			-- vim.keymap.set('n', '<leader>sg', function()
+			-- 	builtin.grep_string({ search = vim.fn.input("Grep > ") })
+			-- end, { desc = 'Grep with prompt' })
 		end
 	},
 }
