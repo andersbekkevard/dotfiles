@@ -3,7 +3,6 @@
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
-
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -27,6 +26,7 @@ else
   RPROMPT=''
 fi
 
+plugins=(git kimi-cli) # Add kimi-cli plugin for Kimi CLI support
 # Load Oh My Zsh
 source $ZSH/oh-my-zsh.sh
 
@@ -85,6 +85,7 @@ alias pysize='bash ~/.scripts/pysize.sh' # Is this needed?
 
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
+export KIMI_API_KEY="$MOONSHOT_API_KEY"
 alias secrets="cursor ~/.secrets"
 
 # Claude Code Router / Antigravity / Other Exports
