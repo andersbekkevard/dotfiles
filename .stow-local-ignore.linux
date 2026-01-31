@@ -1,0 +1,22 @@
+# Linux-specific stow ignore file
+# Excludes Mac-only configs from being symlinked
+
+# Repository metadata
+backups
+.git
+.gitignore
+.stow-local-ignore
+.stow-local-ignore.linux
+README.*
+manifest.json
+setup.sh
+.zshrc.linux
+
+# Mac-specific configurations (EXCLUDE on Linux)
+.config/karabiner
+.config/linearmouse
+.zprofile
+.cursor
+
+# Mac-specific scripts
+.scripts/cpp_reference.zsh
