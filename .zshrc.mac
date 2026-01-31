@@ -1,0 +1,69 @@
+# =============================================================================
+# MAC-SPECIFIC CONFIGURATION
+# Sourced only on macOS from .zshrc
+# =============================================================================
+
+# Homebrew completions (must be before compinit in main .zshrc)
+if type brew &>/dev/null; then
+  FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
+fi
+
+# Perl local setup
+eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)" 2>/dev/null
+
+# Java Home
+export JAVA_HOME=$(/usr/libexec/java_home 2>/dev/null)
+[[ -n "$JAVA_HOME" ]] && export PATH="$JAVA_HOME/bin:$PATH"
+
+# Rust / Cargo
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+
+# Bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
+# Antigravity
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+
+# Go
+export PATH="$HOME/go/bin:$PATH"
+
+# pnpm (macOS location)
+export PNPM_HOME="$HOME/Library/pnpm"
+[[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
+
+# Kiro
+[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)" 2>/dev/null
+
+# =============================================================================
+# MAC-SPECIFIC ALIASES
+# =============================================================================
+alias secrets="cursor ~/.secrets"
+alias c.="cursor ."
+alias c-a="cursor-agent"
+alias zrc="cursor ~/.dotfiles/.zshrc"
+
+# =============================================================================
+# MAC-SPECIFIC PLUGINS
+# =============================================================================
+# Zsh-ai Configuration
+if [[ -f "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh" ]]; then
+  source "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh"
+  export ZSH_AI_PROVIDER="openai"
+  export ZSH_AI_MODEL="openai/gpt-5.2"
+  export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
+- Use 'rg' (ripgrep) instead of 'grep' for all text searches.
+- Use 'fd' instead of 'find' for finding files and directories.
+- Use 'bat' instead of 'cat' for reading files.
+- Use 'lsd' instead of 'ls' for listing files."
+  ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
+fi
+
+# =============================================================================
+# PAI (Personal AI Infrastructure) Configuration
+# =============================================================================
+export PAI_DIR="$HOME/.claude"
+export DA="Hal"
+export DA_COLOR="red"
+export ENGINEER_NAME="Anders Bekkevard"

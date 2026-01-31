@@ -8,3 +8,10 @@ backups
 manifest\.json
 TODO\.md
 README.*
+setup\.sh
+
+# Mac-specific (excluded when stowing on Linux)
+\.config/karabiner
+\.config/linearmouse
+\.zprofile
+\.cursor

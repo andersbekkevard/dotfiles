@@ -189,39 +189,25 @@ if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]]; then
 fi
 
 # =============================================================================
-# DOTFILES LINKING (THE CRITICAL PART)
+# DOTFILES LINKING
 # =============================================================================
 log "Setting up dotfiles..."
 
 cd "$DOTFILES_DIR"
 
-# Step 1: Copy Linux-specific configs
-if [[ "$OS" == "linux" ]]; then
-    log "Applying Linux configuration..."
-    cp -f .zshrc.linux .zshrc
-    cp -f .stow-local-ignore.linux .stow-local-ignore
-fi
-
-# Step 2: Nuke ALL conflicting files/dirs in home
+# Step 1: Remove conflicting files
 log "Removing conflicting files..."
-rm -f ~/.zshrc ~/.zshenv ~/.zprofile ~/.profile ~/.gitconfig ~/.p10k.zsh ~/.wakatime.cfg 2>/dev/null || true
+rm -f ~/.zshrc ~/.zshrc.mac ~/.zshenv ~/.zprofile ~/.profile ~/.gitconfig ~/.p10k.zsh ~/.wakatime.cfg 2>/dev/null || true
 rm -rf ~/.config/nvim ~/.config/fd ~/.scripts 2>/dev/null || true
 
-# Step 3: Ensure ~/.config exists
+# Step 2: Ensure ~/.config exists
 mkdir -p ~/.config
 
-# Step 4: Link dotfiles (try stow first, fallback to ln)
-log "Linking dotfiles..."
-
-if command -v stow &>/dev/null; then
-    log "Using stow..."
-    stow --restow --verbose=1 . || warn "Stow had issues, using fallback..."
-fi
-
-# Step 5: Force-link all critical files (works even if stow failed or isn't installed)
-log "Ensuring all symlinks exist..."
+# Step 3: Link all dotfiles
+log "Creating symlinks..."
 
 ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
+ln -sf "$DOTFILES_DIR/.zshrc.mac" ~/.zshrc.mac
 ln -sf "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
 ln -sf "$DOTFILES_DIR/.p10k.zsh" ~/.p10k.zsh
 [[ -f "$DOTFILES_DIR/.zshenv" ]] && ln -sf "$DOTFILES_DIR/.zshenv" ~/.zshenv
