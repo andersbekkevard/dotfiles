@@ -170,21 +170,33 @@ fi
 
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
-# Powerlevel10k
+# Symlink Oh My Zsh custom directory from dotfiles (same setup as Mac)
+# This ensures all plugins (including kimi-cli) are available
+if [[ -d "$DOTFILES_DIR/.oh-my-zsh/custom" ]]; then
+    log "Linking Oh My Zsh custom directory from dotfiles..."
+    rm -rf "$HOME/.oh-my-zsh/custom"
+    ln -sf "$DOTFILES_DIR/.oh-my-zsh/custom" "$HOME/.oh-my-zsh/custom"
+    ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+fi
+
+# Powerlevel10k (install to dotfiles custom dir so it's shared)
 if [[ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]]; then
     log "Installing Powerlevel10k..."
+    mkdir -p "$ZSH_CUSTOM/themes"
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k" >/dev/null 2>&1
 fi
 
-# zsh-autosuggestions
+# zsh-autosuggestions (install if not already in dotfiles)
 if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
     log "Installing zsh-autosuggestions..."
+    mkdir -p "$ZSH_CUSTOM/plugins"
     git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions" >/dev/null 2>&1
 fi
 
-# zsh-syntax-highlighting
+# zsh-syntax-highlighting (install if not already in dotfiles)
 if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]]; then
     log "Installing zsh-syntax-highlighting..."
+    mkdir -p "$ZSH_CUSTOM/plugins"
     git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" >/dev/null 2>&1
 fi
 
