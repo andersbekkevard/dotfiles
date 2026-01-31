@@ -79,8 +79,11 @@ export OLLAMA_API_BASE=http://127.0.0.1:11434
 # zoxide (smarter cd)
 command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd zsh)"
 
-# thefuck
-command -v thefuck &>/dev/null && eval "$(thefuck --alias fuck)" && alias tf="fuck"
+# thefuck (only if it works - may fail on Python 3.12+)
+if command -v thefuck &>/dev/null && thefuck --version &>/dev/null 2>&1; then
+  eval "$(thefuck --alias fuck)"
+  alias tf="fuck"
+fi
 
 # .local/bin/env
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"

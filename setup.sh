@@ -90,11 +90,12 @@ if [[ "$OS" == "linux" ]]; then
         export PATH="$HOME/.local/bin:$PATH"
     fi
 
-    # thefuck
-    if ! command -v thefuck &>/dev/null; then
-        log "Installing thefuck..."
-        pip3 install thefuck --user --break-system-packages -q 2>/dev/null || pip3 install thefuck --user -q 2>/dev/null || true
-    fi
+    # thefuck (skip on Python 3.12+ due to compatibility issues)
+    # if ! command -v thefuck &>/dev/null; then
+    #     log "Installing thefuck..."
+    #     pip3 install thefuck --user --break-system-packages -q 2>/dev/null || true
+    # fi
+    log "Skipping thefuck (incompatible with Python 3.12)"
 
     # lazygit
     if ! command -v lazygit &>/dev/null; then
@@ -175,8 +176,18 @@ ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 if [[ -d "$DOTFILES_DIR/.oh-my-zsh/custom" ]]; then
     log "Linking Oh My Zsh custom directory from dotfiles..."
     rm -rf "$HOME/.oh-my-zsh/custom"
-    ln -sf "$DOTFILES_DIR/.oh-my-zsh/custom" "$HOME/.oh-my-zsh/custom"
+    ln -s "$DOTFILES_DIR/.oh-my-zsh/custom" "$HOME/.oh-my-zsh/custom"
     ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+    # Verify the symlink worked
+    if [[ -L "$HOME/.oh-my-zsh/custom" ]]; then
+        log "Oh My Zsh custom symlink created successfully"
+    else
+        warn "Oh My Zsh custom symlink failed - creating directory and copying"
+        mkdir -p "$HOME/.oh-my-zsh/custom"
+        cp -r "$DOTFILES_DIR/.oh-my-zsh/custom/"* "$HOME/.oh-my-zsh/custom/"
+    fi
+else
+    warn "No .oh-my-zsh/custom in dotfiles, plugins must be cloned"
 fi
 
 # Powerlevel10k (install to dotfiles custom dir so it's shared)
