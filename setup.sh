@@ -1,11 +1,12 @@
 #!/bin/bash
 #
 # One-Stop Development Environment Setup
-# Clone dotfiles, run this script, done.
+# Clone dotfiles, run this script, done. No manual steps.
 #
 # Usage:
 #   git clone https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
 #   cd ~/.dotfiles && ./setup.sh
+#   exec zsh
 #
 
 set -e
@@ -19,15 +20,10 @@ log() { echo -e "${GREEN}[+]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 error() { echo -e "${RED}[x]${NC} $1"; exit 1; }
 
-# Must be run from ~/.dotfiles
 DOTFILES_DIR="$HOME/.dotfiles"
-if [[ "$(pwd)" != "$DOTFILES_DIR" ]]; then
-    if [[ -d "$DOTFILES_DIR" ]]; then
-        cd "$DOTFILES_DIR"
-    else
-        error "Run this from ~/.dotfiles"
-    fi
-fi
+
+# Ensure we're in dotfiles directory
+cd "$DOTFILES_DIR" 2>/dev/null || error "Clone dotfiles to ~/.dotfiles first"
 
 # Detect OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -45,10 +41,11 @@ fi
 # =============================================================================
 if [[ "$OS" == "linux" ]]; then
     log "Updating system packages..."
-    sudo apt update -qq
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get update -qq
 
     log "Installing core packages..."
-    sudo apt install -y -qq \
+    sudo apt-get install -y \
         git \
         zsh \
         curl \
@@ -65,10 +62,10 @@ if [[ "$OS" == "linux" ]]; then
         python3-pip \
         python3-venv \
         locales \
-        > /dev/null
+        software-properties-common
 
-    # Fix locale (prevents some terminal issues)
-    sudo locale-gen en_US.UTF-8 > /dev/null 2>&1 || true
+    # Fix locale
+    sudo locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
 
@@ -80,42 +77,41 @@ if [[ "$OS" == "linux" ]]; then
     # lsd
     if ! command -v lsd &>/dev/null; then
         log "Installing lsd..."
-        LSD_VERSION=$(curl -s "https://api.github.com/repos/lsd-rs/lsd/releases/latest" | grep -Po '"tag_name": "v?\K[^"]*')
+        LSD_VERSION=$(curl -s "https://api.github.com/repos/lsd-rs/lsd/releases/latest" | grep -Po '"tag_name": "v?\K[^"]*' | head -1)
         wget -q "https://github.com/lsd-rs/lsd/releases/download/v${LSD_VERSION}/lsd_${LSD_VERSION}_amd64.deb" -O /tmp/lsd.deb
-        sudo dpkg -i /tmp/lsd.deb > /dev/null
-        rm /tmp/lsd.deb
+        sudo dpkg -i /tmp/lsd.deb >/dev/null 2>&1
+        rm -f /tmp/lsd.deb
     fi
 
     # zoxide
     if ! command -v zoxide &>/dev/null; then
         log "Installing zoxide..."
-        curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash > /dev/null 2>&1
+        curl -sSf https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash >/dev/null 2>&1
+        export PATH="$HOME/.local/bin:$PATH"
     fi
 
     # thefuck
     if ! command -v thefuck &>/dev/null; then
         log "Installing thefuck..."
-        pip3 install thefuck --user --break-system-packages -q 2>/dev/null || pip3 install thefuck --user -q
+        pip3 install thefuck --user --break-system-packages -q 2>/dev/null || pip3 install thefuck --user -q 2>/dev/null || true
     fi
 
     # lazygit
     if ! command -v lazygit &>/dev/null; then
         log "Installing lazygit..."
-        LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-        curl -sLo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-        tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
-        sudo install /tmp/lazygit /usr/local/bin
-        rm /tmp/lazygit /tmp/lazygit.tar.gz
+        LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*' | head -1)
+        curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz" 2>/dev/null
+        tar xf /tmp/lazygit.tar.gz -C /tmp lazygit 2>/dev/null
+        sudo install /tmp/lazygit /usr/local/bin 2>/dev/null
+        rm -f /tmp/lazygit /tmp/lazygit.tar.gz
     fi
 
-    # Neovim
+    # Neovim (use PPA for latest stable)
     if ! command -v nvim &>/dev/null; then
         log "Installing Neovim..."
-        curl -sLo /tmp/nvim.tar.gz https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
-        sudo rm -rf /opt/nvim-linux64
-        sudo tar -C /opt -xzf /tmp/nvim.tar.gz
-        sudo ln -sf /opt/nvim-linux64/bin/nvim /usr/local/bin/nvim
-        rm /tmp/nvim.tar.gz
+        sudo add-apt-repository -y ppa:neovim-ppa/unstable
+        sudo apt-get update -qq
+        sudo apt-get install -y neovim
     fi
 
     # GitHub CLI
@@ -123,49 +119,53 @@ if [[ "$OS" == "linux" ]]; then
         log "Installing GitHub CLI..."
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
         sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-        sudo apt update -qq && sudo apt install -y -qq gh > /dev/null
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+        sudo apt-get update -qq && sudo apt-get install -y -qq gh 2>/dev/null
     fi
 fi
 
 # =============================================================================
-# CROSS-PLATFORM TOOLS (Node, Python, Zsh)
+# CROSS-PLATFORM: Node.js, pnpm, uv
 # =============================================================================
 
-# NVM + Node.js
+# NVM
 export NVM_DIR="$HOME/.nvm"
 if [[ ! -d "$NVM_DIR" ]]; then
     log "Installing NVM..."
-    curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash > /dev/null 2>&1
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh 2>/dev/null | bash >/dev/null 2>&1
 fi
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
+# Node.js
 if ! command -v node &>/dev/null; then
     log "Installing Node.js LTS..."
-    nvm install --lts > /dev/null 2>&1
-    nvm use --lts > /dev/null 2>&1
+    nvm install --lts >/dev/null 2>&1
+    nvm use --lts >/dev/null 2>&1
+    nvm alias default node >/dev/null 2>&1
 fi
 
 # pnpm
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
 if ! command -v pnpm &>/dev/null; then
     log "Installing pnpm..."
-    curl -fsSL https://get.pnpm.io/install.sh | sh - > /dev/null 2>&1
+    curl -fsSL https://get.pnpm.io/install.sh 2>/dev/null | sh - >/dev/null 2>&1
 fi
 
-# uv (Python)
+# uv
 if ! command -v uv &>/dev/null; then
     log "Installing uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh > /dev/null 2>&1
+    curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh >/dev/null 2>&1
 fi
 
 # =============================================================================
-# ZSH + OH MY ZSH + PLUGINS
+# ZSH + OH MY ZSH + THEME + PLUGINS
 # =============================================================================
 
 # Oh My Zsh
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     log "Installing Oh My Zsh..."
-    RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" > /dev/null 2>&1
+    RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended >/dev/null 2>&1
 fi
 
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
@@ -173,82 +173,109 @@ ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 # Powerlevel10k
 if [[ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]]; then
     log "Installing Powerlevel10k..."
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k" > /dev/null 2>&1
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k" >/dev/null 2>&1
 fi
 
 # zsh-autosuggestions
 if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]]; then
     log "Installing zsh-autosuggestions..."
-    git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions" > /dev/null 2>&1
+    git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions" >/dev/null 2>&1
 fi
 
 # zsh-syntax-highlighting
 if [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]]; then
     log "Installing zsh-syntax-highlighting..."
-    git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" > /dev/null 2>&1
+    git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" >/dev/null 2>&1
 fi
 
 # =============================================================================
-# DOTFILES LINKING
+# DOTFILES LINKING (THE CRITICAL PART)
 # =============================================================================
-log "Linking dotfiles..."
+log "Setting up dotfiles..."
 
 cd "$DOTFILES_DIR"
 
-# Use Linux-specific configs
+# Step 1: Copy Linux-specific configs
 if [[ "$OS" == "linux" ]]; then
-    [[ -f ".zshrc.linux" ]] && cp .zshrc.linux .zshrc
-    [[ -f ".stow-local-ignore.linux" ]] && cp .stow-local-ignore.linux .stow-local-ignore
+    log "Applying Linux configuration..."
+    cp -f .zshrc.linux .zshrc
+    cp -f .stow-local-ignore.linux .stow-local-ignore
 fi
 
-# Remove ALL conflicting files that would block stow
-log "Cleaning up conflicting files..."
-rm -f ~/.zshrc ~/.zshenv ~/.zprofile ~/.profile ~/.gitconfig ~/.p10k.zsh 2>/dev/null || true
-rm -rf ~/.config/nvim 2>/dev/null || true
-rm -rf ~/.scripts 2>/dev/null || true
+# Step 2: Nuke ALL conflicting files/dirs in home
+log "Removing conflicting files..."
+rm -f ~/.zshrc ~/.zshenv ~/.zprofile ~/.profile ~/.gitconfig ~/.p10k.zsh ~/.wakatime.cfg 2>/dev/null || true
+rm -rf ~/.config/nvim ~/.config/fd ~/.scripts 2>/dev/null || true
 
-# Stow everything
-log "Running stow..."
-stow -v --restow . 2>&1 | grep -E "^(LINK|UNLINK)" || true
+# Step 3: Ensure ~/.config exists
+mkdir -p ~/.config
 
-# Verify critical symlinks
-if [[ -L ~/.zshrc ]]; then
-    log "~/.zshrc linked successfully"
-else
-    warn "~/.zshrc not linked, forcing..."
-    ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
+# Step 4: Link dotfiles (try stow first, fallback to ln)
+log "Linking dotfiles..."
+
+if command -v stow &>/dev/null; then
+    log "Using stow..."
+    stow --restow --verbose=1 . || warn "Stow had issues, using fallback..."
 fi
 
-if [[ -L ~/.config/nvim || -d ~/.config/nvim ]]; then
-    log "~/.config/nvim linked successfully"
-else
-    warn "~/.config/nvim not linked, forcing..."
-    mkdir -p ~/.config
-    ln -sf "$DOTFILES_DIR/.config/nvim" ~/.config/nvim
-fi
+# Step 5: Force-link all critical files (works even if stow failed or isn't installed)
+log "Ensuring all symlinks exist..."
+
+ln -sf "$DOTFILES_DIR/.zshrc" ~/.zshrc
+ln -sf "$DOTFILES_DIR/.gitconfig" ~/.gitconfig
+ln -sf "$DOTFILES_DIR/.p10k.zsh" ~/.p10k.zsh
+[[ -f "$DOTFILES_DIR/.zshenv" ]] && ln -sf "$DOTFILES_DIR/.zshenv" ~/.zshenv
+ln -sf "$DOTFILES_DIR/.config/nvim" ~/.config/nvim
+[[ -d "$DOTFILES_DIR/.scripts" ]] && ln -sf "$DOTFILES_DIR/.scripts" ~/.scripts
+
+# Verify
+log "Verifying symlinks..."
+ls -la ~/.zshrc ~/.config/nvim 2>/dev/null || warn "Some symlinks missing"
 
 # =============================================================================
-# SHELL CONFIGURATION
+# FINAL SHELL CONFIGURATION
 # =============================================================================
 
-# Change default shell to zsh
+# Set zsh as default shell
 if [[ "$SHELL" != *"zsh"* ]]; then
     log "Setting zsh as default shell..."
-    chsh -s "$(which zsh)" 2>/dev/null || warn "Could not change shell automatically"
+    sudo chsh -s "$(which zsh)" "$(whoami)" 2>/dev/null || chsh -s "$(which zsh)" 2>/dev/null || true
 fi
 
-# Fix common terminal issues
-log "Configuring terminal settings..."
-cat >> ~/.zshrc.local 2>/dev/null << 'EOF' || true
-# Terminal fixes
+# Create local overrides file with terminal fixes
+log "Applying terminal fixes..."
+cat > ~/.zshrc.local << 'EOF'
+# Terminal fixes (auto-generated by setup.sh)
 stty erase '^?' 2>/dev/null || true
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
+export PATH="$HOME/.local/bin:$PATH"
 EOF
 
-# Source local overrides in .zshrc if not already there
+# Ensure .zshrc sources the local file
 if ! grep -q "zshrc.local" ~/.zshrc 2>/dev/null; then
     echo '[ -f ~/.zshrc.local ] && source ~/.zshrc.local' >> ~/.zshrc
+fi
+
+# =============================================================================
+# VERIFICATION
+# =============================================================================
+log "Verifying installation..."
+
+MISSING=""
+command -v zsh >/dev/null || MISSING="$MISSING zsh"
+command -v nvim >/dev/null || MISSING="$MISSING nvim"
+command -v node >/dev/null || MISSING="$MISSING node"
+command -v pnpm >/dev/null || MISSING="$MISSING pnpm"
+command -v git >/dev/null || MISSING="$MISSING git"
+command -v lsd >/dev/null || MISSING="$MISSING lsd"
+[[ -L ~/.zshrc ]] || MISSING="$MISSING .zshrc-link"
+[[ -L ~/.config/nvim ]] || MISSING="$MISSING nvim-config-link"
+
+if [[ -n "$MISSING" ]]; then
+    warn "Some components may need attention:$MISSING"
+else
+    log "All components verified!"
 fi
 
 # =============================================================================
@@ -259,16 +286,9 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  Setup complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "Installed:"
-echo "  - Node.js $(node --version 2>/dev/null || echo '(reload shell)')"
-echo "  - pnpm $(pnpm --version 2>/dev/null || echo '(reload shell)')"
-echo "  - Python $(python3 --version 2>/dev/null | cut -d' ' -f2)"
-echo "  - Neovim $(nvim --version 2>/dev/null | head -1 | cut -d' ' -f2 || echo 'installed')"
-echo "  - Zsh + Powerlevel10k + plugins"
-echo "  - CLI tools: lsd, bat, rg, fd, fzf, zoxide, lazygit"
+echo "Run this now:"
 echo ""
-echo "Next steps:"
-echo "  1. Run: exec zsh"
-echo "  2. Powerlevel10k will configure itself"
-echo "  3. Optional: gh auth login"
+echo "  exec zsh"
+echo ""
+echo "Then Powerlevel10k will auto-configure on first launch."
 echo ""
