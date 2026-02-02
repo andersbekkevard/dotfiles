@@ -135,20 +135,26 @@ if [[ "$OS" == "linux" ]]; then
     # Neovim (PPA for latest)
     if ! has nvim; then
         log "Installing Neovim..."
+        echo "    Adding Neovim PPA..."
         sudo add-apt-repository -y ppa:neovim-ppa/unstable >/dev/null 2>&1
+        echo "    Updating apt..."
         sudo apt-get update -qq
+        echo "    Installing neovim package..."
         sudo apt-get install -y -qq neovim 2>/dev/null
     fi
 
     # GitHub CLI
     if ! has gh; then
         log "Installing GitHub CLI..."
+        echo "    Adding GitHub CLI repository..."
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
             sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
         sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
             sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+        echo "    Updating apt..."
         sudo apt-get update -qq
+        echo "    Installing gh package..."
         sudo apt-get install -y -qq gh 2>/dev/null
     fi
 fi
@@ -161,6 +167,7 @@ fi
 export NVM_DIR="$HOME/.nvm"
 if [[ ! -d "$NVM_DIR" ]]; then
     log "Installing NVM..."
+    echo "    Downloading NVM installer..."
     curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash >/dev/null 2>&1
 fi
 [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
@@ -168,6 +175,7 @@ fi
 # Node.js
 if ! has node; then
     log "Installing Node.js LTS..."
+    echo "    Downloading and installing Node.js (this may take a while)..."
     nvm install --lts >/dev/null 2>&1
     nvm use --lts >/dev/null 2>&1
     nvm alias default node >/dev/null 2>&1
@@ -178,19 +186,21 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 if ! has pnpm; then
     log "Installing pnpm..."
+    echo "    Downloading pnpm installer..."
     curl -fsSL https://get.pnpm.io/install.sh | sh - >/dev/null 2>&1
 fi
 
 # uv (Python package manager)
 if ! has uv; then
     log "Installing uv..."
+    echo "    Downloading uv installer..."
     curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
 fi
 
 # Rust
 if ! has cargo; then
     log "Installing Rust..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y >/dev/null 2>&1
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     # Load cargo environment for the rest of the script
     [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 fi
@@ -200,15 +210,18 @@ if has cargo; then
     log "Installing Rust CLI tools..."
     # yazi (terminal file manager)
     if ! has yazi; then
-        cargo install --locked yazi-cli yazi-fm >/dev/null 2>&1
+        echo "    Installing yazi (terminal file manager)..."
+        cargo install --locked yazi-cli yazi-fm
     fi
     # dust (du alternative)
     if ! has dust; then
-        cargo install du-dust >/dev/null 2>&1
+        echo "    Installing dust (du alternative)..."
+        cargo install du-dust
     fi
     # tokei (code statistics)
     if ! has tokei; then
-        cargo install tokei >/dev/null 2>&1
+        echo "    Installing tokei (code statistics)..."
+        cargo install tokei
     fi
 fi
 
