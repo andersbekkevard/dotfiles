@@ -62,6 +62,26 @@ as_root() {
     fi
 }
 
+# Retry apt commands (handles lock files from auto-updates)
+apt_install() {
+    local max_attempts=3
+    local attempt=1
+
+    while [[ $attempt -le $max_attempts ]]; do
+        if as_root apt-get install -y "$@"; then
+            return 0
+        fi
+
+        if [[ $attempt -lt $max_attempts ]]; then
+            warn "apt is locked or failed. Waiting 5 seconds before retry ($attempt/$max_attempts)..."
+            sleep 5
+        fi
+        ((attempt++))
+    done
+
+    error "Failed to install packages after $max_attempts attempts"
+}
+
 # =============================================================================
 # PREFLIGHT CHECKS
 # =============================================================================
@@ -97,53 +117,33 @@ esac
 if [[ "$OS" == "linux" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
-    log "Installing system packages via apt..."
-    as_root apt-get update -qq
+    log "Updating package lists..."
+    as_root apt-get update -qq || error "Failed to update apt. Check your internet connection."
 
-    # Base packages (always needed)
-    as_root apt-get install -y -qq \
-        build-essential \
-        curl \
-        git \
-        procps \
-        file \
-        locales \
-        zsh \
-        stow \
-        2>/dev/null
+    log "Installing base system packages..."
+    apt_install build-essential curl git procps file locales zsh stow
+    log "Base packages installed."
 
     # If running as root, install CLI tools via apt (since no Homebrew)
     if [[ "$IS_ROOT" == "true" ]]; then
         log "Installing CLI tools via apt..."
-        as_root apt-get install -y -qq \
-            neovim \
-            fzf \
-            ripgrep \
-            fd-find \
-            bat \
-            htop \
-            btop \
-            jq \
-            zoxide \
-            wget \
-            ffmpeg \
-            p7zip-full \
-            2>/dev/null || true
+        apt_install neovim fzf ripgrep fd-find bat htop btop jq zoxide wget ffmpeg p7zip-full || true
 
-        # Try to install lsd and lazygit (may not be in all repos)
-        as_root apt-get install -y -qq lsd 2>/dev/null || true
-        as_root apt-get install -y -qq lazygit 2>/dev/null || true
-        as_root apt-get install -y -qq gh 2>/dev/null || true
+        # These may not be in all repos - try individually
+        as_root apt-get install -y lsd 2>&1 || warn "lsd not available in apt"
+        as_root apt-get install -y lazygit 2>&1 || warn "lazygit not available in apt"
+        as_root apt-get install -y gh 2>&1 || warn "gh not available in apt"
 
         # Ubuntu renames some tools - create standard symlinks
         [[ -f /usr/bin/batcat ]] && as_root ln -sf /usr/bin/batcat /usr/local/bin/bat
         [[ -f /usr/bin/fdfind ]] && as_root ln -sf /usr/bin/fdfind /usr/local/bin/fd
+        log "CLI tools installed via apt."
     fi
 
     # Locale configuration
     if ! locale -a 2>/dev/null | grep -q "en_US.utf8"; then
         log "Configuring locale..."
-        as_root locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
+        as_root locale-gen en_US.UTF-8 || warn "Failed to generate locale"
     fi
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
@@ -156,7 +156,8 @@ fi
 if [[ "$IS_ROOT" == "false" ]]; then
     if ! has brew; then
         log "Installing Homebrew..."
-        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || error "Homebrew installation failed"
+        log "Homebrew installed."
     fi
 
     # Add Homebrew to PATH for this session
@@ -173,53 +174,42 @@ if [[ "$IS_ROOT" == "false" ]]; then
     log "Installing CLI tools via Homebrew..."
 
     BREW_PACKAGES=(
-        zsh
-        stow
-        git
-        curl
-        wget
-        jq
-        fzf
-        ripgrep
-        fd
-        bat
-        htop
-        btop
-        zoxide
-        lsd
-        lazygit
-        neovim
-        gh
-        ffmpeg
-        p7zip
-        poppler
+        zsh stow git curl wget jq fzf ripgrep fd bat
+        htop btop zoxide lsd lazygit neovim gh ffmpeg p7zip poppler
     )
 
     if [[ "$INSTALL_RUST" == "true" ]]; then
         BREW_PACKAGES+=(yazi dust tokei)
     fi
 
-    brew install "${BREW_PACKAGES[@]}"
+    brew install "${BREW_PACKAGES[@]}" || error "Homebrew package installation failed"
+    log "Homebrew packages installed."
 fi
 
 # =============================================================================
-# DEVELOPMENT TOOLS (standalone installers, work for both root and non-root)
+# DEVELOPMENT TOOLS
 # =============================================================================
 
 # NVM (Node Version Manager)
 export NVM_DIR="$HOME/.nvm"
 if [[ ! -d "$NVM_DIR" ]]; then
     log "Installing NVM..."
-    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash >/dev/null 2>&1
+    if curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash; then
+        log "NVM installed."
+    else
+        warn "NVM installation failed"
+    fi
 fi
 [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
 
 # Node.js
 if ! has node; then
     log "Installing Node.js LTS..."
-    nvm install --lts >/dev/null 2>&1
-    nvm use --lts >/dev/null 2>&1
-    nvm alias default node >/dev/null 2>&1
+    if nvm install --lts && nvm use --lts && nvm alias default node; then
+        log "Node.js installed."
+    else
+        warn "Node.js installation failed"
+    fi
 fi
 
 # pnpm
@@ -227,24 +217,36 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 if ! has pnpm; then
     log "Installing pnpm..."
-    curl -fsSL https://get.pnpm.io/install.sh | sh - >/dev/null 2>&1
+    if curl -fsSL https://get.pnpm.io/install.sh | sh -; then
+        log "pnpm installed."
+    else
+        warn "pnpm installation failed"
+    fi
 fi
 
 # uv (Python package manager)
 if ! has uv; then
     log "Installing uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
+    if curl -LsSf https://astral.sh/uv/install.sh | sh; then
+        log "uv installed."
+    else
+        warn "uv installation failed"
+    fi
 fi
 
 # Rust toolchain
 if [[ "$INSTALL_RUST" == "true" ]]; then
     if ! has rustup; then
         log "Installing Rust toolchain..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+        if curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; then
+            [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+            log "Rust installed."
+        else
+            warn "Rust installation failed"
+        fi
     fi
 else
-    log "Skipping Rust installation (use --with-rust to enable)"
+    log "Skipping Rust (use --with-rust to enable)"
 fi
 
 # =============================================================================
@@ -253,7 +255,9 @@ fi
 
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     log "Installing Oh My Zsh..."
-    if ! RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended >/dev/null 2>&1; then
+    if RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
+        log "Oh My Zsh installed."
+    else
         warn "Oh My Zsh installation failed - continuing anyway"
     fi
 fi
@@ -272,8 +276,10 @@ for plugin_spec in "${ZSH_PLUGINS[@]}"; do
     if [[ ! -d "$target" ]]; then
         log "Installing $name..."
         mkdir -p "$(dirname "$target")"
-        if ! GIT_TERMINAL_PROMPT=0 git clone --depth=1 "$url" "$target" >/dev/null 2>&1; then
-            warn "Failed to install $name - continuing anyway"
+        if GIT_TERMINAL_PROMPT=0 git clone --depth=1 "$url" "$target"; then
+            log "$name installed."
+        else
+            warn "Failed to install $name"
         fi
     fi
 done
@@ -287,17 +293,9 @@ cd "$DOTFILES_DIR"
 
 # Remove any existing files/symlinks that would conflict with stow
 STOW_TARGETS=(
-    ~/.zshrc
-    ~/.zshrc.mac
-    ~/.zshenv
-    ~/.zprofile
-    ~/.profile
-    ~/.gitconfig
-    ~/.p10k.zsh
-    ~/.wakatime.cfg
-    ~/.config/nvim
-    ~/.config/fd
-    ~/.scripts
+    ~/.zshrc ~/.zshrc.mac ~/.zshenv ~/.zprofile ~/.profile
+    ~/.gitconfig ~/.p10k.zsh ~/.wakatime.cfg
+    ~/.config/nvim ~/.config/fd ~/.scripts
 )
 
 for target in "${STOW_TARGETS[@]}"; do
@@ -308,8 +306,10 @@ done
 
 mkdir -p ~/.config
 
-if ! stow --restow --target="$HOME" --no-folding . 2>/tmp/stow-error.log; then
-    error "Stow failed. Check /tmp/stow-error.log for details"
+if stow --restow --target="$HOME" --no-folding .; then
+    log "Dotfiles stowed."
+else
+    error "Stow failed."
 fi
 
 # =============================================================================
@@ -319,11 +319,9 @@ fi
 if [[ "$SHELL" != *"zsh"* ]]; then
     log "Setting zsh as default shell..."
     if [[ "$IS_ROOT" == "true" ]]; then
-        chsh -s "$(which zsh)" 2>/dev/null || warn "Could not change shell"
+        chsh -s "$(which zsh)" || warn "Could not change shell"
     else
-        sudo chsh -s "$(which zsh)" "$(whoami)" 2>/dev/null || \
-            chsh -s "$(which zsh)" 2>/dev/null || \
-            warn "Could not change shell"
+        sudo chsh -s "$(which zsh)" "$(whoami)" || chsh -s "$(which zsh)" || warn "Could not change shell"
     fi
 fi
 
@@ -346,16 +344,7 @@ fi
 
 log "Verifying installation..."
 
-declare -a CHECKS=(
-    "zsh"
-    "node"
-    "pnpm"
-    "uv"
-    "git"
-    "stow"
-    "nvim"
-    "fzf"
-)
+declare -a CHECKS=(zsh node pnpm uv git stow nvim fzf)
 
 if [[ "$INSTALL_RUST" == "true" ]] && [[ "$IS_ROOT" == "false" ]]; then
     CHECKS+=("yazi" "dust" "tokei")
