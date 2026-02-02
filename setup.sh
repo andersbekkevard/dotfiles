@@ -240,7 +240,8 @@ for plugin_spec in "${ZSH_PLUGINS[@]}"; do
     if [[ ! -d "$target" ]]; then
         log "Installing $name..."
         mkdir -p "$(dirname "$target")"
-        if ! git clone --depth=1 "$url" "$target" >/dev/null 2>&1; then
+        # GIT_TERMINAL_PROMPT=0 prevents git from asking for credentials
+        if ! GIT_TERMINAL_PROMPT=0 git clone --depth=1 "$url" "$target" >/dev/null 2>&1; then
             warn "Failed to install $name - continuing anyway"
         fi
     fi
@@ -253,8 +254,7 @@ done
 log "Stowing dotfiles..."
 cd "$DOTFILES_DIR"
 
-# Remove any existing files that would conflict with stow
-# (stow won't overwrite existing files, only create new symlinks)
+# Remove any existing files/symlinks that would conflict with stow
 STOW_TARGETS=(
     ~/.zshrc
     ~/.zshrc.mac
@@ -270,8 +270,8 @@ STOW_TARGETS=(
 )
 
 for target in "${STOW_TARGETS[@]}"; do
-    # Only remove if it's a regular file/directory (not already a symlink)
-    if [[ -e "$target" && ! -L "$target" ]]; then
+    # Remove both regular files and existing symlinks
+    if [[ -e "$target" || -L "$target" ]]; then
         rm -rf "$target"
     fi
 done
