@@ -22,7 +22,11 @@ if [[ -o interactive ]]; then
     PROMPT='%~%# '
     RPROMPT=''
   else
-    ZSH_THEME="powerlevel10k/powerlevel10k"
+    if [[ -d "$ZSH/custom/themes/powerlevel10k" ]]; then
+      ZSH_THEME="powerlevel10k/powerlevel10k"
+    else
+      ZSH_THEME="robbyrussell"
+    fi
   fi
 else
   ZSH_THEME=""
@@ -32,6 +36,9 @@ fi
 
 plugins=(git kimi-cli zsh-autosuggestions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
+
+# Syntax highlighting styles (must be after plugin loads)
+ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
 
 # Source Powerlevel10k config only if theme is enabled
 [[ "$ZSH_THEME" == "powerlevel10k/powerlevel10k" ]] && [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
@@ -74,6 +81,21 @@ alias pysize='bash ~/.scripts/pysize.sh'
 [ -f ~/.secrets ] && source ~/.secrets
 export KIMI_API_KEY="$MOONSHOT_API_KEY"
 export OLLAMA_API_BASE=http://127.0.0.1:11434
+
+# ================================= zsh-ai (macOS) ================================ #
+# Load after .secrets so API keys are available
+if [[ "$OSTYPE" == "darwin"* ]] && [[ -f "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh" ]]; then
+  # Set configuration BEFORE sourcing the plugin
+  export ZSH_AI_PROVIDER="openai"
+  export ZSH_AI_MODEL="openai/gpt-5.2"
+  export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
+- Use 'rg' (ripgrep) instead of 'grep' for all text searches.
+- Use 'fd' instead of 'find' for finding files and directories.
+- Use 'bat' instead of 'cat' for reading files.
+- Use 'lsd' instead of 'ls' for listing files."
+  # Now source the plugin
+  source "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh"
+fi
 
 # ================================= CLI-tools ================================ #
 # zoxide (smarter cd)

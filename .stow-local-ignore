@@ -1,17 +1,42 @@
-# Backups folder - not for stowing
-backups
+# =============================================================================
+# STOW IGNORE FILE
+# Files and directories listed here will NOT be symlinked to $HOME
+# =============================================================================
 
-# Standard ignores
+# Git
 \.git
 \.gitignore
-\.stow-local-ignore
-manifest\.json
-TODO\.md
-README.*
-setup\.sh
+\.gitmodules
 
-# Mac-specific (excluded when stowing on Linux)
+# Stow configuration
+\.stow-local-ignore
+
+# Repository meta files
+README.*
+LICENSE
+TODO\.md
+manifest\.json
+
+# Setup scripts (not dotfiles)
+setup\.sh
+setup\.ps1
+WINDOWS\.md
+
+# Backups directory
+backups
+
+# Oh My Zsh custom directory (plugins are cloned during setup, not stowed)
+\.oh-my-zsh
+
+# Mac-specific files (exclude when stowing on Linux)
+# These are conditionally useful, so we stow them but they're only sourced on Mac
+# \.zshrc\.mac  # Actually needed - sourced conditionally in .zshrc
+# \.zprofile    # Mac-specific but harmless to have on Linux
+
+# Application configs that are Mac-only
 \.config/karabiner
 \.config/linearmouse
-\.zprofile
+
+# Editor settings (machine-specific)
 \.cursor
+\.claude

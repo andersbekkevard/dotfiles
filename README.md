@@ -40,6 +40,31 @@ Not all configurations are suitable for symlinking (e.g., VS Code extension list
   - **Writes** them to a new timestamped directory inside `backups/` (e.g., `backups/2025-12-16_16-04-30/`).
 - **Workflow**: Run this script periodically to capture the state of your environment without linking these files directly to the live system.
 
+## Quick Setup
+
+### Linux (One-Command Install)
+```bash
+git clone https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
+cd ~/.dotfiles && ./setup.sh
+exec zsh
+```
+
+### Windows (PowerShell)
+```powershell
+# Run PowerShell as Administrator
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+git clone https://github.com/USERNAME/.dotfiles.git $env:USERPROFILE\.dotfiles
+cd $env:USERPROFILE\.dotfiles
+.\setup.ps1
+```
+
+**Windows Notes:**
+- Uses PowerShell instead of Zsh (Oh My Posh replaces Powerlevel10k)
+- Most CLI tools work identically (git, nvim, fzf, ripgrep, fd, bat, lsd, etc.)
+- Neovim config is fully compatible
+- Some Linux-specific tools aren't available
+- After setup, restart PowerShell and configure Windows Terminal to use "MesloLGM Nerd Font"
+
 ## Usage
 
 ### 1. Stowing (Symlinking)

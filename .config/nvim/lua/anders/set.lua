@@ -7,6 +7,9 @@
 vim.keymap.set("n", "<Space>", "<Nop>", { silent = true })
 vim.g.mapleader = " "
 
+-- enable true color support
+vim.opt.termguicolors = true
+
 -- keep more context on screen while scrolling
 vim.opt.scrolloff = 10
 -- sweet sweet relative line numbers
