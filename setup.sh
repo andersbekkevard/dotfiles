@@ -80,6 +80,7 @@ if [[ "$OS" == "linux" ]]; then
 
     log "Installing system packages..."
     sudo apt-get install -y -qq \
+        build-essential \
         git \
         zsh \
         curl \
@@ -91,7 +92,11 @@ if [[ "$OS" == "linux" ]]; then
         fd-find \
         bat \
         htop \
+        btop \
         jq \
+        ffmpeg \
+        p7zip-full \
+        poppler-utils \
         python3 \
         python3-pip \
         python3-venv \
@@ -112,19 +117,20 @@ if [[ "$OS" == "linux" ]]; then
     [[ -f /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
     [[ -f /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
-    # Tools from GitHub releases (not in apt or outdated)
-    install_github_release "lsd" "lsd-rs/lsd" "lsd_VERSION_amd64.deb" \
-        "sudo dpkg -i /tmp/lsd.archive >/dev/null 2>&1"
+    # Tools available in Ubuntu 24.04 repos
+    log "Installing additional CLI tools from apt..."
+    sudo apt-get install -y -qq \
+        zoxide \
+        lsd \
+        2>/dev/null
 
-    install_github_release "lazygit" "jesseduffield/lazygit" "lazygit_VERSION_Linux_x86_64.tar.gz" \
+    # lazygit from GitHub releases (not in Ubuntu repos)
+    arch=$(dpkg --print-architecture)
+    lazygit_arch="x86_64"
+    [[ "$arch" == "arm64" || "$arch" == "aarch64" ]] && lazygit_arch="arm64"
+
+    install_github_release "lazygit" "jesseduffield/lazygit" "lazygit_VERSION_Linux_${lazygit_arch}.tar.gz" \
         "tar xzf /tmp/lazygit.archive -C /tmp lazygit && sudo install /tmp/lazygit /usr/local/bin && rm -f /tmp/lazygit"
-
-    # zoxide (has its own installer)
-    if ! has zoxide; then
-        log "Installing zoxide..."
-        curl -sSf https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash >/dev/null 2>&1
-        export PATH="$HOME/.local/bin:$PATH"
-    fi
 
     # Neovim (PPA for latest)
     if ! has nvim; then
@@ -179,6 +185,31 @@ fi
 if ! has uv; then
     log "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
+fi
+
+# Rust
+if ! has cargo; then
+    log "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y >/dev/null 2>&1
+    # Load cargo environment for the rest of the script
+    [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+fi
+
+# Rust-based CLI tools
+if has cargo; then
+    log "Installing Rust CLI tools..."
+    # yazi (terminal file manager)
+    if ! has yazi; then
+        cargo install --locked yazi-cli yazi-fm >/dev/null 2>&1
+    fi
+    # dust (du alternative)
+    if ! has dust; then
+        cargo install du-dust >/dev/null 2>&1
+    fi
+    # tokei (code statistics)
+    if ! has tokei; then
+        cargo install tokei >/dev/null 2>&1
+    fi
 fi
 
 # =============================================================================
@@ -303,6 +334,12 @@ declare -a CHECKS=(
     "nvim"
     "node"
     "pnpm"
+    "uv"
+    "cargo"
+    "btop"
+    "yazi"
+    "dust"
+    "tokei"
     "git"
     "stow"
 )
