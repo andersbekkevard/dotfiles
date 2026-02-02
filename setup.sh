@@ -1,16 +1,40 @@
 #!/bin/bash
 #
-# Development Environment Setup for Linux
+# Development Environment Setup
 # ========================================
 # Idempotent setup script - safe to run multiple times.
+# Uses Homebrew for cross-platform package management.
 #
 # Usage:
 #   git clone https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
 #   cd ~/.dotfiles && ./setup.sh
 #   exec zsh
 #
+# Options:
+#   --with-rust    Install Rust and Rust-based CLI tools (slow, off by default)
+#
 
 set -euo pipefail
+
+# =============================================================================
+# FLAG PARSING
+# =============================================================================
+
+INSTALL_RUST=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --with-rust)
+            INSTALL_RUST=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: ./setup.sh [--with-rust]"
+            exit 1
+            ;;
+    esac
+done
 
 # =============================================================================
 # CONSTANTS AND HELPERS
@@ -29,24 +53,6 @@ error() { echo -e "${RED}[x]${NC} $1"; exit 1; }
 # Check if command exists
 has() { command -v "$1" &>/dev/null; }
 
-# Install from GitHub release (for tools not in apt)
-install_github_release() {
-    local name=$1 repo=$2 pattern=$3 extract_cmd=$4
-
-    if has "$name"; then
-        return 0
-    fi
-
-    log "Installing $name..."
-    local version
-    version=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" | grep -Po '"tag_name": "v?\K[^"]*' | head -1)
-    local url="https://github.com/$repo/releases/download/v${version}/${pattern/VERSION/$version}"
-
-    curl -fsSL "$url" -o "/tmp/$name.archive"
-    eval "$extract_cmd"
-    rm -f "/tmp/$name.archive"
-}
-
 # =============================================================================
 # PREFLIGHT CHECKS
 # =============================================================================
@@ -57,7 +63,7 @@ cd "$DOTFILES_DIR" 2>/dev/null || error "Clone dotfiles to ~/.dotfiles first"
 case "$OSTYPE" in
     darwin*)
         OS="mac"
-        log "Detected macOS - skipping Linux package installation"
+        log "Detected macOS"
         ;;
     linux-gnu*)
         OS="linux"
@@ -69,39 +75,21 @@ case "$OSTYPE" in
 esac
 
 # =============================================================================
-# LINUX: SYSTEM PACKAGES
+# LINUX: MINIMAL SYSTEM PACKAGES (for Homebrew dependencies)
 # =============================================================================
 
 if [[ "$OS" == "linux" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
-    log "Updating package lists..."
+    log "Installing base dependencies for Homebrew..."
     sudo apt-get update -qq
-
-    log "Installing system packages..."
     sudo apt-get install -y -qq \
         build-essential \
-        git \
-        zsh \
         curl \
-        wget \
-        unzip \
-        stow \
-        fzf \
-        ripgrep \
-        fd-find \
-        bat \
-        htop \
-        btop \
-        jq \
-        ffmpeg \
-        p7zip-full \
-        poppler-utils \
-        python3 \
-        python3-pip \
-        python3-venv \
+        git \
+        procps \
+        file \
         locales \
-        software-properties-common \
         2>/dev/null
 
     # Locale configuration
@@ -111,63 +99,74 @@ if [[ "$OS" == "linux" ]]; then
     fi
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
+fi
 
-    # Ubuntu renames some tools - create standard symlinks
-    log "Creating tool aliases..."
-    [[ -f /usr/bin/batcat ]] && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat
-    [[ -f /usr/bin/fdfind ]] && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd
+# =============================================================================
+# HOMEBREW
+# =============================================================================
 
-    # Tools available in Ubuntu 24.04 repos
-    log "Installing additional CLI tools from apt..."
-    sudo apt-get install -y -qq \
-        zoxide \
-        lsd \
-        2>/dev/null
+if ! has brew; then
+    log "Installing Homebrew..."
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
 
-    # lazygit from GitHub releases (not in Ubuntu repos)
-    arch=$(dpkg --print-architecture)
-    lazygit_arch="x86_64"
-    [[ "$arch" == "arm64" || "$arch" == "aarch64" ]] && lazygit_arch="arm64"
-
-    install_github_release "lazygit" "jesseduffield/lazygit" "lazygit_VERSION_Linux_${lazygit_arch}.tar.gz" \
-        "tar xzf /tmp/lazygit.archive -C /tmp lazygit && sudo install /tmp/lazygit /usr/local/bin && rm -f /tmp/lazygit"
-
-    # Neovim (PPA for latest)
-    if ! has nvim; then
-        log "Installing Neovim..."
-        echo "    Adding Neovim PPA..."
-        sudo add-apt-repository -y ppa:neovim-ppa/unstable >/dev/null 2>&1
-        echo "    Updating apt..."
-        sudo apt-get update -qq
-        echo "    Installing neovim package..."
-        sudo apt-get install -y -qq neovim 2>/dev/null
-    fi
-
-    # GitHub CLI
-    if ! has gh; then
-        log "Installing GitHub CLI..."
-        echo "    Adding GitHub CLI repository..."
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
-            sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
-        sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
-            sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
-        echo "    Updating apt..."
-        sudo apt-get update -qq
-        echo "    Installing gh package..."
-        sudo apt-get install -y -qq gh 2>/dev/null
+# Add Homebrew to PATH for this session
+if [[ "$OS" == "linux" ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+else
+    if [[ -f /opt/homebrew/bin/brew ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -f /usr/local/bin/brew ]]; then
+        eval "$(/usr/local/bin/brew shellenv)"
     fi
 fi
 
 # =============================================================================
-# CROSS-PLATFORM: DEVELOPMENT TOOLS
+# CLI TOOLS VIA HOMEBREW
+# =============================================================================
+
+log "Installing CLI tools via Homebrew..."
+
+# Core tools
+BREW_PACKAGES=(
+    zsh
+    stow
+    git
+    curl
+    wget
+    jq
+    fzf
+    ripgrep
+    fd
+    bat
+    htop
+    btop
+    zoxide
+    lsd
+    lazygit
+    neovim
+    gh
+    ffmpeg
+    p7zip
+    poppler
+)
+
+# Rust-based tools via brew (much faster than cargo install)
+if [[ "$INSTALL_RUST" == "true" ]]; then
+    BREW_PACKAGES+=(yazi dust tokei)
+fi
+
+# Install all packages (brew is idempotent)
+brew install "${BREW_PACKAGES[@]}"
+
+# =============================================================================
+# DEVELOPMENT TOOLS (not in Homebrew or better via dedicated installers)
 # =============================================================================
 
 # NVM (Node Version Manager)
 export NVM_DIR="$HOME/.nvm"
 if [[ ! -d "$NVM_DIR" ]]; then
     log "Installing NVM..."
-    echo "    Downloading NVM installer..."
     curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash >/dev/null 2>&1
 fi
 [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
@@ -175,7 +174,6 @@ fi
 # Node.js
 if ! has node; then
     log "Installing Node.js LTS..."
-    echo "    Downloading and installing Node.js (this may take a while)..."
     nvm install --lts >/dev/null 2>&1
     nvm use --lts >/dev/null 2>&1
     nvm alias default node >/dev/null 2>&1
@@ -186,43 +184,24 @@ export PNPM_HOME="$HOME/.local/share/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 if ! has pnpm; then
     log "Installing pnpm..."
-    echo "    Downloading pnpm installer..."
     curl -fsSL https://get.pnpm.io/install.sh | sh - >/dev/null 2>&1
 fi
 
 # uv (Python package manager)
 if ! has uv; then
     log "Installing uv..."
-    echo "    Downloading uv installer..."
     curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
 fi
 
-# Rust
-if ! has cargo; then
-    log "Installing Rust..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    # Load cargo environment for the rest of the script
-    [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-fi
-
-# Rust-based CLI tools
-if has cargo; then
-    log "Installing Rust CLI tools..."
-    # yazi (terminal file manager)
-    if ! has yazi; then
-        echo "    Installing yazi (terminal file manager)..."
-        cargo install --locked yazi-cli yazi-fm
+# Rust toolchain (only if --with-rust and user wants rustup, not just the CLI tools)
+if [[ "$INSTALL_RUST" == "true" ]]; then
+    if ! has rustup; then
+        log "Installing Rust toolchain..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
     fi
-    # dust (du alternative)
-    if ! has dust; then
-        echo "    Installing dust (du alternative)..."
-        cargo install du-dust
-    fi
-    # tokei (code statistics)
-    if ! has tokei; then
-        echo "    Installing tokei (code statistics)..."
-        cargo install tokei
-    fi
+else
+    log "Skipping Rust installation (use --with-rust to enable)"
 fi
 
 # =============================================================================
@@ -263,11 +242,6 @@ done
 # =============================================================================
 # DOTFILES: STOW
 # =============================================================================
-
-# Ensure stow is available
-if ! has stow; then
-    error "stow is not installed. On Linux, run: sudo apt-get install stow"
-fi
 
 log "Stowing dotfiles..."
 cd "$DOTFILES_DIR"
@@ -348,14 +322,15 @@ declare -a CHECKS=(
     "node"
     "pnpm"
     "uv"
-    "cargo"
     "btop"
-    "yazi"
-    "dust"
-    "tokei"
     "git"
     "stow"
 )
+
+# Only check Rust tools if --with-rust was used
+if [[ "$INSTALL_RUST" == "true" ]]; then
+    CHECKS+=("yazi" "dust" "tokei")
+fi
 
 missing=()
 for cmd in "${CHECKS[@]}"; do
