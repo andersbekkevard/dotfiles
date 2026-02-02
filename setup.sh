@@ -59,6 +59,13 @@ has() { command -v "$1" &>/dev/null; }
 
 cd "$DOTFILES_DIR" 2>/dev/null || error "Clone dotfiles to ~/.dotfiles first"
 
+# Check if running as root (Homebrew won't work)
+IS_ROOT=false
+if [[ $EUID -eq 0 ]]; then
+    IS_ROOT=true
+    warn "Running as root - skipping Homebrew (install CLI tools manually or run as non-root)"
+fi
+
 # Detect OS
 case "$OSTYPE" in
     darwin*)
@@ -75,89 +82,89 @@ case "$OSTYPE" in
 esac
 
 # =============================================================================
-# LINUX: MINIMAL SYSTEM PACKAGES (for Homebrew dependencies)
+# LINUX: SYSTEM PACKAGES
 # =============================================================================
 
 if [[ "$OS" == "linux" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
-    log "Installing base dependencies for Homebrew..."
-    sudo apt-get update -qq
-    sudo apt-get install -y -qq \
+    log "Installing base system packages..."
+    apt-get update -qq
+    apt-get install -y -qq \
         build-essential \
         curl \
         git \
         procps \
         file \
         locales \
+        zsh \
+        stow \
         2>/dev/null
 
     # Locale configuration
     if ! locale -a 2>/dev/null | grep -q "en_US.utf8"; then
         log "Configuring locale..."
-        sudo locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
+        locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
     fi
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
 fi
 
 # =============================================================================
-# HOMEBREW
+# HOMEBREW + CLI TOOLS (skipped if root)
 # =============================================================================
 
-if ! has brew; then
-    log "Installing Homebrew..."
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-
-# Add Homebrew to PATH for this session
-if [[ "$OS" == "linux" ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-else
-    if [[ -f /opt/homebrew/bin/brew ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-    elif [[ -f /usr/local/bin/brew ]]; then
-        eval "$(/usr/local/bin/brew shellenv)"
+if [[ "$IS_ROOT" == "false" ]]; then
+    if ! has brew; then
+        log "Installing Homebrew..."
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
+
+    # Add Homebrew to PATH for this session
+    if [[ "$OS" == "linux" ]]; then
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    else
+        if [[ -f /opt/homebrew/bin/brew ]]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+        elif [[ -f /usr/local/bin/brew ]]; then
+            eval "$(/usr/local/bin/brew shellenv)"
+        fi
+    fi
+
+    log "Installing CLI tools via Homebrew..."
+
+    # Core tools
+    BREW_PACKAGES=(
+        zsh
+        stow
+        git
+        curl
+        wget
+        jq
+        fzf
+        ripgrep
+        fd
+        bat
+        htop
+        btop
+        zoxide
+        lsd
+        lazygit
+        neovim
+        gh
+        ffmpeg
+        p7zip
+        poppler
+    )
+
+    # Rust-based tools via brew (much faster than cargo install)
+    if [[ "$INSTALL_RUST" == "true" ]]; then
+        BREW_PACKAGES+=(yazi dust tokei)
+    fi
+
+    # Install all packages (brew is idempotent)
+    brew install "${BREW_PACKAGES[@]}"
 fi
-
-# =============================================================================
-# CLI TOOLS VIA HOMEBREW
-# =============================================================================
-
-log "Installing CLI tools via Homebrew..."
-
-# Core tools
-BREW_PACKAGES=(
-    zsh
-    stow
-    git
-    curl
-    wget
-    jq
-    fzf
-    ripgrep
-    fd
-    bat
-    htop
-    btop
-    zoxide
-    lsd
-    lazygit
-    neovim
-    gh
-    ffmpeg
-    p7zip
-    poppler
-)
-
-# Rust-based tools via brew (much faster than cargo install)
-if [[ "$INSTALL_RUST" == "true" ]]; then
-    BREW_PACKAGES+=(yazi dust tokei)
-fi
-
-# Install all packages (brew is idempotent)
-brew install "${BREW_PACKAGES[@]}"
 
 # =============================================================================
 # DEVELOPMENT TOOLS (not in Homebrew or better via dedicated installers)
@@ -286,9 +293,13 @@ fi
 # Set zsh as default shell
 if [[ "$SHELL" != *"zsh"* ]]; then
     log "Setting zsh as default shell..."
-    sudo chsh -s "$(which zsh)" "$(whoami)" 2>/dev/null || \
-        chsh -s "$(which zsh)" 2>/dev/null || \
-        warn "Could not change shell - run: chsh -s \$(which zsh)"
+    if [[ "$IS_ROOT" == "true" ]]; then
+        chsh -s "$(which zsh)" 2>/dev/null || warn "Could not change shell - run: chsh -s \$(which zsh)"
+    else
+        sudo chsh -s "$(which zsh)" "$(whoami)" 2>/dev/null || \
+            chsh -s "$(which zsh)" 2>/dev/null || \
+            warn "Could not change shell - run: chsh -s \$(which zsh)"
+    fi
 fi
 
 # Create machine-local overrides (not tracked in git)
@@ -318,18 +329,20 @@ log "Verifying installation..."
 
 declare -a CHECKS=(
     "zsh"
-    "nvim"
     "node"
     "pnpm"
     "uv"
-    "btop"
     "git"
     "stow"
 )
 
-# Only check Rust tools if --with-rust was used
-if [[ "$INSTALL_RUST" == "true" ]]; then
-    CHECKS+=("yazi" "dust" "tokei")
+# Only check Homebrew tools if not root
+if [[ "$IS_ROOT" == "false" ]]; then
+    CHECKS+=("nvim" "btop" "fzf" "rg" "fd" "bat" "zoxide" "lsd" "lazygit" "gh")
+    # Only check Rust tools if --with-rust was used
+    if [[ "$INSTALL_RUST" == "true" ]]; then
+        CHECKS+=("yazi" "dust" "tokei")
+    fi
 fi
 
 missing=()
@@ -345,6 +358,16 @@ if [[ ${#missing[@]} -gt 0 ]]; then
     warn "Missing components: ${missing[*]}"
 else
     log "All components verified!"
+fi
+
+# Report skipped tools when running as root
+if [[ "$IS_ROOT" == "true" ]]; then
+    echo ""
+    warn "Skipped (requires Homebrew, run as non-root to install):"
+    echo "    CLI tools: nvim, btop, fzf, ripgrep, fd, bat, zoxide, lsd, lazygit, gh, ffmpeg, p7zip, poppler"
+    if [[ "$INSTALL_RUST" == "true" ]]; then
+        echo "    Rust tools: yazi, dust, tokei"
+    fi
 fi
 
 # =============================================================================

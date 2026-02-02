@@ -38,7 +38,7 @@ plugins=(git kimi-cli zsh-autosuggestions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
 
 # Syntax highlighting styles (must be after plugin loads)
-ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
+[[ -n "${ZSH_HIGHLIGHT_STYLES+x}" ]] && ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
 
 # Source Powerlevel10k config only if theme is enabled
 [[ "$ZSH_THEME" == "powerlevel10k/powerlevel10k" ]] && [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
