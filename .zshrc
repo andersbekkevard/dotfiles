@@ -34,7 +34,7 @@ else
   RPROMPT=''
 fi
 
-plugins=(git kimi-cli zsh-autosuggestions zsh-syntax-highlighting)
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
 
 # Syntax highlighting styles (must be after plugin loads)
@@ -79,7 +79,6 @@ alias pysize='bash ~/.scripts/pysize.sh'
 
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
-export KIMI_API_KEY="$MOONSHOT_API_KEY"
 export OLLAMA_API_BASE=http://127.0.0.1:11434
 
 # ================================= zsh-ai (macOS) ================================ #

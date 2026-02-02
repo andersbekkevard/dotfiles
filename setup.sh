@@ -3,7 +3,7 @@
 # Development Environment Setup
 # ========================================
 # Idempotent setup script - safe to run multiple times.
-# Uses Homebrew for cross-platform package management.
+# Works as root (apt-only) or normal user (Homebrew for CLI tools).
 #
 # Usage:
 #   git clone https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
@@ -53,17 +53,26 @@ error() { echo -e "${RED}[x]${NC} $1"; exit 1; }
 # Check if command exists
 has() { command -v "$1" &>/dev/null; }
 
+# Run command with sudo if not root
+as_root() {
+    if [[ $EUID -eq 0 ]]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
 # =============================================================================
 # PREFLIGHT CHECKS
 # =============================================================================
 
 cd "$DOTFILES_DIR" 2>/dev/null || error "Clone dotfiles to ~/.dotfiles first"
 
-# Check if running as root (Homebrew won't work)
+# Check if running as root
 IS_ROOT=false
 if [[ $EUID -eq 0 ]]; then
     IS_ROOT=true
-    warn "Running as root - skipping Homebrew (install CLI tools manually or run as non-root)"
+    warn "Running as root - will use apt instead of Homebrew for CLI tools"
 fi
 
 # Detect OS
@@ -88,9 +97,11 @@ esac
 if [[ "$OS" == "linux" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
-    log "Installing base system packages..."
-    apt-get update -qq
-    apt-get install -y -qq \
+    log "Installing system packages via apt..."
+    as_root apt-get update -qq
+
+    # Base packages (always needed)
+    as_root apt-get install -y -qq \
         build-essential \
         curl \
         git \
@@ -101,17 +112,45 @@ if [[ "$OS" == "linux" ]]; then
         stow \
         2>/dev/null
 
+    # If running as root, install CLI tools via apt (since no Homebrew)
+    if [[ "$IS_ROOT" == "true" ]]; then
+        log "Installing CLI tools via apt..."
+        as_root apt-get install -y -qq \
+            neovim \
+            fzf \
+            ripgrep \
+            fd-find \
+            bat \
+            htop \
+            btop \
+            jq \
+            zoxide \
+            wget \
+            ffmpeg \
+            p7zip-full \
+            2>/dev/null || true
+
+        # Try to install lsd and lazygit (may not be in all repos)
+        as_root apt-get install -y -qq lsd 2>/dev/null || true
+        as_root apt-get install -y -qq lazygit 2>/dev/null || true
+        as_root apt-get install -y -qq gh 2>/dev/null || true
+
+        # Ubuntu renames some tools - create standard symlinks
+        [[ -f /usr/bin/batcat ]] && as_root ln -sf /usr/bin/batcat /usr/local/bin/bat
+        [[ -f /usr/bin/fdfind ]] && as_root ln -sf /usr/bin/fdfind /usr/local/bin/fd
+    fi
+
     # Locale configuration
     if ! locale -a 2>/dev/null | grep -q "en_US.utf8"; then
         log "Configuring locale..."
-        locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
+        as_root locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
     fi
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
 fi
 
 # =============================================================================
-# HOMEBREW + CLI TOOLS (skipped if root)
+# HOMEBREW + CLI TOOLS (non-root only)
 # =============================================================================
 
 if [[ "$IS_ROOT" == "false" ]]; then
@@ -133,7 +172,6 @@ if [[ "$IS_ROOT" == "false" ]]; then
 
     log "Installing CLI tools via Homebrew..."
 
-    # Core tools
     BREW_PACKAGES=(
         zsh
         stow
@@ -157,17 +195,15 @@ if [[ "$IS_ROOT" == "false" ]]; then
         poppler
     )
 
-    # Rust-based tools via brew (much faster than cargo install)
     if [[ "$INSTALL_RUST" == "true" ]]; then
         BREW_PACKAGES+=(yazi dust tokei)
     fi
 
-    # Install all packages (brew is idempotent)
     brew install "${BREW_PACKAGES[@]}"
 fi
 
 # =============================================================================
-# DEVELOPMENT TOOLS (not in Homebrew or better via dedicated installers)
+# DEVELOPMENT TOOLS (standalone installers, work for both root and non-root)
 # =============================================================================
 
 # NVM (Node Version Manager)
@@ -200,7 +236,7 @@ if ! has uv; then
     curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
 fi
 
-# Rust toolchain (only if --with-rust and user wants rustup, not just the CLI tools)
+# Rust toolchain
 if [[ "$INSTALL_RUST" == "true" ]]; then
     if ! has rustup; then
         log "Installing Rust toolchain..."
@@ -215,7 +251,6 @@ fi
 # ZSH + OH MY ZSH + PLUGINS
 # =============================================================================
 
-# Oh My Zsh
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     log "Installing Oh My Zsh..."
     if ! RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended >/dev/null 2>&1; then
@@ -225,13 +260,10 @@ fi
 
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
-# External plugins and themes (cloned to ~/.oh-my-zsh/custom, not tracked in dotfiles)
-# Format: "name|path|url" (bash 3.x compatible - no associative arrays)
 ZSH_PLUGINS=(
     "powerlevel10k|themes/powerlevel10k|https://github.com/romkatv/powerlevel10k.git"
     "zsh-autosuggestions|plugins/zsh-autosuggestions|https://github.com/zsh-users/zsh-autosuggestions"
     "zsh-syntax-highlighting|plugins/zsh-syntax-highlighting|https://github.com/zsh-users/zsh-syntax-highlighting.git"
-    "kimi-cli|plugins/kimi-cli|https://github.com/wodify/zsh-kimi-cli.git"
 )
 
 for plugin_spec in "${ZSH_PLUGINS[@]}"; do
@@ -240,7 +272,6 @@ for plugin_spec in "${ZSH_PLUGINS[@]}"; do
     if [[ ! -d "$target" ]]; then
         log "Installing $name..."
         mkdir -p "$(dirname "$target")"
-        # GIT_TERMINAL_PROMPT=0 prevents git from asking for credentials
         if ! GIT_TERMINAL_PROMPT=0 git clone --depth=1 "$url" "$target" >/dev/null 2>&1; then
             warn "Failed to install $name - continuing anyway"
         fi
@@ -270,18 +301,13 @@ STOW_TARGETS=(
 )
 
 for target in "${STOW_TARGETS[@]}"; do
-    # Remove both regular files and existing symlinks
     if [[ -e "$target" || -L "$target" ]]; then
         rm -rf "$target"
     fi
 done
 
-# Ensure parent directories exist
 mkdir -p ~/.config
 
-# Stow everything (uses .stow-local-ignore to exclude non-dotfiles)
-# --restow: re-stow (unlink then link) for idempotency
-# --no-folding: create directories instead of symlinking them
 if ! stow --restow --target="$HOME" --no-folding . 2>/tmp/stow-error.log; then
     error "Stow failed. Check /tmp/stow-error.log for details"
 fi
@@ -290,33 +316,26 @@ fi
 # SHELL CONFIGURATION
 # =============================================================================
 
-# Set zsh as default shell
 if [[ "$SHELL" != *"zsh"* ]]; then
     log "Setting zsh as default shell..."
     if [[ "$IS_ROOT" == "true" ]]; then
-        chsh -s "$(which zsh)" 2>/dev/null || warn "Could not change shell - run: chsh -s \$(which zsh)"
+        chsh -s "$(which zsh)" 2>/dev/null || warn "Could not change shell"
     else
         sudo chsh -s "$(which zsh)" "$(whoami)" 2>/dev/null || \
             chsh -s "$(which zsh)" 2>/dev/null || \
-            warn "Could not change shell - run: chsh -s \$(which zsh)"
+            warn "Could not change shell"
     fi
 fi
 
-# Create machine-local overrides (not tracked in git)
 if [[ ! -f ~/.zshrc.local ]]; then
     log "Creating local shell config..."
     cat > ~/.zshrc.local << 'EOF'
 # Machine-specific configuration (not tracked in dotfiles)
-# Add local customizations here
 
-# Terminal fixes
 stty erase '^?' 2>/dev/null || true
 
-# Locale
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
-
-# Local PATH additions
 export PATH="$HOME/.local/bin:$PATH"
 EOF
 fi
@@ -334,15 +353,12 @@ declare -a CHECKS=(
     "uv"
     "git"
     "stow"
+    "nvim"
+    "fzf"
 )
 
-# Only check Homebrew tools if not root
-if [[ "$IS_ROOT" == "false" ]]; then
-    CHECKS+=("nvim" "btop" "fzf" "rg" "fd" "bat" "zoxide" "lsd" "lazygit" "gh")
-    # Only check Rust tools if --with-rust was used
-    if [[ "$INSTALL_RUST" == "true" ]]; then
-        CHECKS+=("yazi" "dust" "tokei")
-    fi
+if [[ "$INSTALL_RUST" == "true" ]] && [[ "$IS_ROOT" == "false" ]]; then
+    CHECKS+=("yazi" "dust" "tokei")
 fi
 
 missing=()
@@ -350,7 +366,6 @@ for cmd in "${CHECKS[@]}"; do
     has "$cmd" || missing+=("$cmd")
 done
 
-# Check symlinks
 [[ -L ~/.zshrc ]] || missing+=(".zshrc symlink")
 [[ -L ~/.config/nvim ]] || missing+=("nvim config symlink")
 
@@ -358,16 +373,6 @@ if [[ ${#missing[@]} -gt 0 ]]; then
     warn "Missing components: ${missing[*]}"
 else
     log "All components verified!"
-fi
-
-# Report skipped tools when running as root
-if [[ "$IS_ROOT" == "true" ]]; then
-    echo ""
-    warn "Skipped (requires Homebrew, run as non-root to install):"
-    echo "    CLI tools: nvim, btop, fzf, ripgrep, fd, bat, zoxide, lsd, lazygit, gh, ffmpeg, p7zip, poppler"
-    if [[ "$INSTALL_RUST" == "true" ]]; then
-        echo "    Rust tools: yazi, dust, tokei"
-    fi
 fi
 
 # =============================================================================
