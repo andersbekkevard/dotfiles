@@ -1,15 +1,11 @@
 # =============================================================================
-# PORTABLE ZSH CONFIGURATION
-# Works on both macOS and Linux
+# ZSH CONFIGURATION (Ubuntu)
 # =============================================================================
 
 # Source .zprofile for non-login shells (so Homebrew PATH is always available)
 if [[ ! -o login ]]; then
   [[ -f ~/.zprofile ]] && source ~/.zprofile
 fi
-
-# Source Mac-specific config if on macOS (before everything else for Homebrew FPATH)
-[[ "$OSTYPE" == "darwin"* ]] && [[ -f ~/.zshrc.mac ]] && source ~/.zshrc.mac
 
 # =================================== Terminal theme ================================== #
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
@@ -50,11 +46,9 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-# pnpm (Linux location - Mac location is in .zshrc.mac)
-if [[ "$OSTYPE" != "darwin"* ]]; then
-  export PNPM_HOME="$HOME/.local/share/pnpm"
-  [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
-fi
+# pnpm
+export PNPM_HOME="$HOME/.local/share/pnpm"
+[[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
 
 # ================================= Scripts ================================== #
 if [[ -d "$HOME/.scripts" ]]; then
@@ -69,21 +63,6 @@ alias pysize='bash ~/.scripts/pysize.sh'
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
 export OLLAMA_API_BASE=http://127.0.0.1:11434
-
-# ================================= zsh-ai (macOS) ================================ #
-# Load after .secrets so API keys are available
-if [[ "$OSTYPE" == "darwin"* ]] && [[ -f "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh" ]]; then
-  # Set configuration BEFORE sourcing the plugin
-  export ZSH_AI_PROVIDER="openai"
-  export ZSH_AI_MODEL="openai/gpt-5.2"
-  export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
-- Use 'rg' (ripgrep) instead of 'grep' for all text searches.
-- Use 'fd' instead of 'find' for finding files and directories.
-- Use 'bat' instead of 'cat' for reading files.
-- Use 'lsd' instead of 'ls' for listing files."
-  # Now source the plugin
-  source "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh"
-fi
 
 # ================================= CLI-tools ================================ #
 # zoxide (smarter cd)
@@ -107,8 +86,8 @@ alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
 
-# zrc alias - uses $EDITOR (nvim on Linux, cursor on Mac via .zshrc.mac override)
-[[ "$OSTYPE" != "darwin"* ]] && alias zrc="$EDITOR ~/.dotfiles/.zshrc"
+# zrc alias
+alias zrc="$EDITOR ~/.dotfiles/.zshrc"
 
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then

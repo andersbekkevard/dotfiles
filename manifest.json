@@ -1,9 +1,11 @@
 {
   "created": "2025-12-16",
-  "description": "Dotfiles backup manifest - tracks original locations of all files",
-  "home_directory": "/Users/andersbekkevard",
+  "updated": "2026-02-05",
+  "description": "Ubuntu dotfiles manifest - tracks all stowed files and their purposes",
+  "branch": "ubuntu",
+
   "stowable_files": {
-    "description": "Files that can be symlinked with GNU Stow (run 'stow .' from ~/.dotfiles)",
+    "description": "Files symlinked with GNU Stow (run 'stow --no-folding .' from ~/.dotfiles)",
     "files": [
       {
         "original_path": "~/.zshrc",
@@ -13,7 +15,7 @@
       {
         "original_path": "~/.zprofile",
         "dotfiles_path": ".zprofile",
-        "description": "Zsh profile (login shell)"
+        "description": "Zsh profile (login shell) - Linuxbrew shellenv"
       },
       {
         "original_path": "~/.zshenv",
@@ -36,24 +38,9 @@
         "description": "Git configuration"
       },
       {
-        "original_path": "~/.wakatime.cfg",
-        "dotfiles_path": ".wakatime.cfg",
-        "description": "WakaTime tracking configuration (gitignored)"
-      },
-      {
         "original_path": "~/.config/nvim",
         "dotfiles_path": ".config/nvim",
         "description": "Neovim configuration"
-      },
-      {
-        "original_path": "~/.config/karabiner",
-        "dotfiles_path": ".config/karabiner",
-        "description": "Karabiner keyboard remapping"
-      },
-      {
-        "original_path": "~/.config/linearmouse",
-        "dotfiles_path": ".config/linearmouse",
-        "description": "LinearMouse configuration"
       },
       {
         "original_path": "~/.config/fd",
@@ -61,14 +48,9 @@
         "description": "fd file search configuration"
       },
       {
-        "original_path": "~/.oh-my-zsh/custom",
-        "dotfiles_path": ".oh-my-zsh/custom",
-        "description": "Oh My Zsh custom plugins and themes"
-      },
-      {
-        "original_path": "~/.scripts",
-        "dotfiles_path": ".scripts",
-        "description": "Custom shell scripts"
+        "original_path": "~/.config/rofi",
+        "dotfiles_path": ".config/rofi",
+        "description": "Rofi launcher configuration"
       },
       {
         "original_path": "~/.config/i3",
@@ -78,7 +60,7 @@
       {
         "original_path": "~/.config/polybar",
         "dotfiles_path": ".config/polybar",
-        "description": "Polybar status bar configuration"
+        "description": "Polybar status bar configuration (Gruvbox theme)"
       },
       {
         "original_path": "~/.config/alacritty",
@@ -114,64 +96,62 @@
         "original_path": "~/.config/fish",
         "dotfiles_path": ".config/fish",
         "description": "Fish shell configuration"
+      },
+      {
+        "original_path": "~/.config/wt",
+        "dotfiles_path": ".config/wt",
+        "description": "wt-cli worktree manager configuration"
+      },
+      {
+        "original_path": "~/.config/git",
+        "dotfiles_path": ".config/git",
+        "description": "Git global ignore file"
+      },
+      {
+        "original_path": "~/.local/share/rofi/themes",
+        "dotfiles_path": ".local/share/rofi/themes",
+        "description": "Custom rofi themes (Gruvbox Dark Hard)"
+      },
+      {
+        "original_path": "~/.wt",
+        "dotfiles_path": ".wt",
+        "description": "wt-cli script (git worktree management)"
+      },
+      {
+        "original_path": "~/.scripts",
+        "dotfiles_path": ".scripts",
+        "description": "Custom shell scripts"
       }
     ]
   },
-  "backup_files": {
-    "description": "Non-stowable files stored in backups/ folder. Run backups/snapshot.sh to create timestamped snapshots.",
-    "sources": [
-      {
-        "original_path": "~/Library/Application Support/Cursor/User/settings.json",
-        "description": "Cursor editor settings"
-      },
-      {
-        "original_path": "~/Library/Application Support/Cursor/User/keybindings.json",
-        "description": "Cursor editor keybindings"
-      },
-      {
-        "original_path": "cursor --list-extensions",
-        "description": "Cursor installed extensions"
-      },
-      {
-        "original_path": "~/Library/Application Support/Code/User/settings.json",
-        "description": "VS Code editor settings"
-      },
-      {
-        "original_path": "~/Library/Application Support/Code/User/keybindings.json",
-        "description": "VS Code editor keybindings"
-      },
-      {
-        "original_path": "code --list-extensions",
-        "description": "VS Code installed extensions"
-      },
-      {
-        "original_path": "~/Library/Application Support/com.mitchellh.ghostty/config",
-        "description": "Ghostty terminal config"
-      },
-      {
-        "original_path": "brew bundle dump --describe",
-        "description": "Homebrew packages"
-      },
-      {
-        "original_path": "npm list -g --depth=0",
-        "description": "Global npm packages"
-      },
-      {
-        "original_path": "pip list --user",
-        "description": "User pip packages"
-      },
-      {
-        "original_path": "cargo install --list",
-        "description": "Cargo installed packages"
-      },
-      {
-        "original_path": "~/.config/gh/hosts.yml",
-        "description": "GitHub CLI auth hosts (gitignored)"
-      }
-    ]
+
+  "setup_installs": {
+    "description": "Tools and packages installed by setup.sh",
+    "apt_packages": [
+      "build-essential", "curl", "git", "zsh", "stow",
+      "i3", "polybar", "rofi", "picom", "feh", "maim", "xclip", "xdotool", "xcape",
+      "alacritty", "kitty",
+      "neovim", "fzf", "ripgrep", "fd-find", "bat", "htop", "btop",
+      "jq", "zoxide", "wget", "ffmpeg", "p7zip-full", "tmux",
+      "lsd", "lazygit", "gh", "yazi"
+    ],
+    "snap_packages": ["ghostty"],
+    "brew_packages": [
+      "zsh", "stow", "git", "curl", "wget", "jq", "fzf", "ripgrep", "fd", "bat",
+      "htop", "btop", "zoxide", "lsd", "lazygit", "neovim", "gh", "ffmpeg",
+      "p7zip", "poppler", "go", "yazi"
+    ],
+    "global_npm": ["@google/gemini-cli"],
+    "zsh_plugins": ["powerlevel10k", "zsh-autosuggestions", "zsh-syntax-highlighting"],
+    "fonts": ["MesloLGS Nerd Font"],
+    "standalone_tools": ["nvm", "pnpm", "uv", "greenclip", "claude"]
   },
-  "notes": {
-    "stow_usage": "Run 'stow .' from ~/.dotfiles to create symlinks for stowable files",
-    "backup_usage": "Run 'backups/snapshot.sh' to create a timestamped backup of non-stowable files"
+
+  "theme": {
+    "description": "Gruvbox Dark Hard across all tools",
+    "polybar": "Gruvbox Dark Hard (config.ini)",
+    "rofi": "gruvbox-dark-hard-custom (.local/share/rofi/themes/)",
+    "zsh": "Powerlevel10k (.p10k.zsh)",
+    "nvim": "base16 gruvbox-dark-hard"
   }
 }

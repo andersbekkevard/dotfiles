@@ -1,40 +1,17 @@
 #!/bin/bash
 #
-# Development Environment Setup
+# Ubuntu Development Environment Setup
 # ========================================
 # Idempotent setup script - safe to run multiple times.
-# Works as root (apt-only) or normal user (Homebrew for CLI tools).
+# Uses apt for system packages and Linuxbrew for CLI tools.
 #
 # Usage:
-#   git clone https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
+#   git clone -b ubuntu https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
 #   cd ~/.dotfiles && ./setup.sh
 #   exec zsh
 #
-# Options:
-#   --with-rust    Install Rust and Rust-based CLI tools (slow, off by default)
-#
 
 set -euo pipefail
-
-# =============================================================================
-# FLAG PARSING
-# =============================================================================
-
-INSTALL_RUST=false
-
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --with-rust)
-            INSTALL_RUST=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Usage: ./setup.sh [--with-rust]"
-            exit 1
-            ;;
-    esac
-done
 
 # =============================================================================
 # CONSTANTS AND HELPERS
@@ -88,6 +65,8 @@ apt_install() {
 
 cd "$DOTFILES_DIR" 2>/dev/null || error "Clone dotfiles to ~/.dotfiles first"
 
+[[ "$OSTYPE" == linux-gnu* ]] || error "This branch is for Ubuntu/Linux only"
+
 # Check if running as root
 IS_ROOT=false
 if [[ $EUID -eq 0 ]]; then
@@ -95,89 +74,70 @@ if [[ $EUID -eq 0 ]]; then
     warn "Running as root - will use apt instead of Homebrew for CLI tools"
 fi
 
-# Detect OS
-case "$OSTYPE" in
-    darwin*)
-        OS="mac"
-        log "Detected macOS"
-        ;;
-    linux-gnu*)
-        OS="linux"
-        log "Detected Linux"
-        ;;
-    *)
-        error "Unsupported OS: $OSTYPE"
-        ;;
-esac
+log "Detected Linux (Ubuntu branch)"
 
 # =============================================================================
-# LINUX: SYSTEM PACKAGES
+# SYSTEM PACKAGES (apt)
 # =============================================================================
 
-if [[ "$OS" == "linux" ]]; then
-    export DEBIAN_FRONTEND=noninteractive
+export DEBIAN_FRONTEND=noninteractive
 
-    log "Updating package lists..."
-    as_root apt-get update -qq || error "Failed to update apt. Check your internet connection."
+log "Updating package lists..."
+as_root apt-get update -qq || error "Failed to update apt. Check your internet connection."
 
-    log "Installing base system packages..."
-    apt_install build-essential curl git procps file locales zsh stow
-    log "Base packages installed."
+log "Installing base system packages..."
+apt_install build-essential curl git procps file locales zsh stow
 
-    log "Installing i3 desktop environment packages..."
-    apt_install i3 polybar rofi picom feh maim xclip xdotool alacritty || true
-    as_root apt-get install -y kitty 2>&1 || warn "kitty not available in apt"
-    log "Desktop packages installed."
+log "Installing i3 desktop environment..."
+apt_install i3 polybar rofi picom feh maim xclip xdotool xcape alacritty kitty
 
-    # If running as root, install CLI tools via apt (since no Homebrew)
-    if [[ "$IS_ROOT" == "true" ]]; then
-        log "Installing CLI tools via apt..."
-        apt_install neovim fzf ripgrep fd-find bat htop btop jq zoxide wget ffmpeg p7zip-full || true
+log "Installing CLI tools via apt..."
+apt_install neovim fzf ripgrep fd-find bat htop btop jq zoxide wget ffmpeg p7zip-full tmux
 
-        # These may not be in all repos - try individually
-        as_root apt-get install -y lsd 2>&1 || warn "lsd not available in apt"
-        as_root apt-get install -y lazygit 2>&1 || warn "lazygit not available in apt"
-        as_root apt-get install -y gh 2>&1 || warn "gh not available in apt"
+# These may not be in all repos - try individually
+as_root apt-get install -y lsd 2>&1 || warn "lsd not available in apt"
+as_root apt-get install -y lazygit 2>&1 || warn "lazygit not available in apt"
+as_root apt-get install -y gh 2>&1 || warn "gh not available in apt"
+as_root apt-get install -y yazi 2>&1 || warn "yazi not available in apt"
 
-        # Ubuntu renames some tools - create standard symlinks
-        [[ -f /usr/bin/batcat ]] && as_root ln -sf /usr/bin/batcat /usr/local/bin/bat
-        [[ -f /usr/bin/fdfind ]] && as_root ln -sf /usr/bin/fdfind /usr/local/bin/fd
-        log "CLI tools installed via apt."
-    fi
+# Ubuntu renames some tools - create standard symlinks
+[[ -f /usr/bin/batcat ]] && as_root ln -sf /usr/bin/batcat /usr/local/bin/bat
+[[ -f /usr/bin/fdfind ]] && as_root ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
-    # Locale configuration
-    if ! locale -a 2>/dev/null | grep -q "en_US.utf8"; then
-        log "Configuring locale..."
-        as_root locale-gen en_US.UTF-8 || warn "Failed to generate locale"
-    fi
-    export LANG=en_US.UTF-8
-    export LC_ALL=en_US.UTF-8
+log "System packages installed."
+
+# Locale configuration
+if ! locale -a 2>/dev/null | grep -q "en_US.utf8"; then
+    log "Configuring locale..."
+    as_root locale-gen en_US.UTF-8 || warn "Failed to generate locale"
+fi
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# =============================================================================
+# SNAP PACKAGES
+# =============================================================================
+
+if has snap; then
+    log "Installing snap packages..."
+    as_root snap install ghostty --classic 2>&1 || warn "ghostty snap not available"
 fi
 
 # =============================================================================
-# HOMEBREW + CLI TOOLS (non-root only)
+# HOMEBREW (Linuxbrew) + CLI TOOLS (non-root only)
 # =============================================================================
 
 if [[ "$IS_ROOT" == "false" ]]; then
-    # Add Homebrew to PATH first (if already installed)
-    if [[ "$OS" == "linux" ]] && [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    # Add Linuxbrew to PATH if already installed
+    if [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    elif [[ -f /opt/homebrew/bin/brew ]]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-    elif [[ -f /usr/local/bin/brew ]]; then
-        eval "$(/usr/local/bin/brew shellenv)"
     fi
 
     if ! has brew; then
-        log "Installing Homebrew..."
+        log "Installing Linuxbrew..."
         NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || error "Homebrew installation failed"
-        log "Homebrew installed."
-        # Add newly installed Homebrew to PATH
-        if [[ "$OS" == "linux" ]]; then
-            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        else
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        fi
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        log "Linuxbrew installed."
     fi
 
     log "Installing CLI tools via Homebrew..."
@@ -185,14 +145,46 @@ if [[ "$IS_ROOT" == "false" ]]; then
     BREW_PACKAGES=(
         zsh stow git curl wget jq fzf ripgrep fd bat
         htop btop zoxide lsd lazygit neovim gh ffmpeg p7zip poppler
+        go yazi
     )
 
-    if [[ "$INSTALL_RUST" == "true" ]]; then
-        BREW_PACKAGES+=(yazi dust tokei)
-    fi
-
-    brew install "${BREW_PACKAGES[@]}" || error "Homebrew package installation failed"
+    brew install "${BREW_PACKAGES[@]}" || warn "Some Homebrew packages failed"
     log "Homebrew packages installed."
+fi
+
+# =============================================================================
+# FONTS (MesloLGS Nerd Font for Powerlevel10k)
+# =============================================================================
+
+FONT_DIR="$HOME/.local/share/fonts"
+if [[ ! -f "$FONT_DIR/Meslo LG S Regular Nerd Font Complete.ttf" ]]; then
+    log "Installing MesloLGS Nerd Font..."
+    mkdir -p "$FONT_DIR"
+
+    MESLO_BASE="https://github.com/ryanoasis/nerd-fonts/releases/latest/download"
+    if curl -fsSL "$MESLO_BASE/Meslo.tar.xz" -o /tmp/meslo-nerd-font.tar.xz; then
+        tar -xf /tmp/meslo-nerd-font.tar.xz -C "$FONT_DIR"
+        rm -f /tmp/meslo-nerd-font.tar.xz
+        fc-cache -f "$FONT_DIR"
+        log "MesloLGS Nerd Font installed."
+    else
+        warn "Failed to download MesloLGS Nerd Font"
+    fi
+fi
+
+# =============================================================================
+# GREENCLIP (clipboard manager for rofi)
+# =============================================================================
+
+if [[ ! -f "$HOME/.local/bin/greenclip" ]]; then
+    log "Installing greenclip..."
+    mkdir -p "$HOME/.local/bin"
+    if curl -fsSL "https://github.com/erebe/greenclip/releases/download/v4.2/greenclip" -o "$HOME/.local/bin/greenclip"; then
+        chmod +x "$HOME/.local/bin/greenclip"
+        log "greenclip installed."
+    else
+        warn "Failed to download greenclip"
+    fi
 fi
 
 # =============================================================================
@@ -233,6 +225,10 @@ if ! has pnpm; then
     fi
 fi
 
+# Global npm packages
+log "Installing global npm packages..."
+npm install -g @google/gemini-cli 2>/dev/null || warn "gemini-cli install failed"
+
 # uv (Python package manager)
 if ! has uv; then
     log "Installing uv..."
@@ -243,19 +239,20 @@ if ! has uv; then
     fi
 fi
 
-# Rust toolchain
-if [[ "$INSTALL_RUST" == "true" ]]; then
-    if ! has rustup; then
-        log "Installing Rust toolchain..."
-        if curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; then
-            [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-            log "Rust installed."
-        else
-            warn "Rust installation failed"
-        fi
+# Go (via Homebrew or system)
+if ! has go && [[ "$IS_ROOT" == "true" ]]; then
+    log "Installing Go..."
+    apt_install golang-go || warn "Go installation failed"
+fi
+
+# Claude CLI
+if ! has claude; then
+    log "Installing Claude CLI..."
+    if curl -fsSL https://storage.googleapis.com/anthropic-sdk/claude-code/claude-code-latest-linux-x64.tar.gz | tar xz -C "$HOME/.local/bin" 2>/dev/null; then
+        log "Claude CLI installed."
+    else
+        npm install -g @anthropic-ai/claude-code 2>/dev/null || warn "Claude CLI installation failed"
     fi
-else
-    log "Skipping Rust (use --with-rust to enable)"
 fi
 
 # =============================================================================
@@ -302,12 +299,15 @@ cd "$DOTFILES_DIR"
 
 # Remove any existing files/symlinks that would conflict with stow
 STOW_TARGETS=(
-    ~/.zshrc ~/.zshrc.mac ~/.zshenv ~/.zprofile ~/.profile
-    ~/.gitconfig ~/.p10k.zsh ~/.wakatime.cfg
+    ~/.zshrc ~/.zshenv ~/.zprofile ~/.profile
+    ~/.gitconfig ~/.p10k.zsh
     ~/.config/nvim ~/.config/fd ~/.config/rofi ~/.scripts
     ~/.config/i3 ~/.config/polybar ~/.config/alacritty
     ~/.config/kitty ~/.config/ghostty ~/.config/lazygit
     ~/.config/btop ~/.config/greenclip.toml ~/.config/fish
+    ~/.config/wt ~/.config/git
+    ~/.local/share/rofi/themes
+    ~/.wt
 )
 
 for target in "${STOW_TARGETS[@]}"; do
@@ -316,7 +316,7 @@ for target in "${STOW_TARGETS[@]}"; do
     fi
 done
 
-mkdir -p ~/.config ~/.scripts
+mkdir -p ~/.config ~/.scripts ~/.local/share/rofi
 
 if stow --restow --target="$HOME" --no-folding .; then
     log "Dotfiles stowed."
@@ -356,11 +356,7 @@ fi
 
 log "Verifying installation..."
 
-declare -a CHECKS=(zsh node pnpm uv git stow nvim fzf)
-
-if [[ "$INSTALL_RUST" == "true" ]] && [[ "$IS_ROOT" == "false" ]]; then
-    CHECKS+=("yazi" "dust" "tokei")
-fi
+declare -a CHECKS=(zsh node pnpm uv git stow nvim fzf bat btop lazygit gh i3 rofi polybar)
 
 missing=()
 for cmd in "${CHECKS[@]}"; do
@@ -368,8 +364,10 @@ for cmd in "${CHECKS[@]}"; do
 done
 
 [[ -L ~/.zshrc ]] || missing+=(".zshrc symlink")
-# With --no-folding, nvim dir contains symlinks (not a symlink itself)
 [[ -L ~/.config/nvim/init.lua ]] || missing+=("nvim config symlink")
+[[ -L ~/.config/i3/config ]] || missing+=("i3 config symlink")
+[[ -L ~/.config/polybar/config.ini ]] || missing+=("polybar config symlink")
+[[ -L ~/.wt/wt.sh ]] || missing+=("wt-cli symlink")
 
 if [[ ${#missing[@]} -gt 0 ]]; then
     warn "Missing components: ${missing[*]}"
@@ -389,4 +387,5 @@ echo ""
 echo "Next steps:"
 echo "  1. Run: exec zsh"
 echo "  2. Powerlevel10k will auto-configure on first launch"
+echo "  3. Log out and back into i3 for desktop changes"
 echo ""
