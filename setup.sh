@@ -154,20 +154,24 @@ fi
 # =============================================================================
 
 if [[ "$IS_ROOT" == "false" ]]; then
+    # Add Homebrew to PATH first (if already installed)
+    if [[ "$OS" == "linux" ]] && [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    elif [[ -f /opt/homebrew/bin/brew ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -f /usr/local/bin/brew ]]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+
     if ! has brew; then
         log "Installing Homebrew..."
         NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || error "Homebrew installation failed"
         log "Homebrew installed."
-    fi
-
-    # Add Homebrew to PATH for this session
-    if [[ "$OS" == "linux" ]]; then
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    else
-        if [[ -f /opt/homebrew/bin/brew ]]; then
+        # Add newly installed Homebrew to PATH
+        if [[ "$OS" == "linux" ]]; then
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        else
             eval "$(/opt/homebrew/bin/brew shellenv)"
-        elif [[ -f /usr/local/bin/brew ]]; then
-            eval "$(/usr/local/bin/brew shellenv)"
         fi
     fi
 
@@ -304,7 +308,7 @@ for target in "${STOW_TARGETS[@]}"; do
     fi
 done
 
-mkdir -p ~/.config
+mkdir -p ~/.config ~/.scripts
 
 if stow --restow --target="$HOME" --no-folding .; then
     log "Dotfiles stowed."
@@ -356,7 +360,8 @@ for cmd in "${CHECKS[@]}"; do
 done
 
 [[ -L ~/.zshrc ]] || missing+=(".zshrc symlink")
-[[ -L ~/.config/nvim ]] || missing+=("nvim config symlink")
+# With --no-folding, nvim dir contains symlinks (not a symlink itself)
+[[ -L ~/.config/nvim/init.lua ]] || missing+=("nvim config symlink")
 
 if [[ ${#missing[@]} -gt 0 ]]; then
     warn "Missing components: ${missing[*]}"

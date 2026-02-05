@@ -3,6 +3,11 @@
 # Works on both macOS and Linux
 # =============================================================================
 
+# Source .zprofile for non-login shells (so Homebrew PATH is always available)
+if [[ ! -o login ]]; then
+  [[ -f ~/.zprofile ]] && source ~/.zprofile
+fi
+
 # Source Mac-specific config if on macOS (before everything else for Homebrew FPATH)
 [[ "$OSTYPE" == "darwin"* ]] && [[ -f ~/.zshrc.mac ]] && source ~/.zshrc.mac
 
@@ -15,24 +20,8 @@ fi
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-# Set theme conditionally based on terminal type and shell context
-if [[ -o interactive ]]; then
-  if [[ -n "$NVIM" ]] || [[ -n "$VIM" ]]; then
-    ZSH_THEME=""
-    PROMPT='%~%# '
-    RPROMPT=''
-  else
-    if [[ -d "$ZSH/custom/themes/powerlevel10k" ]]; then
-      ZSH_THEME="powerlevel10k/powerlevel10k"
-    else
-      ZSH_THEME="robbyrussell"
-    fi
-  fi
-else
-  ZSH_THEME=""
-  PROMPT='%~%# '
-  RPROMPT=''
-fi
+# Set theme - Powerlevel10k
+ZSH_THEME="powerlevel10k/powerlevel10k"
 
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
@@ -40,8 +29,8 @@ source $ZSH/oh-my-zsh.sh
 # Syntax highlighting styles (must be after plugin loads)
 [[ -n "${ZSH_HIGHLIGHT_STYLES+x}" ]] && ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
 
-# Source Powerlevel10k config only if theme is enabled
-[[ "$ZSH_THEME" == "powerlevel10k/powerlevel10k" ]] && [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+# Source Powerlevel10k config
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # ================================= Terminal setup ================================ #
 autoload -Uz compinit
@@ -146,6 +135,7 @@ alias gpo='git push'
 alias gbm='git branch -M main'
 alias glog='git log --oneline --graph --decorate --all'
 alias lg="lazygit"
+alias cc="claude --dangerously-skip-permissions"
 
 # npm/pnpm
 alias nrd='npm run dev'
@@ -187,6 +177,28 @@ bindkey -v
 bindkey '^[z' undo
 bindkey '^[y' redo
 
+# Change cursor shape based on vi mode
+function zle-keymap-select {
+  if [[ ${KEYMAP} == vicmd ]] || [[ $1 = 'block' ]]; then
+    echo -ne '\e[1 q'  # Block cursor for normal mode
+  elif [[ ${KEYMAP} == main ]] || [[ ${KEYMAP} == viins ]] || [[ ${KEYMAP} = '' ]] || [[ $1 = 'beam' ]]; then
+    echo -ne '\e[5 q'  # Beam cursor for insert mode
+  fi
+}
+zle -N zle-keymap-select
+
+# Use beam cursor on startup
+echo -ne '\e[5 q'
+
+# Use beam cursor for each new prompt
+function zle-line-init {
+  echo -ne "\e[5 q"
+}
+zle -N zle-line-init
+
 # ================================= Local Overrides ================================ #
 # Source machine-specific overrides (created by setup.sh on Linux)
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+# wt-cli
+source "/home/anders/.wt/wt.sh"
