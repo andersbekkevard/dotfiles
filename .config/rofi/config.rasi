@@ -1,16 +1,11 @@
-configuration{
-    modi: "run,window,combi";
-    icon-theme: "Oranchelo";
+configuration {
     show-icons: true;
-    terminal: "alacritty";
-    drun-display-format: "{icon} {name}";
-    location: 0;
-    disable-history: false;
-    hide-scrollbar: true;
-    display-combi: " 🖥️  All ";
-    display-run: " 🏃  Run ";
-    display-window: " 🪟  Window";
-    sidebar-mode: true;
+    display-drun: "Applications";
+    display-run: "Commands";
+    display-window: "Windows";
+    display-combi: "Search";
+    modi: "combi,drun,run,window";
+    combi-modi: "drun,run,window";
 }
 
-@theme "catppuccin-mocha"
+@theme "gruvbox-dark-hard-custom"

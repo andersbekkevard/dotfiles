@@ -2,7 +2,6 @@
   "created": "2025-12-16",
   "description": "Dotfiles backup manifest - tracks original locations of all files",
   "home_directory": "/Users/andersbekkevard",
-
   "stowable_files": {
     "description": "Files that can be symlinked with GNU Stow (run 'stow .' from ~/.dotfiles)",
     "files": [
@@ -70,10 +69,54 @@
         "original_path": "~/.scripts",
         "dotfiles_path": ".scripts",
         "description": "Custom shell scripts"
+      },
+      {
+        "original_path": "~/.config/i3",
+        "dotfiles_path": ".config/i3",
+        "description": "i3 window manager configuration"
+      },
+      {
+        "original_path": "~/.config/polybar",
+        "dotfiles_path": ".config/polybar",
+        "description": "Polybar status bar configuration"
+      },
+      {
+        "original_path": "~/.config/alacritty",
+        "dotfiles_path": ".config/alacritty",
+        "description": "Alacritty terminal configuration"
+      },
+      {
+        "original_path": "~/.config/kitty",
+        "dotfiles_path": ".config/kitty",
+        "description": "Kitty terminal configuration"
+      },
+      {
+        "original_path": "~/.config/ghostty",
+        "dotfiles_path": ".config/ghostty",
+        "description": "Ghostty terminal configuration"
+      },
+      {
+        "original_path": "~/.config/lazygit",
+        "dotfiles_path": ".config/lazygit",
+        "description": "Lazygit configuration"
+      },
+      {
+        "original_path": "~/.config/btop",
+        "dotfiles_path": ".config/btop",
+        "description": "btop system monitor configuration"
+      },
+      {
+        "original_path": "~/.config/greenclip.toml",
+        "dotfiles_path": ".config/greenclip.toml",
+        "description": "Greenclip clipboard manager configuration"
+      },
+      {
+        "original_path": "~/.config/fish",
+        "dotfiles_path": ".config/fish",
+        "description": "Fish shell configuration"
       }
     ]
   },
-
   "backup_files": {
     "description": "Non-stowable files stored in backups/ folder. Run backups/snapshot.sh to create timestamped snapshots.",
     "sources": [
@@ -127,7 +170,6 @@
       }
     ]
   },
-
   "notes": {
     "stow_usage": "Run 'stow .' from ~/.dotfiles to create symlinks for stowable files",
     "backup_usage": "Run 'backups/snapshot.sh' to create a timestamped backup of non-stowable files"

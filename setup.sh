@@ -124,6 +124,11 @@ if [[ "$OS" == "linux" ]]; then
     apt_install build-essential curl git procps file locales zsh stow
     log "Base packages installed."
 
+    log "Installing i3 desktop environment packages..."
+    apt_install i3 polybar rofi picom feh maim xclip xdotool alacritty || true
+    as_root apt-get install -y kitty 2>&1 || warn "kitty not available in apt"
+    log "Desktop packages installed."
+
     # If running as root, install CLI tools via apt (since no Homebrew)
     if [[ "$IS_ROOT" == "true" ]]; then
         log "Installing CLI tools via apt..."
@@ -299,7 +304,10 @@ cd "$DOTFILES_DIR"
 STOW_TARGETS=(
     ~/.zshrc ~/.zshrc.mac ~/.zshenv ~/.zprofile ~/.profile
     ~/.gitconfig ~/.p10k.zsh ~/.wakatime.cfg
-    ~/.config/nvim ~/.config/fd ~/.scripts
+    ~/.config/nvim ~/.config/fd ~/.config/rofi ~/.scripts
+    ~/.config/i3 ~/.config/polybar ~/.config/alacritty
+    ~/.config/kitty ~/.config/ghostty ~/.config/lazygit
+    ~/.config/btop ~/.config/greenclip.toml ~/.config/fish
 )
 
 for target in "${STOW_TARGETS[@]}"; do
