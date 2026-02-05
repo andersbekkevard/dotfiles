@@ -46,6 +46,9 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
+# Go
+export PATH="$HOME/go/bin:$PATH"
+
 # pnpm
 export PNPM_HOME="$HOME/.local/share/pnpm"
 [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
@@ -180,4 +183,4 @@ zle -N zle-line-init
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 # wt-cli
-source "/home/anders/.wt/wt.sh"
+source "$HOME/.wt/wt.sh"

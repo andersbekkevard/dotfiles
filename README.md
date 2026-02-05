@@ -5,7 +5,7 @@ My Ubuntu development environment, managed with GNU Stow. Clone and run `setup.s
 ## Quick Setup
 
 ```bash
-git clone -b ubuntu https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
+git clone -b ubuntu https://github.com/andersbekkevard/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles && ./setup.sh
 exec zsh
 ```

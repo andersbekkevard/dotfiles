@@ -16,8 +16,9 @@ set $mod Mod4
 exec --no-startup-id picom
 exec_always --no-startup-id killall polybar
 exec_always --no-startup-id ~/.config/polybar/launch_polybar.sh
-exec_always --no-startup-id ~/.fehbg
-exec_always --no-startup-id xrandr --output DP-1-1 --above eDP-1
+exec_always --no-startup-id test -f ~/.fehbg && ~/.fehbg
+# Multi-monitor: configure in ~/.config/i3/local.conf or edit below
+# exec_always --no-startup-id xrandr --output DP-1-1 --above eDP-1
 exec --no-startup-id ~/.local/bin/greenclip daemon
 bindsym $mod+space exec rofi -show combi
 

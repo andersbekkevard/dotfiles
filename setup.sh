@@ -6,7 +6,7 @@
 # Uses apt for system packages and Linuxbrew for CLI tools.
 #
 # Usage:
-#   git clone -b ubuntu https://github.com/USERNAME/.dotfiles.git ~/.dotfiles
+#   git clone -b ubuntu https://github.com/andersbekkevard/.dotfiles.git ~/.dotfiles
 #   cd ~/.dotfiles && ./setup.sh
 #   exec zsh
 #
@@ -89,16 +89,21 @@ log "Installing base system packages..."
 apt_install build-essential curl git procps file locales zsh stow
 
 log "Installing i3 desktop environment..."
-apt_install i3 polybar rofi picom feh maim xclip xdotool xcape alacritty kitty
+apt_install i3 polybar rofi picom feh maim xclip xdotool
+
+# These desktop packages may need PPAs on some Ubuntu versions
+as_root apt-get install -y xcape 2>&1 || warn "xcape not in apt — install from source if needed"
+as_root apt-get install -y alacritty 2>&1 || warn "alacritty not in apt — will use Ghostty/Kitty"
+as_root apt-get install -y kitty 2>&1 || warn "kitty not in apt"
 
 log "Installing CLI tools via apt..."
 apt_install neovim fzf ripgrep fd-find bat htop btop jq zoxide wget ffmpeg p7zip-full tmux
 
-# These may not be in all repos - try individually
-as_root apt-get install -y lsd 2>&1 || warn "lsd not available in apt"
-as_root apt-get install -y lazygit 2>&1 || warn "lazygit not available in apt"
-as_root apt-get install -y gh 2>&1 || warn "gh not available in apt"
-as_root apt-get install -y yazi 2>&1 || warn "yazi not available in apt"
+# These may not be in default repos - try individually, Linuxbrew provides fallbacks
+as_root apt-get install -y lsd 2>&1 || warn "lsd not in apt (Linuxbrew will provide it)"
+as_root apt-get install -y lazygit 2>&1 || warn "lazygit not in apt (Linuxbrew will provide it)"
+as_root apt-get install -y gh 2>&1 || warn "gh not in apt (Linuxbrew will provide it)"
+as_root apt-get install -y yazi 2>&1 || warn "yazi not in apt (Linuxbrew will provide it)"
 
 # Ubuntu renames some tools - create standard symlinks
 [[ -f /usr/bin/batcat ]] && as_root ln -sf /usr/bin/batcat /usr/local/bin/bat
@@ -140,13 +145,10 @@ if [[ "$IS_ROOT" == "false" ]]; then
         log "Linuxbrew installed."
     fi
 
-    log "Installing CLI tools via Homebrew..."
+    log "Installing tools via Homebrew (fills gaps apt can't cover)..."
 
-    BREW_PACKAGES=(
-        zsh stow git curl wget jq fzf ripgrep fd bat
-        htop btop zoxide lsd lazygit neovim gh ffmpeg p7zip poppler
-        go yazi
-    )
+    # Only install what apt doesn't reliably provide on Ubuntu
+    BREW_PACKAGES=(go lsd lazygit gh yazi poppler)
 
     brew install "${BREW_PACKAGES[@]}" || warn "Some Homebrew packages failed"
     log "Homebrew packages installed."
@@ -157,7 +159,7 @@ fi
 # =============================================================================
 
 FONT_DIR="$HOME/.local/share/fonts"
-if [[ ! -f "$FONT_DIR/Meslo LG S Regular Nerd Font Complete.ttf" ]]; then
+if ! ls "$FONT_DIR"/*Meslo* &>/dev/null; then
     log "Installing MesloLGS Nerd Font..."
     mkdir -p "$FONT_DIR"
 
@@ -195,7 +197,8 @@ fi
 export NVM_DIR="$HOME/.nvm"
 if [[ ! -d "$NVM_DIR" ]]; then
     log "Installing NVM..."
-    if curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash; then
+    # PROFILE=/dev/null prevents NVM from appending to .zshrc (which is a symlink)
+    if curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | PROFILE=/dev/null bash; then
         log "NVM installed."
     else
         warn "NVM installation failed"
@@ -225,9 +228,11 @@ if ! has pnpm; then
     fi
 fi
 
-# Global npm packages
-log "Installing global npm packages..."
-npm install -g @google/gemini-cli 2>/dev/null || warn "gemini-cli install failed"
+# Global npm packages (only if node is available)
+if has node; then
+    log "Installing global npm packages..."
+    npm install -g @google/gemini-cli 2>/dev/null || warn "gemini-cli install failed"
+fi
 
 # uv (Python package manager)
 if ! has uv; then
@@ -246,13 +251,9 @@ if ! has go && [[ "$IS_ROOT" == "true" ]]; then
 fi
 
 # Claude CLI
-if ! has claude; then
+if ! has claude && has node; then
     log "Installing Claude CLI..."
-    if curl -fsSL https://storage.googleapis.com/anthropic-sdk/claude-code/claude-code-latest-linux-x64.tar.gz | tar xz -C "$HOME/.local/bin" 2>/dev/null; then
-        log "Claude CLI installed."
-    else
-        npm install -g @anthropic-ai/claude-code 2>/dev/null || warn "Claude CLI installation failed"
-    fi
+    npm install -g @anthropic-ai/claude-code 2>/dev/null || warn "Claude CLI installation failed"
 fi
 
 # =============================================================================
@@ -316,12 +317,29 @@ for target in "${STOW_TARGETS[@]}"; do
     fi
 done
 
-mkdir -p ~/.config ~/.scripts ~/.local/share/rofi
+mkdir -p ~/.config ~/.scripts ~/.local/share/rofi ~/.wt
 
 if stow --restow --target="$HOME" --no-folding .; then
     log "Dotfiles stowed."
 else
     error "Stow failed."
+fi
+
+# =============================================================================
+# WALLPAPER
+# =============================================================================
+
+if [[ ! -f ~/.fehbg ]]; then
+    log "Setting up default wallpaper..."
+    # Set a solid dark background as default (user can replace with feh --bg-center <image>)
+    cat > ~/.fehbg << 'FEHBG'
+#!/bin/sh
+# Set wallpaper - replace the path below with your image
+# feh --no-fehbg --bg-center ~/Desktop/wallpaper.png
+# Fallback: solid dark background matching gruvbox
+xsetroot -solid '#1d2021' 2>/dev/null || true
+FEHBG
+    chmod +x ~/.fehbg
 fi
 
 # =============================================================================
