@@ -62,6 +62,7 @@ fi
 
 alias nodesize='bash ~/.scripts/nodesize.sh'
 alias pysize='bash ~/.scripts/pysize.sh'
+alias server-mode='bash ~/.scripts/server-mode.sh'
 
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
@@ -184,3 +185,6 @@ zle -N zle-line-init
 
 # wt-cli
 source "$HOME/.wt/wt.sh"
+
+# OpenClaw Completion
+source "/home/anders/.openclaw/completions/openclaw.zsh"
