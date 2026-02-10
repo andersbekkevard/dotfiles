@@ -194,4 +194,4 @@ bindkey '^[y' redo
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 # wt-cli
-source "/Users/andersbekkevard/.wt/wt.sh"
+[[ -f "$HOME/.wt/wt.sh" ]] && source "$HOME/.wt/wt.sh"
