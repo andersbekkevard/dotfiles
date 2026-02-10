@@ -1,0 +1,1 @@
+- [ ] More functions using bufferline: cycle tabs, move tabs and pick tabs

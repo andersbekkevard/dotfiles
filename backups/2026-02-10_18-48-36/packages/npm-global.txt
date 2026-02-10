@@ -1,0 +1,11 @@
+/opt/homebrew/lib
+├── @google/gemini-cli@0.1.5
+├── @musistudio/claude-code-router@1.0.18
+├── firebase-tools@14.9.0
+├── netlistsvg@1.0.2
+├── npm@11.8.0
+├── task-master-ai@0.17.1
+├── ts-node@10.9.2
+├── typescript@5.8.3
+└── yarn@1.22.22
+

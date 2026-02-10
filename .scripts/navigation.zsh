@@ -35,6 +35,29 @@ warp() {
 }
 
 
+# Open directory in default terminal (Ghostty)
+term() {
+  local target_path="${1:-.}"
+
+  # Resolve to absolute path
+  if [[ "$target_path" == "." ]]; then
+    target_path="$PWD"
+  elif [[ "$target_path" == ".."* ]]; then
+    target_path="$(cd "$target_path" 2>/dev/null && pwd)"
+  elif [[ "$target_path" != /* ]]; then
+    target_path="$PWD/$target_path"
+  fi
+
+  # Verify path exists
+  if [[ ! -d "$target_path" ]]; then
+    echo "Error: Directory does not exist: $target_path"
+    return 1
+  fi
+
+  # Open in Ghostty
+  open -a "Ghostty" "$target_path"
+}
+
 # Create a directory and cd into it (alternative to mcd)
 take() {
   mkdir -p "$1" && cd "$1"

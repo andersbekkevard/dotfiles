@@ -117,6 +117,7 @@ alias vim="nvim"
 alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
+alias cc="claude --dangerously-skip-permissions"
 
 # zrc alias - uses $EDITOR (nvim on Linux, cursor on Mac via .zshrc.mac override)
 [[ "$OSTYPE" != "darwin"* ]] && alias zrc="$EDITOR ~/.dotfiles/.zshrc"
@@ -124,9 +125,10 @@ alias ..="cd .."
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then
   alias ls='lsd --ignore-glob "__pycache__" --ignore-glob "venv" --ignore-glob "node_modules"'
-  alias l='ls -l'
+  # Trim noisy long listing fields (e.g. user/group like "staff").
+  alias l='ls -l --blocks permission,size,date,name'
   alias la='lsd -A'
-  alias lla='lsd -lA'
+  alias lla='ls -lA --blocks permission,size,date,name'
   alias lt='lsd --tree --ignore-glob "__pycache__" --ignore-glob "venv" --ignore-glob "node_modules"'
 else
   alias ls='ls --color=auto'
@@ -190,3 +192,6 @@ bindkey '^[y' redo
 # ================================= Local Overrides ================================ #
 # Source machine-specific overrides (created by setup.sh on Linux)
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+# wt-cli
+source "/Users/andersbekkevard/.wt/wt.sh"

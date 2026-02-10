@@ -75,6 +75,10 @@ return {
 				component_function = {
 					filename = 'LightlineFilename'
 				},
+				enable = {
+					statusline = 1,
+					tabline = 0,
+				},
 			}
 			function LightlineFilenameInLua(opts)
 				if vim.fn.expand('%:t') == '' then

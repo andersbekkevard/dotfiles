@@ -1,0 +1,118 @@
+[
+	{
+		"key": "cmd+enter",
+		"command": "workbench.action.debug.run",
+		"when": "editorLangId == java"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "python.execInTerminal",
+		"when": "editorLangId == python"
+	},
+	{
+		"key": "cmd+enter",
+		"command": "notebook.cell.execute",
+		"when": "notebookCellListFocused || notebookEditorFocused"
+	},
+	{
+		"key": "shift+enter",
+		"command": "notebook.cell.executeAndSelectBelow",
+		"when": "notebookCellListFocused || notebookEditorFocused"
+	},
+	{
+		"key": "shift+cmd+enter",
+		"command": "notebook.execute",
+		"when": "config.notebook.globalToolbar && !notebookHasSomethingRunning || config.notebook.globalToolbar && notebookInterruptibleKernel && !notebookHasSomethingRunning || config.notebook.globalToolbar && !notebookHasSomethingRunning && !notebookInterruptibleKernel"
+	},
+	{
+		"key": "cmd+[Semicolon]",
+		"command": "workbench.action.terminal.toggleTerminal",
+		"when": "terminal.active"
+	},
+	{
+		"key": "ctrl+shift+[Equal]",
+		"command": "-workbench.action.terminal.toggleTerminal",
+		"when": "terminal.active"
+	},
+	{
+		"key": "cmd+'",
+		"command": "codesnap.start"
+	},
+	{
+		"key": "shift+cmd+s",
+		"command": "-workbench.action.files.saveAs"
+	},
+	{
+		"key": "shift+cmd+s",
+		"command": "-workbench.action.files.saveLocalFile",
+		"when": "remoteFileDialogVisible"
+	},
+	{
+		"key": "shift+cmd+s",
+		"command": "workbench.view.scm",
+		"when": "workbench.scm.active"
+	},
+	{
+		"key": "ctrl+shift+g",
+		"command": "-workbench.view.scm",
+		"when": "workbench.scm.active"
+	},
+	{
+		"key": "cmd+k",
+		"command": "-workbench.action.terminal.clear",
+		"when": "terminalFocus && terminalHasBeenCreated && !accessibilityModeEnabled || terminalFocus && terminalProcessSupported && !accessibilityModeEnabled || accessibilityModeEnabled && accessibleViewIsShown && terminalHasBeenCreated && accessibleViewCurrentProviderId == 'terminal' || accessibilityModeEnabled && accessibleViewIsShown && terminalProcessSupported && accessibleViewCurrentProviderId == 'terminal'"
+	},
+	{
+		"key": "cmd+k",
+		"command": "-workbench.debug.panel.action.clearReplAction",
+		"when": "focusedView == 'workbench.panel.repl.view'"
+	},
+	{
+		"key": "cmd+k",
+		"command": "inlineChat.start",
+		"when": "editorFocus && inlineChatHasEditsAgent && inlineChatPossible && !editorReadonly && !editorSimpleInput || editorFocus && inlineChatHasProvider && inlineChatPossible && !editorReadonly && !editorSimpleInput"
+	},
+	{
+		"key": "cmd+i",
+		"command": "-inlineChat.start",
+		"when": "editorFocus && inlineChatHasEditsAgent && inlineChatPossible && !editorReadonly && !editorSimpleInput || editorFocus && inlineChatHasProvider && inlineChatPossible && !editorReadonly && !editorSimpleInput"
+	},
+	{
+		"key": "cmd+k",
+		"command": "inlineChat2.close",
+		"when": "inlineChatHasEditsAgent && inlineChatVisible && !chatEdits.isRequestInProgress && chatEdits.requestCount == '0' || inlineChatHasEditsAgent && inlineChatVisible && !chatEdits.hasEditorModifications && !chatEdits.isRequestInProgress && chatEdits.requestCount == '0'"
+	},
+	{
+		"key": "cmd+i",
+		"command": "-inlineChat2.close",
+		"when": "inlineChatHasEditsAgent && inlineChatVisible && !chatEdits.isRequestInProgress && chatEdits.requestCount == '0' || inlineChatHasEditsAgent && inlineChatVisible && !chatEdits.hasEditorModifications && !chatEdits.isRequestInProgress && chatEdits.requestCount == '0'"
+	},
+	{
+		"key": "cmd+i",
+		"command": "workbench.action.chat.open",
+		"when": "!chatSetupDisabled && !chatSetupHidden"
+	},
+	{
+		"key": "ctrl+cmd+i",
+		"command": "-workbench.action.chat.open",
+		"when": "!chatSetupDisabled && !chatSetupHidden"
+	},
+	{
+		"key": "cmd+k",
+		"command": "inlineChat2.reveal",
+		"when": "inlineChatHasEditsAgent && !chatEdits.isGlobalEditingSession && chatEdits.requestCount >= 1"
+	},
+	{
+		"key": "cmd+i",
+		"command": "-inlineChat2.reveal",
+		"when": "inlineChatHasEditsAgent && !chatEdits.isGlobalEditingSession && chatEdits.requestCount >= 1"
+	},
+	{
+		"key": "cmd+i",
+		"command": "workbench.action.toggleAuxiliaryBar"
+	},
+	{
+		"key": "alt+cmd+b",
+		"command": "-workbench.action.toggleAuxiliaryBar"
+	},
+]

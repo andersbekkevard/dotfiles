@@ -75,24 +75,39 @@ return {
 			}
 			vim.lsp.enable('jdtls')
 
-			-- SQL (uses global config at ~/.config/sqls/config.yml)
-			vim.lsp.config.sqls = {
-				cmd = { 'sqls' },
-				filetypes = { 'sql', 'mysql' },
-				root_markers = { '.sqls', '.git' },
-				capabilities = capabilities,
-				on_attach = function(client, bufnr)
-					local ok, sqls = pcall(require, 'sqls')
-					if ok then
-						sqls.on_attach(client, bufnr)
-					end
-
-					-- Execute SQL query (overrides diagnostic float in SQL files)
-					vim.keymap.set({ 'n', 'v' }, '<leader>e', ':SqlsExecuteQuery<CR>',
-						{ buffer = bufnr, desc = 'Execute SQL query' })
+			-- SQL keybindings (vim-dadbod-ui handles everything)
+			vim.api.nvim_create_autocmd('FileType', {
+				pattern = { 'sql', 'mysql', 'plsql' },
+				callback = function(args)
+					local bufnr = args.buf
+					-- Execute SQL query
+					vim.keymap.set('n', '<leader>e', '<Cmd>%DB<CR>',
+						{ buffer = bufnr, desc = 'Execute SQL file' })
+					vim.keymap.set('v', '<leader>e', ':DB<CR>',
+						{ buffer = bufnr, desc = 'Execute SQL selection' })
+					-- Connect external file to a DBUI database
+					vim.keymap.set('n', '<leader>cc', function()
+						-- Use the predefined connections from g:dbs
+						local dbs = vim.g.dbs or {}
+						local names = {}
+						for _, db in ipairs(dbs) do
+							table.insert(names, db.name)
+						end
+						vim.ui.select(names, { prompt = 'Select database:' }, function(choice)
+							if choice then
+								for _, db in ipairs(dbs) do
+									if db.name == choice then
+										vim.b.db = db.url
+										pcall(vim.cmd, 'DBCompletionClearCache')
+										print('Connected to: ' .. choice)
+										break
+									end
+								end
+							end
+						end)
+					end, { buffer = bufnr, desc = 'Connect to database' })
 				end,
-			}
-			vim.lsp.enable('sqls')
+			})
 		end
 	},
 
@@ -121,9 +136,69 @@ return {
 		end,
 	},
 
-	-- sqls.nvim - SQL client extension for sqls LSP
+	-- vim-dadbod + completion (loads on SQL filetype)
 	{
-		'nanotee/sqls.nvim',
-		lazy = false, -- Load eagerly so it's available when LSP attaches
+		'tpope/vim-dadbod',
+		ft = { 'sql', 'mysql', 'plsql' },
+		init = function()
+			-- Define database connections (available before plugin loads)
+			vim.g.dbs = {
+				{ name = 'northwind', url = 'sqlite:/Users/andersbekkevard/dev/school/db/ex2/database.db' },
+				{ name = 'university', url = 'sqlite:/Users/andersbekkevard/dev/school/db/uni_db/database.db' },
+				{ name = 'cddb', url = 'sqlite:/Users/andersbekkevard/dev/school/db/tx2/cddb.db' },
+			}
+
+			-- Command to select database connection (same as <leader>cc)
+			vim.api.nvim_create_user_command('DBSelect', function()
+				local dbs = vim.g.dbs or {}
+				local names = {}
+				for _, db in ipairs(dbs) do
+					table.insert(names, db.name)
+				end
+				vim.ui.select(names, { prompt = 'Select database:' }, function(choice)
+					if choice then
+						for _, db in ipairs(dbs) do
+							if db.name == choice then
+								vim.b.db = db.url
+								pcall(vim.cmd, 'DBCompletionClearCache')
+								print('Connected to: ' .. choice)
+								break
+							end
+						end
+					end
+				end)
+			end, { desc = 'Select database connection for current buffer' })
+		end,
+	},
+
+	-- vim-dadbod-completion (loads on SQL filetype, sets up cmp)
+	{
+		'kristijanhusak/vim-dadbod-completion',
+		ft = { 'sql', 'mysql', 'plsql' },
+		dependencies = { 'tpope/vim-dadbod' },
+		config = function()
+			vim.api.nvim_create_autocmd('FileType', {
+				pattern = { 'sql', 'mysql', 'plsql' },
+				callback = function()
+					require('cmp').setup.buffer({
+						sources = {
+							{ name = 'vim-dadbod-completion' },
+							{ name = 'buffer' },
+						},
+					})
+				end,
+			})
+		end,
+	},
+
+	-- vim-dadbod-ui (lazy, only loads when you run :DBUI)
+	{
+		'kristijanhusak/vim-dadbod-ui',
+		dependencies = { 'tpope/vim-dadbod' },
+		cmd = { 'DBUI', 'DBUIToggle', 'DBUIAddConnection', 'DBUIFindBuffer' },
+		init = function()
+			vim.g.db_ui_use_nerd_fonts = 1
+			vim.g.db_ui_execute_on_save = 0
+		end,
 	},
 }

@@ -33,6 +33,8 @@ vim.api.nvim_create_autocmd('Filetype', {
 })
 -- enable mouse mode for resizing panes
 vim.o.mouse = "a"
+-- keep buffers open in the background when navigating away
+vim.o.hidden = true
 
 -- tabs: go big or go home (mirroring jon's setup)
 vim.opt.shiftwidth = 8

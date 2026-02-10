@@ -1,6 +1,6 @@
 # .dotfiles
 
-This repository manages my local configuration files (dotfiles) using GNU Stow, providing a centralized and version-controlled system for my development environment.
+This repository manages my local configuration files (dotfiles) using GNU Stow, providing a centralized and version-controlled system for my development environment. The main branch is my mac setup, where as the ubuntu branch is somewhat altered and provides a single setup.sh script for setting up a working dev environment on a clean machine.
 
 ## Project Structure
 
