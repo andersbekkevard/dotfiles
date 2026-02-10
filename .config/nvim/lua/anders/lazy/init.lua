@@ -16,6 +16,7 @@ else
 		require("anders.lazy.full.oil"),
 		require("anders.lazy.full.vim-be-good"),
 		require("anders.lazy.full.lazygit"),
-		require("anders.lazy.full.dbee"),
+		require("anders.lazy.full.bufferline"),
+		require("anders.lazy.full.vim-tmux-navigator"),
 	}
 end

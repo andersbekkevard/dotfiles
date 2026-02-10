@@ -30,9 +30,12 @@ return {
 			vim.keymap.set('n', '<C-t>', builtin.builtin, { desc = 'Telescope builtins' })
 
 			-- Find keybinds (<leader>f*)
-			vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Find files' })
+			vim.keymap.set('n', '<leader>ff', function()
+				builtin.find_files({ hidden = true })
+			end, { desc = 'Find files (including hidden)' })
 			vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Find grep (live)' })
 			vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Find buffers' })
+			vim.keymap.set('n', '<C-b>', builtin.buffers, { desc = 'Find buffers' })
 			vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Find help' })
 			vim.keymap.set('n', '<leader>fw', function()
 				builtin.grep_string({ search = vim.fn.expand("<cword>") })

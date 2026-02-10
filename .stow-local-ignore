@@ -16,15 +16,27 @@ README.*
 LICENSE
 TODO\.md
 manifest\.json
+CLAUDE.md
 
 # Setup scripts (not dotfiles)
 setup\.sh
+setup\.ps1
+WINDOWS\.md
 
 # Backups directory
 backups
 
 # Oh My Zsh custom directory (plugins are cloned during setup, not stowed)
 \.oh-my-zsh
+
+# Mac-specific files (exclude when stowing on Linux)
+# These are conditionally useful, so we stow them but they're only sourced on Mac
+# \.zshrc\.mac  # Actually needed - sourced conditionally in .zshrc
+# \.zprofile    # Mac-specific but harmless to have on Linux
+
+# Application configs that are Mac-only
+\.config/karabiner
+\.config/linearmouse
 
 # Editor settings (machine-specific)
 \.cursor

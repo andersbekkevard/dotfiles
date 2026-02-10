@@ -23,7 +23,7 @@ return {
 
 	-------------------------------------------------------------------------------
 	--
-	-- - Gruvbox via Base16
+	-- OLD THEME - Gruvbox via Base16 (commented out)
 	--
 	-------------------------------------------------------------------------------
 	{
@@ -74,6 +74,10 @@ return {
 				},
 				component_function = {
 					filename = 'LightlineFilename'
+				},
+				enable = {
+					statusline = 1,
+					tabline = 0,
 				},
 			}
 			function LightlineFilenameInLua(opts)
