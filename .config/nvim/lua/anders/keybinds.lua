@@ -83,11 +83,7 @@ if not vim.g.vscode then
 	-- LazyGit
 	vim.keymap.set('n', '<leader>lg', ":LazyGit<enter>", { desc = '[L]azy [G]it' })
 
-	-- Window navigation (for splits)
-	vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move to left window' })
-	vim.keymap.set('n', '<C-j>', '<C-w>j', { desc = 'Move to bottom window' })
-	vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = 'Move to top window' })
-	vim.keymap.set('n', '<C-l>', '<C-w>l', { desc = 'Move to right window' })
+	-- Window navigation handled by vim-tmux-navigator plugin (C-h/j/k/l)
 
 	-- Resize splits with Ctrl + arrow keys
 	vim.keymap.set('n', '<C-Up>', ':resize +1<CR>', { desc = 'Increase window height' })

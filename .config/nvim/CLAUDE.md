@@ -64,6 +64,8 @@ Space is set as the leader key (`vim.g.mapleader = " "`)
 - **Full Neovim only**: Add to `lua/anders/lazy/full/`
 - **VS Code only**: Add to `lua/anders/lazy/vscode/`
 
+**CRITICAL**: Plugins are NOT auto-discovered. After creating a plugin file, you MUST add a `require()` statement in `lua/anders/lazy/init.lua` in the appropriate return block (vscode or full Neovim). Simply creating the file in the subdirectory is not enough.
+
 ### Shell Configuration
 - Uses zsh with interactive mode (`-i -c`) for shell commands
 - Colorcolumn at 80 characters (100 for Rust files)
@@ -76,3 +78,9 @@ Uses lazy.nvim with automatic installation. Plugin configs are modular and envir
 ### Interpreting Configuration References
 - `@jon.md`, `@vetle.md`, and `@prime.md` are ONLY example files
 - When asked "How can I do this" or "How is x implemented", ALWAYS refer to the ACTUAL real .lua config files, NOT these markdown example files
+
+### Tmux Integration
+- Uses `christoomey/vim-tmux-navigator` plugin for seamless navigation between nvim splits and tmux panes
+- Requires matching tmux plugin: `set -g @plugin 'christoomey/vim-tmux-navigator'` in `.tmux.conf`
+- Navigation keybinds (`C-h/j/k/l`) are handled by the plugin, not manual keymaps
+- When adding the nvim plugin: create the file in `full/`, then add `require("anders.lazy.full.vim-tmux-navigator")` to `init.lua`
