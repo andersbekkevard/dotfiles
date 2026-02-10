@@ -2,11 +2,15 @@
 .wakatime.cfg
 .secrets
 
-# External Oh My Zsh plugins (cloned during setup)
+# Sensitive files in backups (contains tokens)
+backups/sources/sensitive/
+backups/*/gh/
+
+# External Oh My Zsh plugins (cloned during setup, not part of dotfiles)
 .oh-my-zsh/custom/plugins/zsh-autosuggestions/
 .oh-my-zsh/custom/plugins/zsh-syntax-highlighting/
 .oh-my-zsh/custom/plugins/kimi-cli/
 .oh-my-zsh/custom/plugins/example/
 
-# External Oh My Zsh themes (cloned during setup)
+# External Oh My Zsh themes (cloned during setup, not part of dotfiles)
 .oh-my-zsh/custom/themes/powerlevel10k/
