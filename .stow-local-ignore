@@ -16,6 +16,7 @@ README.*
 LICENSE
 TODO\.md
 manifest\.json
+CLAUDE.md
 
 # Setup scripts (not dotfiles)
 setup\.sh
