@@ -153,11 +153,25 @@ show_status() {
     status=$(cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo "?")
     info "Battery:           ${capacity}% (${status})"
 
-    # TLP (runs on boot/power events then exits — "inactive" is normal)
+    # TLP service
     if systemctl is-enabled tlp &>/dev/null; then
-        info "TLP:               ${GREEN}enabled${NC} (runs on boot + power events)"
+        info "TLP:               ${GREEN}enabled${NC}"
     else
-        info "TLP:               ${RED}not enabled${NC} — run: sudo systemctl enable tlp"
+        warn "TLP:               ${RED}not enabled${NC} — run: sudo systemctl enable tlp"
+    fi
+
+    # Verify TLP actually applied thresholds
+    if [[ -f "$TLP_DROP" ]]; then
+        local expected_stop="${CHARGE_STOP}"
+        local expected_start="${CHARGE_START}"
+        local actual_stop=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null || echo "?")
+        local actual_start=$(cat /sys/class/power_supply/BAT0/charge_control_start_threshold 2>/dev/null || echo "?")
+        if [[ "$actual_stop" == "$expected_stop" && "$actual_start" == "$expected_start" ]]; then
+            info "TLP thresholds:    ${GREEN}enforced${NC} (start=${actual_start}% stop=${actual_stop}%)"
+        else
+            warn "TLP thresholds:    ${RED}NOT enforced${NC} (reads start=${actual_start}% stop=${actual_stop}%, expected ${expected_start}%/${expected_stop}%)"
+            warn "Fix: ${BOLD}sudo tlp start${NC}"
+        fi
     fi
 
     # Temps

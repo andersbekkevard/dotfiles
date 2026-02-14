@@ -64,6 +64,15 @@ alias nodesize='bash ~/.scripts/nodesize.sh'
 alias pysize='bash ~/.scripts/pysize.sh'
 alias server-mode='bash ~/.scripts/server-mode.sh'
 
+# Warn if TLP thresholds aren't enforced (server-mode battery health)
+if [[ -f /etc/tlp.d/01-server-mode.conf ]]; then
+  local _thresh=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)
+  if [[ "$_thresh" != "80" ]]; then
+    echo -e "\033[0;31m[!] TLP battery threshold not enforced (reads ${_thresh:-?}%) — run: sudo tlp start\033[0m"
+  fi
+  unset _thresh
+fi
+
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
 export OLLAMA_API_BASE=http://127.0.0.1:11434
@@ -188,3 +197,4 @@ source "$HOME/.wt/wt.sh"
 
 # OpenClaw Completion
 source "/home/anders/.openclaw/completions/openclaw.zsh"
+alias tui="openclaw tui"
