@@ -42,7 +42,6 @@ export PNPM_HOME="$HOME/Library/pnpm"
 alias secrets="cursor ~/.secrets"
 alias c.="cursor ."
 alias c-a="cursor-agent"
-alias zrc="cursor ~/.dotfiles/.zshrc"
 
 # =============================================================================
 # MAC-SPECIFIC PLUGINS

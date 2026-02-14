@@ -6,6 +6,7 @@
 
 -- quick-save
 vim.keymap.set('n', '<leader>w', '<cmd>w<cr>')
+vim.keymap.set('n', '<leader>x', '<cmd>bd<cr>', { desc = 'Close buffer' })
 
 -- Jump to start and end of line using the home row keys
 vim.keymap.set('', 'H', '^')
@@ -110,7 +111,7 @@ if not vim.g.vscode then
 	-- Buffer navigation (like Jon's setup)
 	-- <leader><leader> toggles between current and previous buffer
 	vim.keymap.set('n', '<leader><leader>', '<c-^>', { desc = 'Toggle between buffers' })
-	-- + and ´ for sequential buffer navigation (shifted one step right)
-	vim.keymap.set('n', '+', ':bp<cr>', { desc = 'Previous buffer' })
-	vim.keymap.set('n', '´', ':bn<cr>', { desc = 'Next buffer' })
+	-- + and 0 for sequential buffer navigation
+	vim.keymap.set('n', '+', ':bn<cr>', { desc = 'Next buffer (right)' })
+	vim.keymap.set('n', '0', ':bp<cr>', { desc = 'Previous buffer (left)' })
 end

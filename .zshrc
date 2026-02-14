@@ -56,10 +56,6 @@ export PATH="$HOME/.local/bin:$PATH"
 export UV_PYTHON_PREFERENCE=managed
 export UV_PYTHON=3.13
 
-# NVM (Node.js)
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 # pnpm (Linux location - Mac location is in .zshrc.mac)
 if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -97,8 +93,11 @@ if [[ "$OSTYPE" == "darwin"* ]] && [[ -f "$(brew --prefix)/share/zsh-ai/zsh-ai.p
 fi
 
 # ================================= CLI-tools ================================ #
-# zoxide (smarter cd)
-command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd zsh)"
+# Zoxide
+eval "$(zoxide init zsh --cmd cd)"
+alias zi='cdi'
+alias za='zoxide add'
+
 
 # thefuck (only if it works - may fail on Python 3.12+)
 if command -v thefuck &>/dev/null && thefuck --version &>/dev/null 2>&1; then
@@ -112,15 +111,13 @@ fi
 # ================================= Aliases ================================ #
 # General
 alias src="source ~/.zshrc"
+alias zrc="nvim ~/.dotfiles/.zshrc"
 alias c="clear"
 alias vim="nvim"
 alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
-
-# zrc alias - uses $EDITOR (nvim on Linux, cursor on Mac via .zshrc.mac override)
-[[ "$OSTYPE" != "darwin"* ]] && alias zrc="$EDITOR ~/.dotfiles/.zshrc"
 
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then
@@ -195,3 +192,6 @@ bindkey '^[y' redo
 
 # wt-cli
 [[ -f "$HOME/.wt/wt.sh" ]] && source "$HOME/.wt/wt.sh"
+
+autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
+add-zsh-hook chpwd chpwd_recent_dirs
