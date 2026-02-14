@@ -14,6 +14,13 @@ return {
 				},
 			})
 			for i = 1, 9 do
+				-- Ctrl+number is unreliable in terminal/tmux, so provide tmux-safe fallbacks.
+				vim.keymap.set("n", "<leader>" .. i, function()
+					require("bufferline").go_to(i, true)
+				end, { desc = "Go to buffer " .. i })
+				vim.keymap.set("n", "<A-" .. i .. ">", function()
+					require("bufferline").go_to(i, true)
+				end, { desc = "Go to buffer " .. i })
 				vim.keymap.set("n", "<C-" .. i .. ">", function()
 					require("bufferline").go_to(i, true)
 				end, { desc = "Go to buffer " .. i })

@@ -1,11 +1,10 @@
 # =============================================================================
-# ZSH CONFIGURATION (Ubuntu)
+# PORTABLE ZSH CONFIGURATION
+# Works on both macOS and Linux
 # =============================================================================
 
-# Source .zprofile for non-login shells (so Homebrew PATH is always available)
-if [[ ! -o login ]]; then
-  [[ -f ~/.zprofile ]] && source ~/.zprofile
-fi
+# Source Mac-specific config if on macOS (before everything else for Homebrew FPATH)
+[[ "$OSTYPE" == "darwin"* ]] && [[ -f ~/.zshrc.mac ]] && source ~/.zshrc.mac
 
 # =================================== Terminal theme ================================== #
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
@@ -16,8 +15,24 @@ fi
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-# Set theme - Powerlevel10k
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# Set theme conditionally based on terminal type and shell context
+if [[ -o interactive ]]; then
+  if [[ -n "$NVIM" ]] || [[ -n "$VIM" ]]; then
+    ZSH_THEME=""
+    PROMPT='%~%# '
+    RPROMPT=''
+  else
+    if [[ -d "$ZSH/custom/themes/powerlevel10k" ]]; then
+      ZSH_THEME="powerlevel10k/powerlevel10k"
+    else
+      ZSH_THEME="robbyrussell"
+    fi
+  fi
+else
+  ZSH_THEME=""
+  PROMPT='%~%# '
+  RPROMPT=''
+fi
 
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 source $ZSH/oh-my-zsh.sh
@@ -25,8 +40,8 @@ source $ZSH/oh-my-zsh.sh
 # Syntax highlighting styles (must be after plugin loads)
 [[ -n "${ZSH_HIGHLIGHT_STYLES+x}" ]] && ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
 
-# Source Powerlevel10k config
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+# Source Powerlevel10k config only if theme is enabled
+[[ "$ZSH_THEME" == "powerlevel10k/powerlevel10k" ]] && [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # ================================= Terminal setup ================================ #
 autoload -Uz compinit
@@ -41,17 +56,20 @@ export PATH="$HOME/.local/bin:$PATH"
 export UV_PYTHON_PREFERENCE=managed
 export UV_PYTHON=3.13
 
-# NVM (Node.js)
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+# Linux-only language runtimes
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+  export PATH="$HOME/go/bin:$PATH"
+fi
 
-# Go
-export PATH="$HOME/go/bin:$PATH"
 
-# pnpm
-export PNPM_HOME="$HOME/.local/share/pnpm"
-[[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
+# pnpm (Linux location - Mac location is in .zshrc.mac)
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  export PNPM_HOME="$HOME/.local/share/pnpm"
+  [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
+fi
 
 # ================================= Scripts ================================== #
 if [[ -d "$HOME/.scripts" ]]; then
@@ -77,9 +95,27 @@ fi
 [ -f ~/.secrets ] && source ~/.secrets
 export OLLAMA_API_BASE=http://127.0.0.1:11434
 
+# ================================= zsh-ai (macOS) ================================ #
+# Load after .secrets so API keys are available
+if [[ "$OSTYPE" == "darwin"* ]] && [[ -f "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh" ]]; then
+  # Set configuration BEFORE sourcing the plugin
+  export ZSH_AI_PROVIDER="openai"
+  export ZSH_AI_MODEL="openai/gpt-5.2"
+  export ZSH_AI_PROMPT_EXTEND="RECOMMENDED TOOL PREFERENCES:
+- Use 'rg' (ripgrep) instead of 'grep' for all text searches.
+- Use 'fd' instead of 'find' for finding files and directories.
+- Use 'bat' instead of 'cat' for reading files.
+- Use 'lsd' instead of 'ls' for listing files."
+  # Now source the plugin
+  source "$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh"
+fi
+
 # ================================= CLI-tools ================================ #
-# zoxide (smarter cd)
-command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd zsh)"
+# Zoxide
+eval "$(zoxide init zsh --cmd cd)"
+alias zi='cdi'
+alias za='zoxide add'
+
 
 # thefuck (only if it works - may fail on Python 3.12+)
 if command -v thefuck &>/dev/null && thefuck --version &>/dev/null 2>&1; then
@@ -93,21 +129,21 @@ fi
 # ================================= Aliases ================================ #
 # General
 alias src="source ~/.zshrc"
+alias zrc="nvim ~/.dotfiles/.zshrc"
 alias c="clear"
 alias vim="nvim"
 alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
-
-# zrc alias
-alias zrc="$EDITOR ~/.dotfiles/.zshrc"
+alias cc="claude --dangerously-skip-permissions"
 
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then
   alias ls='lsd --ignore-glob "__pycache__" --ignore-glob "venv" --ignore-glob "node_modules"'
-  alias l='ls -l'
+  # Trim noisy long listing fields (e.g. user/group like "staff").
+  alias l='ls -l --blocks permission,size,date,name'
   alias la='lsd -A'
-  alias lla='lsd -lA'
+  alias lla='ls -lA --blocks permission,size,date,name'
   alias lt='lsd --tree --ignore-glob "__pycache__" --ignore-glob "venv" --ignore-glob "node_modules"'
 else
   alias ls='ls --color=auto'
@@ -127,7 +163,6 @@ alias gpo='git push'
 alias gbm='git branch -M main'
 alias glog='git log --oneline --graph --decorate --all'
 alias lg="lazygit"
-alias cc="claude --dangerously-skip-permissions"
 
 # npm/pnpm
 alias nrd='npm run dev'
@@ -169,32 +204,19 @@ bindkey -v
 bindkey '^[z' undo
 bindkey '^[y' redo
 
-# Change cursor shape based on vi mode
-function zle-keymap-select {
-  if [[ ${KEYMAP} == vicmd ]] || [[ $1 = 'block' ]]; then
-    echo -ne '\e[1 q'  # Block cursor for normal mode
-  elif [[ ${KEYMAP} == main ]] || [[ ${KEYMAP} == viins ]] || [[ ${KEYMAP} = '' ]] || [[ $1 = 'beam' ]]; then
-    echo -ne '\e[5 q'  # Beam cursor for insert mode
-  fi
-}
-zle -N zle-keymap-select
-
-# Use beam cursor on startup
-echo -ne '\e[5 q'
-
-# Use beam cursor for each new prompt
-function zle-line-init {
-  echo -ne "\e[5 q"
-}
-zle -N zle-line-init
-
 # ================================= Local Overrides ================================ #
 # Source machine-specific overrides (created by setup.sh on Linux)
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 # wt-cli
-source "$HOME/.wt/wt.sh"
+[[ -f "$HOME/.wt/wt.sh" ]] && source "$HOME/.wt/wt.sh"
 
-# OpenClaw Completion
-source "/home/anders/.openclaw/completions/openclaw.zsh"
-alias tui="openclaw tui"
+# OpenClaw completion (Ubuntu workstation)
+if [[ "$OSTYPE" != "darwin"* ]] && [[ -f "/home/anders/.openclaw/completions/openclaw.zsh" ]]; then
+  source "/home/anders/.openclaw/completions/openclaw.zsh"
+fi
+
+command -v openclaw &>/dev/null && alias tui="openclaw tui"
+
+autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
+add-zsh-hook chpwd chpwd_recent_dirs

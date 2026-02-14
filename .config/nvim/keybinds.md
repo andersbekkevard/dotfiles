@@ -24,11 +24,15 @@
 | Keybind | Mode | Action |
 |---------|------|--------|
 | `<leader>w` | Normal | Quick save `:w` |
+| `<leader>x` | Normal | Close current buffer (`:bd`) |
 | `<leader>f` | Normal | Find existing buffers (Telescope) |
 | `<leader>?` | Normal | Find recently opened files (Telescope) |
 | `<leader><leader>` | Normal | Toggle between current and previous buffer |
-| `+` | Normal | Navigate to previous buffer |
-| `´` | Normal | Navigate to next buffer |
+| `+` | Normal | Navigate to next buffer (right) |
+| `0` | Normal | Navigate to previous buffer (left) |
+| `<leader>1..9` | Normal | Jump to buffer tab 1..9 (tmux-safe) |
+| `<A-1..9>` | Normal | Jump to buffer tab 1..9 |
+| `<C-1..9>` | Normal | Jump to buffer tab 1..9 (may not work in terminal/tmux) |
 
 ---
 
