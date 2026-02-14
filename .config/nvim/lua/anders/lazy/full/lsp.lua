@@ -141,11 +141,14 @@ return {
 		'tpope/vim-dadbod',
 		ft = { 'sql', 'mysql', 'plsql' },
 		init = function()
+			local home = vim.fn.expand('~')
+			local db_root = home .. '/dev/school/db'
+
 			-- Define database connections (available before plugin loads)
 			vim.g.dbs = {
-				{ name = 'northwind', url = 'sqlite:/Users/andersbekkevard/dev/school/db/ex2/database.db' },
-				{ name = 'university', url = 'sqlite:/Users/andersbekkevard/dev/school/db/uni_db/database.db' },
-				{ name = 'cddb', url = 'sqlite:/Users/andersbekkevard/dev/school/db/tx2/cddb.db' },
+				{ name = 'northwind', url = 'sqlite:' .. db_root .. '/ex2/database.db' },
+				{ name = 'university', url = 'sqlite:' .. db_root .. '/uni_db/database.db' },
+				{ name = 'cddb', url = 'sqlite:' .. db_root .. '/tx2/cddb.db' },
 			}
 
 			-- Command to select database connection (same as <leader>cc)

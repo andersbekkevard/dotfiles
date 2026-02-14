@@ -1,6 +1,7 @@
 # Sensitive files (contain API keys)
 .wakatime.cfg
 .secrets
+CLAUDE.md
 
 # Sensitive files in backups (contains tokens)
 backups/sources/sensitive/
