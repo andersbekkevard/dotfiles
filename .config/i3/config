@@ -20,6 +20,12 @@ exec_always --no-startup-id test -f ~/.fehbg && ~/.fehbg
 # Multi-monitor: configure in ~/.config/i3/local.conf or edit below
 # exec_always --no-startup-id xrandr --output DP-1-1 --above eDP-1
 exec --no-startup-id ~/.local/bin/greenclip daemon
+
+# Touchpad: Mac-like settings
+exec_always --no-startup-id xinput set-prop "Synaptics TM3289-021" "libinput Natural Scrolling Enabled" 1
+exec_always --no-startup-id xinput set-prop "Synaptics TM3289-021" "libinput Tapping Enabled" 1
+exec_always --no-startup-id xinput set-prop "Synaptics TM3289-021" "libinput Click Method Enabled" 0 1
+exec_always --no-startup-id xinput set-prop "Synaptics TM3289-021" "libinput Scrolling Pixel Distance" 30
 bindsym $mod+space exec rofi -show combi
 
 # Screenshot bindings with maim - all copy to clipboard
