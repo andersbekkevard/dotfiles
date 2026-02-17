@@ -3,9 +3,11 @@
 # Works on both macOS and Linux
 # =============================================================================
 
+# Disable terminal flow control (frees Ctrl+S and Ctrl+Q for keybinds)
+[[ -t 0 ]] && stty -ixon
+
 # Source Mac-specific config if on macOS (before everything else for Homebrew FPATH)
 [[ "$OSTYPE" == "darwin"* ]] && [[ -f ~/.zshrc.mac ]] && source ~/.zshrc.mac
-
 # =================================== Terminal theme ================================== #
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
@@ -118,6 +120,7 @@ alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
+alias co="codex -a never"
 
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then
@@ -195,3 +198,5 @@ bindkey '^[y' redo
 
 autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
 add-zsh-hook chpwd chpwd_recent_dirs
+
+alias claude-mem='bun "/Users/andersbekkevard/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'

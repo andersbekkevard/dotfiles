@@ -81,6 +81,12 @@ if not vim.g.vscode then
 	-- Replace word under cursor with substitution pattern
 	vim.keymap.set("n", "<leader>r", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]])
 
+	-- Reload config
+	vim.keymap.set('n', '<leader>R', function()
+		vim.cmd('source $MYVIMRC')
+		vim.notify('Reloaded config')
+	end, { desc = 'Reload config' })
+
 	-- LazyGit
 	vim.keymap.set('n', '<leader>lg', ":LazyGit<enter>", { desc = '[L]azy [G]it' })
 

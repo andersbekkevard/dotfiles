@@ -25,6 +25,9 @@ return {
 			})
 
 			local builtin = require('telescope.builtin')
+			local hidden_rg_args = function()
+				return { "--hidden", "--glob", "!**/.git/*" }
+			end
 
 			-- Quick access to telescope builtins
 			vim.keymap.set('n', '<C-t>', builtin.builtin, { desc = 'Telescope builtins' })
@@ -33,7 +36,9 @@ return {
 			vim.keymap.set('n', '<leader>ff', function()
 				builtin.find_files({ hidden = true })
 			end, { desc = 'Find files (including hidden)' })
-			vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Find grep (live)' })
+			vim.keymap.set('n', '<leader>fg', function()
+				builtin.live_grep({ additional_args = hidden_rg_args })
+			end, { desc = 'Find grep (live, includes hidden)' })
 			vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Find buffers' })
 			vim.keymap.set('n', '<C-b>', builtin.buffers, { desc = 'Find buffers' })
 			vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Find help' })

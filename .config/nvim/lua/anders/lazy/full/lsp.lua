@@ -85,6 +85,49 @@ return {
 						{ buffer = bufnr, desc = 'Execute SQL file' })
 					vim.keymap.set('v', '<leader>e', ':DB<CR>',
 						{ buffer = bufnr, desc = 'Execute SQL selection' })
+					-- Show tables
+					vim.keymap.set('n', '<leader>dt', function()
+						local db = vim.b.db or ''
+						local query
+						if db:match('^sqlite') or db:match('%.db$') or db:match('%.sqlite') then
+							query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+						elseif db:match('^mysql') or db:match('^mariadb') then
+							query = 'SHOW TABLES;'
+						else -- postgres and others
+							query = "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;"
+						end
+						vim.cmd('DB ' .. query)
+					end, { buffer = bufnr, desc = 'Show tables' })
+
+					-- Show schema (prompts for table name)
+					vim.keymap.set('n', '<leader>ds', function()
+						local db = vim.b.db or ''
+						vim.ui.input({ prompt = 'Table name (empty for all): ' }, function(tbl)
+							if tbl == nil then return end
+							local query
+							if db:match('^sqlite') or db:match('%.db$') or db:match('%.sqlite') then
+								if tbl == '' then
+									query = "SELECT sql FROM sqlite_master WHERE type='table' ORDER BY name;"
+								else
+									query = "SELECT sql FROM sqlite_master WHERE name='" .. tbl .. "';"
+								end
+							elseif db:match('^mysql') or db:match('^mariadb') then
+								if tbl == '' then
+									query = 'SHOW TABLES;'
+								else
+									query = 'DESCRIBE ' .. tbl .. ';'
+								end
+							else -- postgres
+								if tbl == '' then
+									query = "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema='public' ORDER BY table_name, ordinal_position;"
+								else
+									query = "SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name='" .. tbl .. "' ORDER BY ordinal_position;"
+								end
+							end
+							vim.cmd('DB ' .. query)
+						end)
+					end, { buffer = bufnr, desc = 'Show schema' })
+
 					-- Connect external file to a DBUI database
 					vim.keymap.set('n', '<leader>cc', function()
 						-- Use the predefined connections from g:dbs
@@ -141,19 +184,69 @@ return {
 		'tpope/vim-dadbod',
 		ft = { 'sql', 'mysql', 'plsql' },
 		init = function()
-			local home = vim.fn.expand('~')
-			local db_root = home .. '/dev/school/db'
+			-- Auto-discover SQLite databases from cwd
+			local function discover_dbs()
+				local dbs = {}
+				local seen = {}
+				local cwd = vim.fn.getcwd()
+				local function is_db_file(name)
+					return name:match('%.db$') or name:match('%.sqlite$') or name:match('%.sqlite3$')
+				end
+				local function scan(dir, depth)
+					if depth > 3 then return end
+					local h = vim.uv.fs_scandir(dir)
+					if not h then return end
+					while true do
+						local name, typ = vim.uv.fs_scandir_next(h)
+						if not name then break end
+						local full = dir .. '/' .. name
+						if typ == 'directory' and not name:match('^%.') then
+							scan(full, depth + 1)
+						elseif typ == 'file' and is_db_file(name) then
+							if not seen[full] then
+								seen[full] = true
+								local label = name:gsub('%.db$', ''):gsub('%.sqlite3?$', '')
+								table.insert(dbs, { name = label, url = 'sqlite:' .. full })
+							end
+						end
+					end
+				end
+				scan(cwd, 0)
+				return dbs
+			end
 
-			-- Define database connections (available before plugin loads)
-			vim.g.dbs = {
-				{ name = 'northwind', url = 'sqlite:' .. db_root .. '/ex2/database.db' },
-				{ name = 'university', url = 'sqlite:' .. db_root .. '/uni_db/database.db' },
-				{ name = 'cddb', url = 'sqlite:' .. db_root .. '/tx2/cddb.db' },
-			}
+			-- Also support .dadbod.json in project root for custom connections
+			local function load_project_dbs()
+				local path = vim.fn.getcwd() .. '/.dadbod.json'
+				local f = io.open(path, 'r')
+				if not f then return {} end
+				local content = f:read('*a')
+				f:close()
+				local ok, parsed = pcall(vim.json.decode, content)
+				if ok and type(parsed) == 'table' then return parsed end
+				return {}
+			end
 
-			-- Command to select database connection (same as <leader>cc)
+			local function refresh_dbs()
+				local dbs = load_project_dbs()
+				vim.list_extend(dbs, discover_dbs())
+				vim.g.dbs = dbs
+				return dbs
+			end
+
+			refresh_dbs()
+
+			vim.api.nvim_create_user_command('DBRefresh', function()
+				local dbs = refresh_dbs()
+				print('Found ' .. #dbs .. ' database(s)')
+			end, { desc = 'Re-scan for databases' })
+
 			vim.api.nvim_create_user_command('DBSelect', function()
-				local dbs = vim.g.dbs or {}
+				local dbs = refresh_dbs()
+				if #dbs == 0 then
+					print('No databases found in ' .. vim.fn.getcwd())
+					return
+				end
 				local names = {}
 				for _, db in ipairs(dbs) do
 					table.insert(names, db.name)
