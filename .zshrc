@@ -3,6 +3,9 @@
 # Works on both macOS and Linux
 # =============================================================================
 
+# Disable terminal flow control (frees Ctrl+S and Ctrl+Q for keybinds)
+[[ -t 0 ]] && stty -ixon
+
 # Source Mac-specific config if on macOS (before everything else for Homebrew FPATH)
 [[ "$OSTYPE" == "darwin"* ]] && [[ -f ~/.zshrc.mac ]] && source ~/.zshrc.mac
 
@@ -136,6 +139,7 @@ alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
+alias co="codex -a never"
 
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then
