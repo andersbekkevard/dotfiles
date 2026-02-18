@@ -22,15 +22,6 @@ vim.opt.ignorecase = true
 vim.opt.smartcase = true
 -- always draw sign column. prevents buffer moving when adding/deleting sign
 vim.opt.signcolumn = 'yes'
--- show a column at 80 characters as a guide for long lines
-vim.opt.colorcolumn = '80'
--- except in Rust where the rule is 100 characters
-vim.api.nvim_create_autocmd('Filetype', {
-	pattern = 'rust',
-	callback = function()
-		vim.opt.colorcolumn = '100'
-	end
-})
 -- enable mouse mode for resizing panes
 vim.o.mouse = "a"
 -- keep buffers open in the background when navigating away
