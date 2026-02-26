@@ -19,5 +19,6 @@ else
 		require("anders.lazy.full.lazygit"),
 		require("anders.lazy.full.bufferline"),
 		require("anders.lazy.full.vim-tmux-navigator"),
+		require("anders.lazy.full.pdfview"),
 	}
 end

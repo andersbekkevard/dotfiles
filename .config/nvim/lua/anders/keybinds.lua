@@ -92,11 +92,27 @@ if not vim.g.vscode then
 
 	-- Window navigation handled by vim-tmux-navigator plugin (C-h/j/k/l)
 
-	-- Resize splits with Ctrl + arrow keys
-	vim.keymap.set('n', '<C-Up>', ':resize +1<CR>', { desc = 'Increase window height' })
-	vim.keymap.set('n', '<C-Down>', ':resize -1<CR>', { desc = 'Decrease window height' })
-	vim.keymap.set('n', '<C-Left>', ':vertical resize -1<CR>', { desc = 'Decrease window width' })
-	vim.keymap.set('n', '<C-Right>', ':vertical resize +1<CR>', { desc = 'Increase window width' })
+	-- Resize splits with Ctrl + arrow keys (moves the split border in the arrow direction)
+	local function smart_resize(direction)
+		local cur = vim.api.nvim_get_current_win()
+		if direction == 'left' or direction == 'right' then
+			vim.cmd('wincmd l')
+			local has_right = vim.api.nvim_get_current_win() ~= cur
+			if has_right then vim.api.nvim_set_current_win(cur) end
+			local sign = (direction == 'right') == has_right and '+' or '-'
+			vim.cmd('vertical resize ' .. sign .. '1')
+		else
+			vim.cmd('wincmd j')
+			local has_below = vim.api.nvim_get_current_win() ~= cur
+			if has_below then vim.api.nvim_set_current_win(cur) end
+			local sign = (direction == 'down') == has_below and '+' or '-'
+			vim.cmd('resize ' .. sign .. '1')
+		end
+	end
+	vim.keymap.set('n', '<C-Up>', function() smart_resize('up') end, { desc = 'Move split border up' })
+	vim.keymap.set('n', '<C-Down>', function() smart_resize('down') end, { desc = 'Move split border down' })
+	vim.keymap.set('n', '<C-Left>', function() smart_resize('left') end, { desc = 'Move split border left' })
+	vim.keymap.set('n', '<C-Right>', function() smart_resize('right') end, { desc = 'Move split border right' })
 
 	-- Move splits to different positions with Ctrl + Shift + hjkl
 	vim.keymap.set('n', '<C-S-h>', '<C-w>H', { desc = 'Move window to far left' })
