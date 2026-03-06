@@ -7,6 +7,13 @@
 # - local aliases that should not propagate
 # - optional shell completions for tools installed outside dotfiles
 #
+# Prompt/tmux machine identity color.
+# Recommended defaults:
+#   ThinkPad / linux-desktop -> red
+#   MacBook / macos          -> blue
+#   VPS / linux-headless     -> green
+# export HAL_THEME_COLOR="red"
+
 # Example machine-local model paths:
 # export LLAMA_APRILIA_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
 # export LLAMA_GLM_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
