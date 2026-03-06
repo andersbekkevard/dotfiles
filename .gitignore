@@ -1,17 +1,12 @@
-# Sensitive files (contain API keys)
-.wakatime.cfg
 .secrets
+.wakatime.cfg
+.zshrc.local
 CLAUDE.md
 
-# Sensitive files in backups (contains tokens)
-backups/sources/sensitive/
-backups/*/gh/
+# git-crypt keeps secrets encrypted in git, but the local decrypted file should
+# still stay out of status when users create it outside the tracked pattern set.
+shell/.secrets
 
-# External Oh My Zsh plugins (cloned during setup, not part of dotfiles)
-.oh-my-zsh/custom/plugins/zsh-autosuggestions/
-.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/
-.oh-my-zsh/custom/plugins/kimi-cli/
-.oh-my-zsh/custom/plugins/example/
-
-# External Oh My Zsh themes (cloned during setup, not part of dotfiles)
-.oh-my-zsh/custom/themes/powerlevel10k/
+# Generated or machine-local state.
+nvim/.config/nvim/lazy-lock.json
+.DS_Store
