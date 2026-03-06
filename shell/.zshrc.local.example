@@ -1,0 +1,8 @@
+# Machine-specific overrides live here.
+# This file is intentionally not tracked once copied to ~/.zshrc.local.
+#
+# Use it for:
+# - host-specific PATH additions
+# - laptop-only battery checks
+# - local aliases that should not propagate
+# - optional shell completions for tools installed outside dotfiles
