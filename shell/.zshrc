@@ -6,6 +6,7 @@ for config_file in \
   "$HOME/.zsh/core.zsh" \
   "$HOME/.zsh/env.zsh" \
   "$HOME/.zsh/aliases.zsh" \
+  "$HOME/.zsh/helpers.zsh" \
   "$HOME/.zsh/languages.zsh"; do
   [[ -r "$config_file" ]] && source "$config_file"
 done
