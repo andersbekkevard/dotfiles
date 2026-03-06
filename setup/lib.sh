@@ -816,6 +816,8 @@ write_local_overrides_template() {
     case "$profile" in
       linux-desktop)
         cat <<'EOF'
+export HAL_THEME_COLOR="red"
+
 if [[ -f /etc/tlp.d/01-server-mode.conf && -o interactive ]]; then
   _threshold="$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)"
   if [[ "$_threshold" != "80" ]]; then
@@ -833,11 +835,15 @@ EOF
         ;;
       macos)
         cat <<'EOF'
+export HAL_THEME_COLOR="blue"
+
 # Add machine-only PATH or aliases here.
 EOF
         ;;
       *)
         cat <<'EOF'
+export HAL_THEME_COLOR="green"
+
 # Add machine-only PATH or aliases here.
 EOF
         ;;
