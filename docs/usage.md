@@ -46,3 +46,11 @@ tmux source-file ~/.tmux.conf
 ```
 
 `./init.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
+
+## Architecture handling
+
+Both x86_64 and arm64/aarch64 Linux machines are supported. Architecture is detected automatically via `uname -m` at startup. GitHub release binaries (lazygit, yazi, lsd) and Go use architecture-specific download URLs. No manual configuration is needed.
+
+## One-hit runtime guarantees
+
+After a successful `./init.sh` run, all required commands for the active profile are verified. If any required tool (including `node`, `pnpm`, and other runtimes) is missing, the setup exits with a hard error listing the missing commands. This ensures that a green exit always means a fully functional environment.

@@ -10,6 +10,7 @@ run_minimal_layer() {
     apt_update_once
     apt_install_manifest "$DOTFILES_DIR/setup/packages/apt.minimal.txt"
     ensure_linux_command_aliases
+    ensure_neovim_011
   fi
 
   ensure_oh_my_zsh

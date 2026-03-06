@@ -8,7 +8,6 @@ git
 htop
 jq
 locales
-neovim
 procps
 ripgrep
 stow
