@@ -8,6 +8,7 @@
 
 # Source Mac-specific config if on macOS (before everything else for Homebrew FPATH)
 [[ "$OSTYPE" == "darwin"* ]] && [[ -f ~/.zshrc.mac ]] && source ~/.zshrc.mac
+
 # =================================== Terminal theme ================================== #
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
@@ -52,12 +53,19 @@ compinit
 # ================================= Environment ================================ #
 export EDITOR='nvim'
 export PATH="$HOME/.local/bin:$PATH"
-[[ ":$PATH:" != *":$HOME/.config/emacs/bin:"* ]] && export PATH="$HOME/.config/emacs/bin:$PATH"
 
 # ================================= Languages ================================ #
 # Python (uv)
 export UV_PYTHON_PREFERENCE=managed
 export UV_PYTHON=3.13
+
+# Linux-only language runtimes
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+  export PATH="$HOME/go/bin:$PATH"
+fi
 
 
 # pnpm (Linux location - Mac location is in .zshrc.mac)
@@ -75,6 +83,16 @@ fi
 
 alias nodesize='bash ~/.scripts/nodesize.sh'
 alias pysize='bash ~/.scripts/pysize.sh'
+alias server-mode='bash ~/.scripts/server-mode.sh'
+
+# Warn if TLP thresholds aren't enforced (server-mode battery health)
+if [[ -f /etc/tlp.d/01-server-mode.conf ]]; then
+  local _thresh=$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)
+  if [[ "$_thresh" != "80" ]]; then
+    echo -e "\033[0;31m[!] TLP battery threshold not enforced (reads ${_thresh:-?}%) — run: sudo tlp start\033[0m"
+  fi
+  unset _thresh
+fi
 
 # ================================= API-keys ================================= #
 [ -f ~/.secrets ] && source ~/.secrets
@@ -197,7 +215,12 @@ bindkey '^[y' redo
 # wt-cli
 [[ -f "$HOME/.wt/wt.sh" ]] && source "$HOME/.wt/wt.sh"
 
+# OpenClaw completion (Ubuntu workstation)
+if [[ "$OSTYPE" != "darwin"* ]] && [[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]]; then
+  source "$HOME/.openclaw/completions/openclaw.zsh"
+fi
+
+command -v openclaw &>/dev/null && alias tui="openclaw tui"
+
 autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
 add-zsh-hook chpwd chpwd_recent_dirs
-
-alias claude-mem='bun "/Users/andersbekkevard/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'
