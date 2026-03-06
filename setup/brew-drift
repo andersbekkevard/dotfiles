@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if ! command -v brew >/dev/null 2>&1; then
+  printf 'brew is not installed\n'
+  exit 1
+fi
+
+tracked_formulas="$(
+  awk '/^brew / { gsub(/[",]/, "", $2); print $2 }' \
+    "$DOTFILES_DIR/setup/packages/Brewfile.minimal" \
+    "$DOTFILES_DIR/setup/packages/Brewfile.full" \
+    "$DOTFILES_DIR/setup/packages/Brewfile.macos" | LC_ALL=C sort -u
+)"
+
+tracked_casks="$(
+  awk '/^cask / { gsub(/[",]/, "", $2); print $2 }' \
+    "$DOTFILES_DIR/setup/packages/Brewfile.macos" | LC_ALL=C sort -u
+)"
+
+installed_formulas="$(brew list --formula | LC_ALL=C sort -u)"
+installed_casks="$(brew list --cask | LC_ALL=C sort -u)"
+
+printf 'Untracked formulas:\n'
+comm -23 <(printf '%s\n' "$installed_formulas") <(printf '%s\n' "$tracked_formulas")
+printf '\nUntracked casks:\n'
+comm -23 <(printf '%s\n' "$installed_casks") <(printf '%s\n' "$tracked_casks")

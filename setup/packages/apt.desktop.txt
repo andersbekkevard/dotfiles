@@ -1,0 +1,10 @@
+alacritty
+feh
+i3
+kitty
+maim
+picom
+polybar
+rofi
+xcape
+xdotool

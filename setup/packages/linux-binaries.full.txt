@@ -1,0 +1,4 @@
+# tool|repo|asset-name-regex|binary-name
+lazygit|jesseduffield/lazygit|lazygit_.*_Linux_x86_64\.tar\.gz$|lazygit
+yazi|sxyazi/yazi|yazi-x86_64-unknown-linux-gnu\.zip$|yazi
+lsd|lsd-rs/lsd|lsd-.*-x86_64-unknown-linux-gnu\.tar\.gz$|lsd

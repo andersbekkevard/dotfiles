@@ -1,0 +1,7 @@
+brew "fnm"
+brew "gh"
+brew "git-crypt"
+brew "go"
+brew "lazygit"
+brew "lsd"
+brew "yazi"
