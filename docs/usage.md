@@ -30,10 +30,12 @@ Machine-specific accent color (prompt + tmux):
 
 ```bash
 # ~/.zshrc.local
-export HAL_THEME_COLOR="red"   # thinkpad
-# export HAL_THEME_COLOR="blue"  # mac
-# export HAL_THEME_COLOR="green" # vps
+export HAL_THEME_COLOR="red"   # linux-desktop
+# export HAL_THEME_COLOR="blue"  # macos
+# export HAL_THEME_COLOR="green" # headless/minimal
 
 source ~/.zshrc
 tmux source-file ~/.tmux.conf
 ```
+
+`./init.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.

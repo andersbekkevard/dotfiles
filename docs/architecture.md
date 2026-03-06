@@ -18,4 +18,4 @@ minimal
         -> linux-desktop
 ```
 
-Shared shell startup is orchestrated by `shell/.zshrc`, which delegates to focused files under `shell/.zsh/`. Machine-specific behavior belongs in `~/.zshrc.local`, generated once from `shell/.zshrc.local.example`.
+Shared shell startup is orchestrated by `shell/.zshrc`, which delegates to focused files under `shell/.zsh/`. Machine-specific behavior belongs in `~/.zshrc.local`. `./init.sh` refreshes the latest reference template into `~/.config/zsh/local.example.zsh` and only rewrites `~/.zshrc.local` when it still exactly matches a managed template.
