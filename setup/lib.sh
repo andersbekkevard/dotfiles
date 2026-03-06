@@ -22,6 +22,7 @@ STOW_ONLY_PACKAGE=""
 VERIFY_PROFILE=""
 DRY_RUN=0
 SKIP_INSTALL=0
+ALLOW_PARTIAL="${DOTFILES_ALLOW_PARTIAL:-0}"
 
 secrets_source_path() {
   printf '%s\n' "$DOTFILES_DIR/shell/.secrets"
@@ -138,6 +139,9 @@ parse_args() {
         ;;
       --skip-install)
         SKIP_INSTALL=1
+        ;;
+      --allow-partial|--allow-without-sudo)
+        ALLOW_PARTIAL=1
         ;;
       --layer)
         shift
@@ -279,14 +283,35 @@ print_profile_banner() {
   printf 'layers: %s\n' "${layers[*]}"
 }
 
+handle_missing_sudo() {
+  local reason="$1"
+
+  if [[ "$ALLOW_PARTIAL" == "1" ]]; then
+    log_warn "$reason Running in explicit degraded mode; privileged Linux setup will be skipped."
+    return 0
+  fi
+
+  if [[ -t 0 ]]; then
+    log_warn "$reason Privileged operations will be skipped."
+    return 0
+  fi
+
+  record_error "$reason Non-interactive Linux bootstrap would skip privileged setup. Re-run interactively, run 'sudo -v' first, or set DOTFILES_ALLOW_PARTIAL=1."
+  return 1
+}
+
 acquire_sudo_if_needed() {
   if [[ "$SKIP_INSTALL" -eq 1 || "$DRY_RUN" -eq 1 || "$OS_FAMILY" != "linux" ]]; then
     return 0
   fi
 
-  if ! command_exists sudo; then
-    log_warn "sudo not available; privileged operations will be skipped."
+  if [[ $EUID -eq 0 ]]; then
     return 0
+  fi
+
+  if ! command_exists sudo; then
+    handle_missing_sudo "sudo not available."
+    return $?
   fi
 
   if sudo -n true >/dev/null 2>&1; then
@@ -296,12 +321,12 @@ acquire_sudo_if_needed() {
     if sudo -v; then
       HAS_SUDO=1
     else
-      log_warn "sudo authentication failed; privileged operations will be skipped."
-      return 0
+      handle_missing_sudo "sudo authentication failed."
+      return $?
     fi
   else
-    log_warn "No cached sudo in non-interactive mode; privileged operations will be skipped."
-    return 0
+    handle_missing_sudo "No cached sudo in non-interactive mode."
+    return $?
   fi
 
   (

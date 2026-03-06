@@ -41,7 +41,9 @@ else
 fi
 
 configure_interrupt_trap
-acquire_sudo_if_needed
+if ! acquire_sudo_if_needed; then
+  exit_with_summary
+fi
 note_git_crypt_state
 print_profile_banner "$ACTIVE_PROFILE" "${ACTIVE_LAYERS[@]}"
 
