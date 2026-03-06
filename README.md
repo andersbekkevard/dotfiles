@@ -39,3 +39,5 @@ DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
 ```
 
 `setup.sh` remains as a compatibility wrapper for `./init.sh` and now passes arguments through without forcing `linux-desktop`.
+
+Machine-local shell overrides live in `~/.zshrc.local`. `./init.sh` refreshes `~/.config/zsh/local.example.zsh` as the latest reference template without overwriting a customized local file.

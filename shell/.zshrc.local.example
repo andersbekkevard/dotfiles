@@ -1,19 +1,10 @@
-# Machine-specific overrides live here.
-# This file is intentionally not tracked once copied to ~/.zshrc.local.
+# Machine-local shell overrides live here.
+# This file is user-owned. Keep host-specific settings here instead of tracked
+# dotfiles, and compare against ~/.config/zsh/local.example.zsh after running
+# ./init.sh to review the latest template changes safely.
 #
-# Use it for:
+# Good candidates:
+# - prompt/tmux accent
 # - host-specific PATH additions
-# - laptop-only battery checks
-# - local aliases that should not propagate
-# - optional shell completions for tools installed outside dotfiles
-#
-# Prompt/tmux machine identity color.
-# Recommended defaults:
-#   ThinkPad / linux-desktop -> red
-#   MacBook / macos          -> blue
-#   VPS / linux-headless     -> green
-# export HAL_THEME_COLOR="red"
-
-# Example machine-local model paths:
-# export LLAMA_APRILIA_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
-# export LLAMA_GLM_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
+# - local aliases or completions
+# - laptop-only checks

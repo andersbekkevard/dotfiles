@@ -825,20 +825,79 @@ write_local_overrides_template() {
   local profile="$1"
   local target="$HOME/.zshrc.local"
   local source_template="$DOTFILES_DIR/shell/.zshrc.local.example"
+  local local_config_dir="$HOME/.config/zsh"
+  local reference_template="$local_config_dir/local.example.zsh"
+  local backup_target
+  local managed_state=""
+  local managed_version=""
+  local managed_profile=""
 
-  if [[ -e "$target" ]]; then
-    return 0
+  render_current_local_overrides() {
+    cat "$source_template"
+    printf '\n# Profile scaffold for %s\n' "$1"
+
+    case "$1" in
+      linux-desktop)
+        cat <<'EOF'
+export HAL_THEME_COLOR="red"
+
+if [[ -f /etc/tlp.d/01-server-mode.conf && -o interactive ]]; then
+  _threshold="$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)"
+  if [[ "$_threshold" != "80" ]]; then
+    printf '\033[0;31m[!] TLP battery threshold not enforced (reads %s%%)\033[0m\n' "${_threshold:-?}"
   fi
+  unset _threshold
+fi
 
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    log_info "[dry-run] Create ~/.zshrc.local from template"
-    return 0
-  fi
+if [[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]]; then
+  source "$HOME/.openclaw/completions/openclaw.zsh"
+fi
 
-  cp "$source_template" "$target"
-  {
-    printf '\n# Profile-specific additions for %s\n' "$profile"
-    case "$profile" in
+command -v openclaw >/dev/null 2>&1 && alias tui="openclaw tui"
+EOF
+        ;;
+      macos)
+        cat <<'EOF'
+export HAL_THEME_COLOR="blue"
+EOF
+        ;;
+      *)
+        cat <<'EOF'
+export HAL_THEME_COLOR="green"
+EOF
+        ;;
+    esac
+  }
+
+  render_legacy_local_overrides() {
+    local legacy_profile_name="$1"
+
+    # Keep the historical template verbatim so we can safely detect untouched
+    # legacy ~/.zshrc.local files before refreshing them in place.
+    cat <<'EOF'
+# Machine-specific overrides live here.
+# This file is intentionally not tracked once copied to ~/.zshrc.local.
+#
+# Use it for:
+# - host-specific PATH additions
+# - laptop-only battery checks
+# - local aliases that should not propagate
+# - optional shell completions for tools installed outside dotfiles
+#
+# Prompt/tmux machine identity color.
+# Recommended defaults:
+#   ThinkPad / linux-desktop -> red
+#   MacBook / macos          -> blue
+#   VPS / linux-headless     -> green
+# export HAL_THEME_COLOR="red"
+
+# Example machine-local model paths:
+# export LLAMA_APRILIA_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
+# export LLAMA_GLM_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
+EOF
+    printf '\n# Profile-specific additions for %s\n' "$legacy_profile_name"
+
+    case "$legacy_profile_name" in
       linux-desktop)
         cat <<'EOF'
 export HAL_THEME_COLOR="red"
@@ -873,7 +932,76 @@ export HAL_THEME_COLOR="green"
 EOF
         ;;
     esac
-  } >> "$target"
+  }
+
+  detect_managed_template_state() {
+    local candidate="$1"
+    local candidate_profile
+    local candidate_version
+
+    for candidate_version in current legacy; do
+      for candidate_profile in minimal full macos linux-headless linux-desktop; do
+        if [[ "$candidate_version" == "current" ]]; then
+          if diff -q "$candidate" <(render_current_local_overrides "$candidate_profile") >/dev/null 2>&1; then
+            printf '%s|%s\n' "$candidate_version" "$candidate_profile"
+            return 0
+          fi
+        else
+          if diff -q "$candidate" <(render_legacy_local_overrides "$candidate_profile") >/dev/null 2>&1; then
+            printf '%s|%s\n' "$candidate_version" "$candidate_profile"
+            return 0
+          fi
+        fi
+      done
+    done
+
+    return 1
+  }
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Refresh ~/.config/zsh/local.example.zsh"
+  else
+    mkdir -p "$local_config_dir"
+    render_current_local_overrides "$profile" > "$reference_template"
+  fi
+
+  if [[ -e "$target" ]]; then
+    managed_state="$(detect_managed_template_state "$target" || true)"
+    if [[ -n "$managed_state" ]]; then
+      managed_version="${managed_state%%|*}"
+      managed_profile="${managed_state#*|}"
+    fi
+  fi
+
+  if [[ "$managed_version" == "legacy" || ( "$managed_version" == "current" && "$managed_profile" != "$profile" ) ]]; then
+    backup_target="$target.pre-locality-migration-$RUN_ID.bak"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      log_info "[dry-run] Refresh untouched ~/.zshrc.local from managed template"
+      return 0
+    fi
+
+    cp "$target" "$backup_target"
+    render_current_local_overrides "$profile" > "$target"
+    log_info "Refreshed untouched ~/.zshrc.local from the latest managed template"
+    log_info "Backup saved to $backup_target"
+    return 0
+  fi
+
+  if [[ "$managed_version" == "current" && "$managed_profile" == "$profile" ]]; then
+    return 0
+  fi
+
+  if [[ -e "$target" ]]; then
+    log_info "Preserving existing ~/.zshrc.local; compare with $reference_template for template updates."
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Create ~/.zshrc.local from managed template"
+    return 0
+  fi
+
+  render_current_local_overrides "$profile" > "$target"
 }
 
 package_entry_target() {
