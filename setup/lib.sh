@@ -265,7 +265,7 @@ profile_commands() {
       printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }
