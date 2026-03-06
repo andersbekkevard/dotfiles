@@ -1,2 +1,0 @@
-auox v0.0.1 (/Users/andersbekkevard/dev/rust/external/auox):
-    auox

@@ -1,0 +1,11 @@
+# Alacritty Configuration
+
+[[keyboard.bindings]]
+key = "C"
+mods = "Alt"
+action = "Copy"
+
+[[keyboard.bindings]]
+key = "V"
+mods = "Alt"
+action = "Paste"

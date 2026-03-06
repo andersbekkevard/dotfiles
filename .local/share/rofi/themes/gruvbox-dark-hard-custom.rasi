@@ -1,0 +1,107 @@
+/**
+ * Gruvbox Dark Hard theme for rofi
+ * Matching polybar and nvim gruvbox-dark-hard colors
+ */
+
+* {
+    /* Gruvbox Dark Hard colors */
+    bg:                 #1d2021;
+    bg-alt:             #282828;
+    bg-selected:        #504945;
+    fg:                 #ebdbb2;
+    fg-alt:             #a89984;
+
+    border-col:         #665c54;
+    selected-col:       #fabd2f;
+    urgent-col:         #fb4934;
+
+    /* Base settings */
+    background-color:   transparent;
+    text-color:         @fg;
+    margin:             0;
+    padding:            0;
+    spacing:            0;
+}
+
+window {
+    location:           center;
+    width:              640;
+    background-color:   @bg;
+    border:             2px;
+    border-color:       @border-col;
+    border-radius:      8px;
+}
+
+inputbar {
+    padding:            12px;
+    spacing:            12px;
+    children:           [ prompt, entry ];
+    background-color:   @bg-alt;
+}
+
+prompt {
+    text-color:         @selected-col;
+}
+
+entry {
+    placeholder:        "Search...";
+    placeholder-color:  @fg-alt;
+}
+
+message {
+    margin:             12px 0 0;
+    border-radius:      8px;
+    border-color:       @border-col;
+    background-color:   @bg-alt;
+}
+
+textbox {
+    padding:            8px 12px;
+}
+
+listview {
+    background-color:   transparent;
+    margin:             0;
+    lines:              8;
+    columns:            1;
+    fixed-height:       false;
+}
+
+element {
+    padding:            8px 12px;
+    spacing:            8px;
+    border-radius:      4px;
+}
+
+element normal normal {
+    text-color:         @fg;
+}
+
+element normal urgent {
+    text-color:         @urgent-col;
+}
+
+element normal active {
+    text-color:         @selected-col;
+}
+
+element selected normal,
+element selected active {
+    background-color:   @bg-selected;
+    text-color:         @selected-col;
+}
+
+element selected urgent {
+    background-color:   @urgent-col;
+    text-color:         @bg;
+}
+
+element-icon {
+    size:               1em;
+    vertical-align:     0.5;
+}
+
+element-text {
+    text-color:         inherit;
+    vertical-align:     0.5;
+}

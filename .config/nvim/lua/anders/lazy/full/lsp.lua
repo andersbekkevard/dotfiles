@@ -99,47 +99,29 @@ return {
 						vim.cmd('DB ' .. query)
 					end, { buffer = bufnr, desc = 'Show tables' })
 
-					-- Show schema (prompts for comma-separated table names)
+					-- Show schema (prompts for table name)
 					vim.keymap.set('n', '<leader>ds', function()
 						local db = vim.b.db or ''
-						vim.ui.input({ prompt = 'Tables (comma-separated, empty for all): ' }, function(input)
-							if input == nil then return end
-							local tables = {}
-							if input ~= '' then
-								for t in input:gmatch('[^,%s]+') do
-									table.insert(tables, t)
-								end
-							end
+						vim.ui.input({ prompt = 'Table name (empty for all): ' }, function(tbl)
+							if tbl == nil then return end
 							local query
 							if db:match('^sqlite') or db:match('%.db$') or db:match('%.sqlite') then
-								if #tables == 0 then
+								if tbl == '' then
 									query = "SELECT sql FROM sqlite_master WHERE type='table' ORDER BY name;"
 								else
-									local quoted = {}
-									for _, t in ipairs(tables) do
-										table.insert(quoted, "'" .. t .. "'")
-									end
-									query = "SELECT sql FROM sqlite_master WHERE name IN (" .. table.concat(quoted, ',') .. ");"
+									query = "SELECT sql FROM sqlite_master WHERE name='" .. tbl .. "';"
 								end
 							elseif db:match('^mysql') or db:match('^mariadb') then
-								if #tables == 0 then
+								if tbl == '' then
 									query = 'SHOW TABLES;'
 								else
-									local parts = {}
-									for _, t in ipairs(tables) do
-										table.insert(parts, 'DESCRIBE ' .. t .. ';')
-									end
-									query = table.concat(parts, ' ')
+									query = 'DESCRIBE ' .. tbl .. ';'
 								end
 							else -- postgres
-								if #tables == 0 then
+								if tbl == '' then
 									query = "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema='public' ORDER BY table_name, ordinal_position;"
 								else
-									local quoted = {}
-									for _, t in ipairs(tables) do
-										table.insert(quoted, "'" .. t .. "'")
-									end
-									query = "SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name IN (" .. table.concat(quoted, ',') .. ") ORDER BY table_name, ordinal_position;"
+									query = "SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name='" .. tbl .. "' ORDER BY ordinal_position;"
 								end
 							end
 							vim.cmd('DB ' .. query)
