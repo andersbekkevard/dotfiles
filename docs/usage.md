@@ -14,8 +14,11 @@ Common maintenance:
 ./init.sh --verify
 ./init.sh --layer linux-desktop
 ./init.sh --stow shell
+DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
 ./setup/brew-drift
 ```
+
+For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./init.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `DOTFILES_ALLOW_PARTIAL=1`.
 
 Compatibility wrapper:
 

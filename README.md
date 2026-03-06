@@ -20,6 +20,8 @@ Use an explicit profile to avoid surprises:
 ./init.sh linux-desktop
 ```
 
+On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./init.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
+
 ## Repository layout
 
 - `shell/`, `git/`, `nvim/`, `tmux/`, `scripts/`, `terminals/`, `wt/`, `lazygit/`, `btop/`, `fd/`, `macos/`, `linux-desktop/`: GNU Stow packages.
@@ -32,7 +34,8 @@ Use an explicit profile to avoid surprises:
 ./init.sh --verify
 ./init.sh --layer full
 ./init.sh --stow nvim
+DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
 ./setup/brew-drift
 ```
 
-`setup.sh` remains as a compatibility wrapper for `./init.sh linux-desktop`.
+`setup.sh` remains as a compatibility wrapper for `./init.sh` and now passes arguments through without forcing `linux-desktop`.
