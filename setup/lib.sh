@@ -500,7 +500,13 @@ brew_bundle() {
     log_info "Skipping Brewfile $brewfile"
     return 0
   fi
-  run_cmd_allow_failure "Apply Brewfile $(basename "$brewfile")" brew bundle --file "$brewfile" --no-lock
+
+  local brew_args=(bundle --file "$brewfile")
+  if brew bundle --help 2>&1 | grep -q -- '--no-lock'; then
+    brew_args+=(--no-lock)
+  fi
+
+  run_cmd_allow_failure "Apply Brewfile $(basename "$brewfile")" brew "${brew_args[@]}"
 }
 
 apt_update_once() {
