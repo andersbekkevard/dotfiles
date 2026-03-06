@@ -20,6 +20,8 @@ Use an explicit profile to avoid surprises:
 ./init.sh linux-desktop
 ```
 
+With no explicit profile, `./init.sh` uses `auto`. On Linux, `auto` only selects `linux-desktop` when it sees runtime evidence of a local graphical session: `WAYLAND_DISPLAY`, `XDG_SESSION_TYPE=x11|wayland`, a non-SSH `DISPLAY`, or an active `graphical.target`. Installed GUI packages alone do not count, and SSH/X11-forwarded shells default to `linux-headless`.
+
 On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./init.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
 
 ## Repository layout
