@@ -6,3 +6,7 @@
 # - laptop-only battery checks
 # - local aliases that should not propagate
 # - optional shell completions for tools installed outside dotfiles
+#
+# Example machine-local model paths:
+# export LLAMA_APRILIA_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
+# export LLAMA_GLM_MODEL_PATH="$HOME/.ollama/models/blobs/<blob>"
