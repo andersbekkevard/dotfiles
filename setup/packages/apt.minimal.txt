@@ -1,6 +1,5 @@
 bat
 btop
-build-essential
 curl
 fd-find
 file

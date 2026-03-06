@@ -34,7 +34,10 @@ if [[ -n "$RUN_LAYER_ONLY" ]]; then
   ACTIVE_LAYERS=("$RUN_LAYER_ONLY")
 else
   ACTIVE_PROFILE="$(resolve_profile "$REQUESTED_PROFILE")"
-  mapfile -t ACTIVE_LAYERS < <(profile_layers "$ACTIVE_PROFILE")
+  ACTIVE_LAYERS=()
+  while IFS= read -r layer; do
+    [[ -n "$layer" ]] && ACTIVE_LAYERS+=("$layer")
+  done < <(profile_layers "$ACTIVE_PROFILE")
 fi
 
 configure_interrupt_trap

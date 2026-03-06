@@ -23,6 +23,10 @@ VERIFY_PROFILE=""
 DRY_RUN=0
 SKIP_INSTALL=0
 
+secrets_source_path() {
+  printf '%s\n' "$DOTFILES_DIR/shell/.secrets"
+}
+
 log_line() {
   printf '%b%s%b\n' "$1" "$2" "$COLOR_RESET"
 }
@@ -777,15 +781,18 @@ ensure_default_shell_zsh() {
 }
 
 note_git_crypt_state() {
-  if [[ ! -e "$HOME/.secrets" ]]; then
+  local secrets_path
+  secrets_path="$(secrets_source_path)"
+
+  if [[ ! -e "$secrets_path" ]]; then
     log_info "No .secrets file present; git-crypt unlock not required."
     return 0
   fi
 
-  if LC_ALL=C grep -Iq . "$HOME/.secrets" 2>/dev/null; then
-    log_info ".secrets is readable."
+  if LC_ALL=C grep -Iq . "$secrets_path" 2>/dev/null; then
+    log_info "Tracked shell/.secrets is readable."
   else
-    log_warn ".secrets appears locked or binary. Run: git-crypt unlock"
+    log_warn "Tracked shell/.secrets appears locked or binary. Run: git-crypt unlock <keyfile>"
   fi
 }
 
@@ -994,6 +1001,7 @@ verify_profile() {
     verify_package_links "$package" || failures=1
   done < <(profile_packages "$profile")
 
+  verify_profile_symlink_drift "$profile" || failures=1
   verify_commands "$profile" || failures=1
 
   if [[ $failures -eq 0 ]]; then
@@ -1003,6 +1011,64 @@ verify_profile() {
 
   printf 'verify: failed (%s)\n' "$profile"
   return 1
+}
+
+managed_target_roots() {
+  find "$DOTFILES_DIR" \
+    -mindepth 2 \
+    -maxdepth 3 \
+    \( -type f -o -type l \) \
+    ! -path "$DOTFILES_DIR/setup/*" \
+    ! -path "$DOTFILES_DIR/docs/*" \
+    | while IFS= read -r source_path; do
+        local rel
+        rel="${source_path#"$DOTFILES_DIR"/}"
+        rel="${rel#*/}"
+        printf '%s\n' "${rel%%/*}"
+      done | LC_ALL=C sort -u
+}
+
+verify_profile_symlink_drift() {
+  local profile="$1"
+  local actual_link actual_target root_path failures=0
+  local tmp_expected tmp_roots
+
+  tmp_expected="$(mktemp)"
+  tmp_roots="$(mktemp)"
+
+  while IFS= read -r package; do
+    [[ -z "$package" ]] && continue
+    find "$DOTFILES_DIR/$package" -mindepth 1 \( -type f -o -type l \) | while IFS= read -r source_path; do
+      printf '%s\n' "$HOME/${source_path#"$DOTFILES_DIR/$package/"}"
+    done
+  done < <(profile_packages "$profile") | LC_ALL=C sort -u > "$tmp_expected"
+
+  managed_target_roots > "$tmp_roots"
+
+  while IFS= read -r root_name; do
+    root_path="$HOME/$root_name"
+    [[ -e "$root_path" || -L "$root_path" ]] || continue
+
+    while IFS= read -r actual_link; do
+      actual_target="$(resolve_symlink_destination "$actual_link" 2>/dev/null)" || {
+        printf 'broken managed symlink: %s\n' "$actual_link"
+        failures=1
+        continue
+      }
+
+      case "$actual_target" in
+        "$DOTFILES_DIR"/*)
+          if ! grep -Fxq "$actual_link" "$tmp_expected"; then
+            printf 'unexpected managed symlink for profile %s: %s -> %s\n' "$profile" "$actual_link" "$actual_target"
+            failures=1
+          fi
+          ;;
+      esac
+    done < <(find "$root_path" \( -type l -o -xtype l \) 2>/dev/null | LC_ALL=C sort)
+  done < "$tmp_roots"
+
+  rm -f "$tmp_expected" "$tmp_roots"
+  return $failures
 }
 
 run_layer() {
