@@ -8,6 +8,13 @@ cd ~/.dotfiles
 ./init.sh
 ```
 
+Auto profile selection:
+
+- `./init.sh` without a profile uses `auto`.
+- On Linux, `auto` prefers `linux-headless` unless the current shell has local GUI runtime signals.
+- SSH sessions, including shells with only X11 forwarding via `DISPLAY`, stay on `linux-headless` by default.
+- Pass `linux-desktop` explicitly when you want desktop setup regardless of auto-detection.
+
 Common maintenance:
 
 ```bash

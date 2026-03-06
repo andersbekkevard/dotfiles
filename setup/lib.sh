@@ -180,10 +180,19 @@ has_display_server() {
     return 1
   fi
 
-  dpkg -s xserver-xorg >/dev/null 2>&1 && return 0
-  systemctl list-units --type=target 2>/dev/null | grep -q graphical && return 0
-  [[ -n "${DISPLAY:-}" ]] && return 0
   [[ -n "${WAYLAND_DISPLAY:-}" ]] && return 0
+  case "${XDG_SESSION_TYPE:-}" in
+    wayland|x11) return 0 ;;
+  esac
+
+  if [[ -n "${DISPLAY:-}" && -z "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ]]; then
+    return 0
+  fi
+
+  if [[ -z "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ]] && command_exists systemctl; then
+    systemctl is-active --quiet graphical.target >/dev/null 2>&1 && return 0
+  fi
+
   return 1
 }
 
