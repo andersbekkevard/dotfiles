@@ -1,11 +1,6 @@
-.secrets
 .wakatime.cfg
 .zshrc.local
 CLAUDE.md
-
-# git-crypt keeps secrets encrypted in git, but the local decrypted file should
-# still stay out of status when users create it outside the tracked pattern set.
-shell/.secrets
 
 # Generated or machine-local state.
 nvim/.config/nvim/lazy-lock.json
