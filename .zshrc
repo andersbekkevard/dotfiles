@@ -52,6 +52,7 @@ compinit
 # ================================= Environment ================================ #
 export EDITOR='nvim'
 export PATH="$HOME/.local/bin:$PATH"
+[[ ":$PATH:" != *":$HOME/.config/emacs/bin:"* ]] && export PATH="$HOME/.config/emacs/bin:$PATH"
 
 # ================================= Languages ================================ #
 # Python (uv)
@@ -120,7 +121,7 @@ alias vi="nvim"
 alias nv="nvim"
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
-alias co="codex -a never"
+alias co="codex --yolo"
 
 # lsd (if installed, otherwise fallback to ls)
 if command -v lsd &>/dev/null; then
