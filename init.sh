@@ -51,4 +51,8 @@ for layer in "${ACTIVE_LAYERS[@]}"; do
   run_layer "$layer"
 done
 
+if [[ "$DRY_RUN" -eq 0 && "$SKIP_INSTALL" -eq 0 ]]; then
+  check_required_commands "$ACTIVE_PROFILE"
+fi
+
 exit_with_summary

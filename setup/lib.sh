@@ -9,6 +9,9 @@ COLOR_RESET='\033[0m'
 RUN_ID=""
 DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 OS_FAMILY=""
+ARCH_UNAME=""   # raw uname -m: x86_64 or aarch64
+ARCH_SHORT=""   # normalized: x86_64 or arm64
+ARCH_GO=""      # Go convention: amd64 or arm64
 ERRORS=()
 COMPLETED_LAYERS=()
 APT_UPDATED=0
@@ -106,9 +109,30 @@ detect_os() {
   esac
 }
 
+detect_arch() {
+  ARCH_UNAME="$(uname -m)"
+  case "$ARCH_UNAME" in
+    x86_64)
+      ARCH_SHORT="x86_64"
+      ARCH_GO="amd64"
+      ;;
+    aarch64|arm64)
+      ARCH_UNAME="aarch64"
+      ARCH_SHORT="arm64"
+      ARCH_GO="arm64"
+      ;;
+    *)
+      record_error "Unsupported architecture: $ARCH_UNAME"
+      ARCH_SHORT="$ARCH_UNAME"
+      ARCH_GO="$ARCH_UNAME"
+      ;;
+  esac
+}
+
 init_runtime() {
   RUN_ID="$(date +%Y%m%d-%H%M%S)"
   detect_os
+  detect_arch
 }
 
 cleanup_runtime() {
@@ -390,6 +414,86 @@ ensure_linux_command_aliases() {
   fi
 }
 
+nvim_version_at_least() {
+  local required="$1"
+  local current
+  current="$(nvim --version 2>/dev/null | head -1 | sed 's/^NVIM v//')" || return 1
+  [[ -z "$current" ]] && return 1
+
+  local cur_major cur_minor req_major req_minor
+  cur_major="${current%%.*}"
+  cur_minor="${current#*.}"; cur_minor="${cur_minor%%.*}"
+  req_major="${required%%.*}"
+  req_minor="${required#*.}"; req_minor="${req_minor%%.*}"
+
+  (( cur_major > req_major )) && return 0
+  (( cur_major == req_major && cur_minor >= req_minor )) && return 0
+  return 1
+}
+
+ensure_neovim_011() {
+  local required="0.11"
+  local install_dir="$HOME/.local/share/nvim-install"
+  local bin_link="$HOME/.local/bin/nvim"
+
+  if command_exists nvim && nvim_version_at_least "$required"; then
+    return 0
+  fi
+
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  local arch
+  arch="$(uname -m)"
+  local tarball_arch
+  case "$arch" in
+    x86_64)  tarball_arch="x86_64" ;;
+    aarch64) tarball_arch="arm64" ;;
+    *)
+      record_error "Neovim $required: unsupported architecture $arch"
+      return 0
+      ;;
+  esac
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install Neovim >= $required from GitHub release ($tarball_arch)"
+    return 0
+  fi
+
+  local release_url="https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${tarball_arch}.tar.gz"
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+
+  log_info "Install Neovim >= $required from GitHub release ($tarball_arch)"
+  curl -fsSL "$release_url" -o "$tmp_dir/nvim.tar.gz"
+  local status=$?
+  if [[ $status -ne 0 ]]; then
+    rm -rf "$tmp_dir"
+    record_error "Download Neovim release failed (exit $status)"
+    return 0
+  fi
+
+  rm -rf "$install_dir"
+  mkdir -p "$install_dir"
+  tar -xzf "$tmp_dir/nvim.tar.gz" -C "$install_dir" --strip-components=1
+  status=$?
+  rm -rf "$tmp_dir"
+  if [[ $status -ne 0 ]]; then
+    record_error "Extract Neovim release failed (exit $status)"
+    return 0
+  fi
+
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$install_dir/bin/nvim" "$bin_link"
+
+  if "$bin_link" --version >/dev/null 2>&1; then
+    log_ok "Neovim $("$bin_link" --version | head -1 | sed 's/^NVIM v//') installed to $bin_link"
+  else
+    record_error "Neovim binary at $bin_link is not functional"
+  fi
+}
+
 brew_bundle() {
   local brewfile="$1"
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
@@ -509,13 +613,34 @@ install_fnm_node_stack() {
     return 0
   fi
 
-  if command_exists fnm; then
-    run_cmd_allow_failure "Install Node.js LTS with fnm" fnm install --lts
-    run_cmd_allow_failure "Select Node.js LTS with fnm" fnm default lts-latest
-    if command_exists corepack; then
-      run_cmd_allow_failure "Enable corepack" corepack enable
-      run_cmd_allow_failure "Activate pnpm" corepack prepare pnpm@latest --activate
+  if ! command_exists fnm; then
+    if [[ "$DRY_RUN" -eq 0 ]]; then
+      record_error "fnm not available after install; node/pnpm stack skipped"
     fi
+    return 0
+  fi
+
+  run_cmd_allow_failure "Install Node.js LTS with fnm" fnm install --lts
+  run_cmd_allow_failure "Select Node.js LTS with fnm" fnm default lts-latest
+
+  # Re-evaluate fnm env so node/npm/corepack land on PATH for the rest of setup
+  eval "$(fnm env --use-on-cd --shell bash 2>/dev/null)" || true
+
+  if command_exists corepack; then
+    run_cmd_allow_failure "Enable corepack" corepack enable
+    run_cmd_allow_failure "Activate pnpm" corepack prepare pnpm@latest --activate
+  elif command_exists npm; then
+    run_cmd_allow_failure "Install pnpm via npm (corepack unavailable)" npm install -g pnpm
+  else
+    record_error "Neither corepack nor npm available; pnpm not installed"
+  fi
+
+  # Final check: node and pnpm should be reachable now
+  if ! command_exists node; then
+    record_error "node not on PATH after fnm install"
+  fi
+  if ! command_exists pnpm; then
+    record_error "pnpm not on PATH after activation"
   fi
 }
 
@@ -529,7 +654,7 @@ install_shared_runtimes() {
 
 install_go_linux() {
   local version="1.24.1"
-  local archive="go${version}.linux-amd64.tar.gz"
+  local archive="go${version}.linux-${ARCH_GO}.tar.gz"
   local url="https://go.dev/dl/${archive}"
 
   if [[ "$OS_FAMILY" != "linux" || "$SKIP_INSTALL" -eq 1 ]]; then
@@ -587,8 +712,12 @@ install_linux_release_binaries() {
     [[ -z "$tool" || "$tool" =~ ^# ]] && continue
     command_exists "$tool" && continue
 
+    # Substitute architecture placeholders in the asset pattern
+    pattern="${pattern//__UNAME_ARCH__/$ARCH_UNAME}"
+    pattern="${pattern//__SHORT_ARCH__/$ARCH_SHORT}"
+
     if [[ "$DRY_RUN" -eq 1 ]]; then
-      log_info "[dry-run] Install $tool from GitHub release"
+      log_info "[dry-run] Install $tool from GitHub release ($ARCH_UNAME)"
       continue
     fi
 
@@ -1172,6 +1301,14 @@ verify_profile() {
   verify_profile_symlink_drift "$profile" || failures=1
   verify_commands "$profile" || failures=1
 
+  if command_exists nvim; then
+    if ! nvim_version_at_least "0.11"; then
+      printf 'neovim too old: %s (need >= 0.11). Run ./init.sh to upgrade.\n' \
+        "$(nvim --version 2>/dev/null | head -1 | sed 's/^NVIM v//')"
+      failures=1
+    fi
+  fi
+
   if [[ $failures -eq 0 ]]; then
     printf 'verify: ok (%s)\n' "$profile"
     return 0
@@ -1264,6 +1401,22 @@ run_layer() {
   esac
 
   COMPLETED_LAYERS+=("$layer")
+}
+
+check_required_commands() {
+  local profile="$1"
+  local cmd missing=()
+
+  while IFS= read -r cmd; do
+    [[ -z "$cmd" ]] && continue
+    if ! command_exists "$cmd"; then
+      missing+=("$cmd")
+    fi
+  done < <(profile_commands "$profile")
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    record_error "Required commands missing for profile $profile: ${missing[*]}"
+  fi
 }
 
 exit_with_summary() {

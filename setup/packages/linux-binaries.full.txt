@@ -1,4 +1,5 @@
 # tool|repo|asset-name-regex|binary-name
-lazygit|jesseduffield/lazygit|lazygit_.*_Linux_x86_64\.tar\.gz$|lazygit
-yazi|sxyazi/yazi|yazi-x86_64-unknown-linux-gnu\.zip$|yazi
-lsd|lsd-rs/lsd|lsd-.*-x86_64-unknown-linux-gnu\.tar\.gz$|lsd
+# Arch placeholders: __UNAME_ARCH__ (x86_64/aarch64), __SHORT_ARCH__ (x86_64/arm64)
+lazygit|jesseduffield/lazygit|lazygit_.*_Linux___SHORT_ARCH__\.tar\.gz$|lazygit
+yazi|sxyazi/yazi|yazi-__UNAME_ARCH__-unknown-linux-gnu\.zip$|yazi
+lsd|lsd-rs/lsd|lsd-.*-__UNAME_ARCH__-unknown-linux-gnu\.tar\.gz$|lsd
