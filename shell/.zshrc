@@ -22,3 +22,31 @@ fi
 [[ -r "$HOME/.zsh/tools.zsh" ]] && source "$HOME/.zsh/tools.zsh"
 [[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 [[ -r "$HOME/.zsh/theme.zsh" ]] && source "$HOME/.zsh/theme.zsh"
+
+. "$HOME/.local/bin/env"
+
+# bun completions
+[ -s "/home/anders/.bun/_bun" ] && source "/home/anders/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# fnm
+FNM_PATH="/home/anders/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="$FNM_PATH:$PATH"
+  eval "`fnm env`"
+fi
+
+# pnpm
+export PNPM_HOME="/home/anders/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
