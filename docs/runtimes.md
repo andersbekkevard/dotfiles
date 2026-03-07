@@ -18,4 +18,5 @@ Why these choices:
 - Linux avoids Linuxbrew and uses apt plus official binaries/scripts instead.
 - All Linux binary downloads are architecture-aware (x86_64 and arm64/aarch64).
 - `fnm` node stack is hardened: PATH is re-evaluated after install, and pnpm falls back to `npm install -g pnpm` if corepack is unavailable.
+- Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, and related CLI entrypoints lives in `shell/.profile` and is pulled into zsh login shells via `shell/.zprofile`; interactive-only hooks such as `fnm --use-on-cd` stay in `shell/.zshrc`.
 - Interactive zsh shells reject `npm install` / `npm i` and `npm ... -g` loudly; use `pnpm install`, `pnpm add`, or `pnpm add -g` instead. The bootstrap may still invoke raw `npm install -g pnpm` internally as a non-interactive fallback when `corepack` is unavailable.

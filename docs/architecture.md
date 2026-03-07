@@ -18,4 +18,10 @@ minimal
         -> linux-desktop
 ```
 
-Shared shell startup is orchestrated by `shell/.zshrc`, which delegates to focused files under `shell/.zsh/`. Machine-specific behavior belongs in `~/.zshrc.local`. `./init.sh` refreshes the latest reference template into `~/.config/zsh/local.example.zsh` and only rewrites `~/.zshrc.local` when it still exactly matches a managed template.
+Shell startup is split by responsibility:
+
+- `shell/.profile` owns runtime-critical, POSIX-safe PATH/bootstrap needed by login and non-interactive shells.
+- `shell/.zprofile` handles zsh login-shell setup and sources `~/.profile`.
+- `shell/.zshrc` owns interactive zsh behavior and delegates to focused files under `shell/.zsh/`.
+
+Machine-specific behavior belongs in `~/.zshrc.local`. `./init.sh` refreshes the latest reference template into `~/.config/zsh/local.example.zsh` and only rewrites `~/.zshrc.local` when it still exactly matches a managed template.
