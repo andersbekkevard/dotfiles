@@ -42,6 +42,10 @@ alias nrb='npm run build'
 alias nrl='npm run lint'
 alias prd='pnpm dev'
 
+alias ogr='openclaw gateway restart'
+alias ogs='openclaw gateway status'
+alias olf='openclaw logs follow'
+
 command -v bat >/dev/null 2>&1 && alias cat='bat'
 command -v gh >/dev/null 2>&1 && alias ghc='gh copilot'
 command -v cargo >/dev/null 2>&1 && alias cr='cargo run'
