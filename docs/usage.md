@@ -47,6 +47,15 @@ tmux source-file ~/.tmux.conf
 
 `./init.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
 
+Shell bootstrap verification:
+
+```bash
+env -i HOME="$HOME" USER="$USER" SHELL=/bin/zsh PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  zsh -lc 'command -v fnm node pnpm openclaw qmd'
+```
+
+Use that clean login-shell check when you need to confirm runtime bootstrap does not depend on interactive `~/.zshrc` state.
+
 ## Architecture handling
 
 Both x86_64 and arm64/aarch64 Linux machines are supported. Architecture is detected automatically via `uname -m` at startup. GitHub release binaries (lazygit, yazi, lsd) and Go use architecture-specific download URLs. No manual configuration is needed.

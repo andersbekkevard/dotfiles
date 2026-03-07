@@ -4,6 +4,7 @@ export UV_PYTHON='3.13'
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 export FNM_DIR="$HOME/.local/share/fnm"
+[[ ":$PATH:" != *":$FNM_DIR:"* ]] && export PATH="$FNM_DIR:$PATH"
 if command -v fnm >/dev/null 2>&1; then
   eval "$(fnm env --use-on-cd --shell zsh)"
 fi

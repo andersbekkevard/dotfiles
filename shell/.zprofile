@@ -5,3 +5,5 @@ if [[ "$OSTYPE" == darwin* ]]; then
     eval "$(/usr/local/bin/brew shellenv)"
   fi
 fi
+
+[[ -r "$HOME/.profile" ]] && . "$HOME/.profile"
