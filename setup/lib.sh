@@ -293,16 +293,16 @@ profile_commands() {
       printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
       ;;
     linux-headless)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }
@@ -611,6 +611,17 @@ ensure_fnm_available_now() {
   fi
 }
 
+ensure_cargo_available_now() {
+  if command_exists cargo; then
+    return 0
+  fi
+
+  if [[ -f "$HOME/.cargo/env" ]]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.cargo/env"
+  fi
+}
+
 install_fnm_node_stack() {
   install_script_if_missing fnm "Install fnm" "curl -fsSL https://fnm.vercel.app/install | bash"
   ensure_fnm_available_now
@@ -655,6 +666,12 @@ install_shared_runtimes() {
   install_script_if_missing rustup "Install rustup" "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
   install_script_if_missing bun "Install bun" "curl -fsSL https://bun.sh/install | bash"
   install_script_if_missing zoxide "Install zoxide" "curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash"
+  ensure_cargo_available_now
+  if command_exists cargo; then
+    run_cmd_allow_failure "Install tree-sitter CLI with cargo" cargo install tree-sitter-cli --locked
+  elif [[ "$DRY_RUN" -eq 0 ]]; then
+    record_error "cargo not on PATH after rustup install; tree-sitter CLI skipped"
+  fi
   install_fnm_node_stack
 }
 

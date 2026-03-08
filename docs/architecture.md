@@ -25,3 +25,5 @@ Shell startup is split by responsibility:
 - `shell/.zshrc` owns interactive zsh behavior and delegates to focused files under `shell/.zsh/`.
 
 Machine-specific behavior belongs in `~/.zshrc.local`. `./init.sh` refreshes the latest reference template into `~/.config/zsh/local.example.zsh` and only rewrites `~/.zshrc.local` when it still exactly matches a managed template.
+
+For the full contract on machine-local shell tweaks vs automation-visible command overrides, see `docs/local-overrides.md`.

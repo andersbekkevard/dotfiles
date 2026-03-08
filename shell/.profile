@@ -33,3 +33,5 @@ if [ -d "$BUN_INSTALL/bin" ]; then
   esac
 fi
 export BUN_INSTALL PATH
+
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
