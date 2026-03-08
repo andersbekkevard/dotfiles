@@ -21,3 +21,5 @@ else
   export PNPM_HOME="$HOME/.local/share/pnpm"
 fi
 [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PATH:$PNPM_HOME"
+
+[[ -f "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"

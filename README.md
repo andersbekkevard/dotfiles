@@ -32,7 +32,7 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 
 - `shell/`, `git/`, `nvim/`, `tmux/`, `scripts/`, `terminals/`, `wt/`, `lazygit/`, `btop/`, `fd/`, `macos/`, `linux-desktop/`: GNU Stow packages.
 - `setup/`: non-stowed setup and verification scripts plus package manifests.
-- `docs/`: architecture, runtime, profile, secrets, and migration documentation (`docs/index.md` is the map).
+- `docs/`: architecture, runtime, profile, local-override, secrets, and migration documentation (`docs/index.md` is the map).
 - `AGENTS.md`: LLM/coding-agent navigation, read order, and documentation source-of-truth matrix.
 
 ## Useful commands

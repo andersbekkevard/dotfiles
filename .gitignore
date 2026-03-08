@@ -1,6 +1,7 @@
 .wakatime.cfg
 .zshrc.local
 CLAUDE.md
+IMPROVEMENT.md
 
 # Generated or machine-local state.
 nvim/.config/nvim/lazy-lock.json

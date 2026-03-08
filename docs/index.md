@@ -17,6 +17,7 @@ Use this page as the map for the `docs/` directory.
 | Profiles and auto resolution | `docs/profiles.md` | Exact desktop/headless detection rules |
 | Runtime version and installer policy | `docs/runtimes.md` | Version floors and installer strategy |
 | Repository/layer architecture | `docs/architecture.md` | Stow packages + setup orchestration |
+| Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks and automation-visible wrappers belong |
 | Secrets and git-crypt flow | `docs/secrets.md` | Unlock/export behavior |
 | Migration history and rationale | `docs/migration.md` | Historical context from old branch model |
 | General engineering principles | `docs/design-principles.md` | Broader coding standards |

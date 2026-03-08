@@ -169,12 +169,17 @@ return {
 	-- Treesitter for better syntax highlighting
 	{
 		'nvim-treesitter/nvim-treesitter',
+		lazy = false,
 		build = ':TSUpdate',
 		config = function()
-			require('nvim-treesitter.configs').setup({
-				ensure_installed = { 'python', 'rust', 'java', 'lua', 'vim', 'vimdoc', 'sql' },
-				highlight = { enable = true },
-				indent = { enable = true },
+			local languages = { 'python', 'rust', 'java', 'lua', 'vim', 'vimdoc', 'sql' }
+
+			vim.api.nvim_create_autocmd('FileType', {
+				pattern = languages,
+				callback = function(args)
+					pcall(vim.treesitter.start, args.buf)
+					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+				end,
 			})
 		end,
 	},
