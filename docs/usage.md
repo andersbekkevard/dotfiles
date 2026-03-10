@@ -25,6 +25,23 @@ DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
 ./setup/brew-drift
 ```
 
+Rapid tmux session cleanup:
+
+```bash
+tk
+```
+
+`tk` opens an `fzf` picker for tmux sessions, previews the session windows, and asks for confirmation before killing the selected session.
+
+Worktree workflow:
+
+```bash
+wt new my-branch
+wt config
+```
+
+`wt new` creates the worktree, runs any repo-defined setup hooks, and `cd`s into the new path. It does not auto-launch Claude Code or any other follow-up command unless `~/.config/wt/config.json` explicitly opts in with `"autoLaunch": true` alongside a non-empty `"command"` value.
+
 For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./init.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `DOTFILES_ALLOW_PARTIAL=1`.
 
 Compatibility wrapper:
