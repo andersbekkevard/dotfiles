@@ -58,10 +58,20 @@ _wt_get_config_command() {
   fi
 }
 
+_wt_should_auto_launch_command() {
+  if [[ -f "$_wt_config_file" ]]; then
+    local auto_launch
+    auto_launch=$(jq -r '.autoLaunch // .auto_launch // false' "$_wt_config_file" 2>/dev/null)
+    [[ "$auto_launch" == "true" ]]
+  else
+    return 1
+  fi
+}
+
 _wt_ensure_config() {
   if [[ ! -f "$_wt_config_file" ]]; then
     mkdir -p "$_wt_config_dir"
-    echo '{"command": "claude --dangerously-skip-permissions"}' > "$_wt_config_file"
+    echo '{"command": "", "autoLaunch": false}' > "$_wt_config_file"
   fi
 }
 
@@ -395,7 +405,7 @@ _wt_new() {
   _wt_ensure_config
   local cmd
   cmd=$(_wt_get_config_command)
-  if [[ -n "$cmd" ]]; then
+  if [[ -n "$cmd" ]] && _wt_should_auto_launch_command; then
     echo "Running: $cmd"
     eval "$cmd"
   fi
