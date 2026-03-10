@@ -38,12 +38,8 @@ npm() {
   done
 
   if (( is_global )); then
-    if (( ${#replacement_args[@]} > 0 )); then
-      print -u2 -- "Blocked: use 'pnpm add -g $(_npm_guard_join "${replacement_args[@]}")' instead."
-    else
-      print -u2 -- "Blocked: use 'pnpm add -g <package>' instead of npm global install."
-    fi
-    return 1
+    command npm "$subcommand" "$@"
+    return $?
   fi
 
   if (( ${#replacement_args[@]} == 0 )); then
