@@ -36,14 +36,17 @@ compinit
 add-zsh-hook chpwd chpwd_recent_dirs
 
 HISTFILE="$HOME/.zsh_history"
-HISTSIZE=100000
-SAVEHIST=100000
+HISTSIZE=500000
+SAVEHIST=500000
 
-setopt APPEND_HISTORY
-setopt INC_APPEND_HISTORY
-setopt SHARE_HISTORY
+setopt EXTENDED_HISTORY
 setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_FIND_NO_DUPS
 setopt HIST_REDUCE_BLANKS
+setopt HIST_VERIFY
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt SHARE_HISTORY
 
 bindkey -v
 bindkey '^[z' undo
