@@ -25,6 +25,25 @@ DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
 ./setup/brew-drift
 ```
 
+Tmux session picker:
+
+```text
+Prefix + s
+```
+
+`Prefix + s` opens a tmux popup session/window picker with search, preview, and inline actions (`Ctrl-n` new session, `Ctrl-r` rename, `Ctrl-x` kill). `Alt-s` opens the same popup without a prefix, and `Prefix + S` jumps back to the previous tmux session.
+
+Tmux navigation:
+
+```text
+Alt-a / Alt-d
+Prefix + -
+Prefix + _
+Prefix + c
+```
+
+`Alt-a` and `Alt-d` move to the previous and next window. `Prefix + -`, `Prefix + _`, and `Prefix + c` create splits/windows in the current pane's working directory.
+
 Rapid tmux session cleanup:
 
 ```bash

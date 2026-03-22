@@ -3,3 +3,13 @@
 	email = anders.bekkevard@gmail.com
 [credential]
 	helper = !gh auth git-credential
+[core]
+	pager = delta
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	colorMoved = default

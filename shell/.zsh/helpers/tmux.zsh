@@ -46,7 +46,7 @@ ts() {
   esac
   current_color=$'\033[38;5;152m'
   attached_color=$'\033[38;5;110m'
-  quiet_color=$'\033[90m'
+  quiet_color=$'\033[38;5;245m'
   neutral_color=$'\033[97m'
   reset_color=$'\033[0m'
   bold_on=$'\033[1m'
@@ -213,7 +213,7 @@ tk() {
   esac
   current_color=$'\033[38;5;152m'
   attached_color=$'\033[38;5;110m'
-  quiet_color=$'\033[90m'
+  quiet_color=$'\033[38;5;245m'
   neutral_color=$'\033[97m'
   reset_color=$'\033[0m'
   bold_on=$'\033[1m'

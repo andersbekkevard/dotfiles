@@ -34,4 +34,8 @@ if [ -d "$BUN_INSTALL/bin" ]; then
 fi
 export BUN_INSTALL PATH
 
+if [ -x /home/linuxbrew/.linuxbrew/bin/brew ] && [ -z "${HOMEBREW_PREFIX:-}" ]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
