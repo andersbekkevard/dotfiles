@@ -13,16 +13,6 @@ alias secrets='cursor ~/.secrets'
 alias c.='cursor .'
 alias c-a='cursor-agent'
 
-if command -v brew >/dev/null 2>&1; then
-  zsh_ai_plugin="$(brew --prefix)/share/zsh-ai/zsh-ai.plugin.zsh"
-  if [[ -f "$zsh_ai_plugin" ]]; then
-    export ZSH_AI_PROVIDER='openai'
-    export ZSH_AI_MODEL='openai/gpt-5.2'
-    export ZSH_AI_PROMPT_EXTEND=$'RECOMMENDED TOOL PREFERENCES:\n- Use '\''rg'\'' (ripgrep) instead of '\''grep'\'' for all text searches.\n- Use '\''fd'\'' instead of '\''find'\'' for finding files and directories.\n- Use '\''bat'\'' instead of '\''cat'\'' for reading files.\n- Use '\''lsd'\'' instead of '\''ls'\'' for listing files.'
-    source "$zsh_ai_plugin"
-  fi
-  unset zsh_ai_plugin
-fi
 
 export PAI_DIR="$HOME/.claude"
 export DA='Hal'
