@@ -36,6 +36,7 @@ alias gpo='git push'
 alias gbm='git branch -M main'
 alias glog='git log --oneline --graph --decorate --all'
 alias lg='lazygit'
+alias lzd='lazydocker'
 
 alias nrd='pnpm dev'
 alias nrt='pnpm test'

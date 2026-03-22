@@ -172,7 +172,10 @@ return {
 		lazy = false,
 		build = ':TSUpdate',
 		config = function()
-			local languages = { 'python', 'rust', 'java', 'lua', 'vim', 'vimdoc', 'sql' }
+			local languages = { 'python', 'rust', 'java', 'lua', 'vim', 'vimdoc', 'sql', 'markdown', 'markdown_inline' }
+
+			require('nvim-treesitter').setup()
+			require('nvim-treesitter').install(languages)
 
 			vim.api.nvim_create_autocmd('FileType', {
 				pattern = languages,
@@ -301,5 +304,72 @@ return {
 			vim.g.db_ui_use_nerd_fonts = 1
 			vim.g.db_ui_execute_on_save = 0
 		end,
+	},
+
+	-------------------------------------------------------------------------------
+	--
+	-- Gitsigns - Git change indicators in the gutter
+	--
+	-------------------------------------------------------------------------------
+	{
+		"lewis6991/gitsigns.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		opts = {
+			on_attach = function(bufnr)
+				local gs = require("gitsigns")
+				local map = function(mode, lhs, rhs, desc)
+					vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
+				end
+
+				-- Navigation
+				map("n", "]h", gs.next_hunk, "Next hunk")
+				map("n", "[h", gs.prev_hunk, "Previous hunk")
+
+				-- Actions
+				map("n", "<leader>hs", gs.stage_hunk, "Stage hunk")
+				map("n", "<leader>hr", gs.reset_hunk, "Reset hunk")
+				map("v", "<leader>hs", function() gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, "Stage hunk")
+				map("v", "<leader>hr", function() gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, "Reset hunk")
+				map("n", "<leader>hu", gs.undo_stage_hunk, "Undo stage hunk")
+				map("n", "<leader>hp", gs.preview_hunk, "Preview hunk")
+				map("n", "<leader>hb", function() gs.blame_line({ full = true }) end, "Blame line")
+			end,
+		},
+	},
+
+	-------------------------------------------------------------------------------
+	--
+	-- Diffview - Git diff viewer inside Neovim
+	--
+	-------------------------------------------------------------------------------
+	{
+		"sindrets/diffview.nvim",
+		cmd = { "DiffviewOpen", "DiffviewFileHistory", "DiffviewClose" },
+		keys = {
+			{ "<leader>gd", function()
+				if next(require("diffview.lib").views) then
+					vim.cmd("DiffviewClose")
+				else
+					vim.cmd("DiffviewOpen")
+				end
+			end, desc = "Toggle diff view" },
+			{ "<leader>gh", "<cmd>DiffviewFileHistory %<cr>", desc = "File history" },
+		},
+		opts = {},
+	},
+
+	-------------------------------------------------------------------------------
+	--
+	-- Render Markdown - Inline markdown rendering in buffers
+	--
+	-------------------------------------------------------------------------------
+	{
+		"MeanderingProgrammer/render-markdown.nvim",
+		ft = { "markdown" },
+		dependencies = { "nvim-treesitter/nvim-treesitter", "echasnovski/mini.icons" },
+		keys = {
+			{ "<leader>md", "<cmd>RenderMarkdown toggle<cr>", desc = "Toggle markdown render" },
+		},
+		opts = {},
 	},
 }
