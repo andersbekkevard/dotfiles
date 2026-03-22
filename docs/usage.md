@@ -5,23 +5,22 @@ Fresh clone:
 ```bash
 git clone <repo-url> ~/.dotfiles
 cd ~/.dotfiles
-./init.sh
+./setup.sh macos
 ```
 
-Auto profile selection:
+Explicit profile selection:
 
-- `./init.sh` without a profile uses `auto`.
-- On Linux, `auto` prefers `linux-headless` unless the current shell has local GUI runtime signals.
-- SSH sessions, including shells with only X11 forwarding via `DISPLAY`, stay on `linux-headless` by default.
-- Pass `linux-desktop` explicitly when you want desktop setup regardless of auto-detection.
+- `./setup.sh` never auto-detects a profile.
+- Running `./setup.sh` with no profile prints the available profiles and maintenance modes.
+- Pick the exact target you want: `minimal`, `full`, `macos`, `linux-headless`, or `linux-desktop`.
 
 Common maintenance:
 
 ```bash
-./init.sh --verify
-./init.sh --layer linux-desktop
-./init.sh --stow shell
-DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
+./setup.sh --verify macos
+./setup.sh --layer linux-desktop
+./setup.sh --stow shell
+DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-headless
 ./setup/brew-drift
 ```
 
@@ -61,13 +60,7 @@ wt config
 
 `wt new` creates the worktree, runs any repo-defined setup hooks, and `cd`s into the new path. It does not auto-launch Claude Code or any other follow-up command unless `~/.config/wt/config.json` explicitly opts in with `"autoLaunch": true` alongside a non-empty `"command"` value.
 
-For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./init.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `DOTFILES_ALLOW_PARTIAL=1`.
-
-Compatibility wrapper:
-
-```bash
-./setup.sh
-```
+For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./setup.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `DOTFILES_ALLOW_PARTIAL=1`.
 
 Machine-specific accent color (prompt + tmux):
 
@@ -81,16 +74,25 @@ source ~/.zshrc
 tmux source-file ~/.tmux.conf
 ```
 
-`./init.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
+`./setup.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
+
+Machine-local runtime env and PATH overrides belong in `~/.profile.local`. Use `~/.zshrc.local` only for interactive shell behavior.
 
 Shell bootstrap verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" SHELL=/bin/zsh PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-  zsh -lc 'command -v fnm node pnpm openclaw qmd'
+  zsh -lc 'command -v git nvim fnm node pnpm cargo bun tree-sitter'
 ```
 
-Use that clean login-shell check when you need to confirm runtime bootstrap does not depend on interactive `~/.zshrc` state.
+Stable non-login command contract verification:
+
+```bash
+env -i HOME="$HOME" USER="$USER" PATH="$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
+  sh -lc 'command -v git nvim fnm node pnpm cargo bun tree-sitter wt'
+```
+
+Use the login-shell check to confirm shared bootstrap does not depend on interactive `~/.zshrc` state. Use the non-login check to confirm agents and scripts can resolve the same commands through the stable `~/.local/bin` contract.
 
 ## Architecture handling
 
@@ -98,4 +100,4 @@ Both x86_64 and arm64/aarch64 Linux machines are supported. Architecture is dete
 
 ## One-hit runtime guarantees
 
-After a successful `./init.sh` run, all required commands for the active profile are verified. If any required tool (including `node`, `pnpm`, and other runtimes) is missing, the setup exits with a hard error listing the missing commands. This ensures that a green exit always means a fully functional environment.
+After a successful `./setup.sh <profile>` run, all required commands for the active profile are verified in two ways: from a clean login shell and from a non-login shell with `~/.local/bin` plus the base system PATH only. If any required tool is missing in either view, setup exits with a hard error. This keeps human shells and agent/script entrypoints aligned.

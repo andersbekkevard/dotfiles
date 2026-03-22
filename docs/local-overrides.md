@@ -19,8 +19,10 @@ There are three different concerns:
 
 2. **Machine-local overrides**
    - Lives outside the managed repo when it is specific to one host or one person's local state.
-   - Primary shell-local file: `~/.zshrc.local`
-   - Use for host-specific aliases, secrets references, prompt tweaks, experiments, or one-off shell ergonomics.
+   - Runtime/login file: `~/.profile.local`
+   - Interactive shell file: `~/.zshrc.local`
+   - Use `~/.profile.local` for machine-specific env and PATH that automation, agents, or services must see.
+   - Use `~/.zshrc.local` for prompt tweaks, aliases, completions, experiments, and one-off shell ergonomics.
 
 3. **Stable user-level command layer**
    - Lives in `~/.local/bin`
@@ -34,6 +36,7 @@ There are three different concerns:
 ## Rule of thumb
 
 - If it only matters to your interactive shell experience, `~/.zshrc.local` is fine.
+- If it must be visible outside interactive zsh, put it in `~/.profile.local`.
 - If it must work for automation, agents, or services, expose it as a real executable in `~/.local/bin`.
 - Do not rely on aliases or shell functions as infrastructure.
 
@@ -66,10 +69,26 @@ Why:
 
 Current pattern:
 - `~/.local/bin/env` is a shared PATH-normalization snippet
-- startup files may source it to reassert `~/.local/bin` after toolchains mutate PATH
+- `shell/.profile` sources it to reassert `~/.local/bin` after shared runtime bootstrap mutates PATH
 - services that need deterministic command resolution should also put `~/.local/bin` first in their explicit PATH
 
 `~/.local/bin/env` is **not** a shell primitive. It only applies where startup files explicitly source it.
+
+## Machine-local overrides
+
+These files are optional, untracked, and machine-owned.
+
+| File | Lifecycle | Use for |
+|---|---|---|
+| `~/.profile.local` | Login shells, automation-visible bootstrap | Machine-specific env vars, PATH additions, installer-added lines moved out of tracked files |
+| `~/.zshrc.local` | Interactive zsh only | Aliases, prompt tweaks, completions, experiments, interactive helpers |
+
+Installer pollution workflow:
+
+1. Let the installer finish, even if it appends to a tracked startup file.
+2. Inspect the repo diff with `git diff shell/.profile` or the affected shell file.
+3. Move the machine-specific lines into `~/.profile.local`.
+4. Restore the tracked file with `git checkout -- shell/.profile`.
 
 ## What belongs in `~/.zshrc.local`
 
@@ -77,10 +96,17 @@ Use `~/.zshrc.local` for things like:
 - host-specific aliases
 - local prompt/theme tweaks
 - temporary experiments
-- machine-only environment variables
 - interactive helpers that do not need to work in automation
 
 Do **not** use it as the primary place to make automation-visible commands available.
+
+## What belongs in `~/.profile.local`
+
+Use `~/.profile.local` for things like:
+- machine-specific PATH additions
+- env vars needed by agents, services, or non-interactive shells
+- runtime tweaks that must apply outside interactive zsh
+- installer-added shell snippets moved out of tracked files
 
 ## What belongs in repo-managed shell files
 
@@ -89,6 +115,8 @@ Use repo-managed shell files for:
 - portable PATH/bootstrap rules
 - cross-machine toolchain initialization
 - reapplication of the `~/.local/bin` precedence contract
+
+Shared PATH ownership belongs in `shell/.profile`. Interactive zsh files may add shell niceties, but they should not be the baseline PATH owner.
 
 Do not hardcode one-machine hacks into shared shell files unless they are part of an intentional documented contract.
 

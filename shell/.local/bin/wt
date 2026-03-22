@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+wt_script="$HOME/.wt/wt.sh"
+
+if [[ ! -r "$wt_script" ]]; then
+  printf 'wt unavailable: missing %s\n' "$wt_script" >&2
+  exit 1
+fi
+
+exec bash "$wt_script" "$@"

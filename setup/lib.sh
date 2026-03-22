@@ -26,6 +26,8 @@ VERIFY_PROFILE=""
 DRY_RUN=0
 SKIP_INSTALL=0
 ALLOW_PARTIAL="${DOTFILES_ALLOW_PARTIAL:-0}"
+SHOW_HELP=0
+ARG_ERRORS=()
 
 secrets_source_path() {
   printf '%s\n' "$DOTFILES_DIR/shell/.secrets"
@@ -49,6 +51,10 @@ log_warn() {
 
 log_error() {
   log_line "$COLOR_RED" "$1"
+}
+
+record_arg_error() {
+  ARG_ERRORS+=("$1")
 }
 
 record_error() {
@@ -96,6 +102,76 @@ run_cmd_allow_failure() {
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
+}
+
+base_system_path() {
+  printf '%s\n' "/usr/bin:/bin:/usr/sbin:/sbin"
+}
+
+resolve_command_from_clean_login_shell() {
+  local cmd="$1"
+  local zsh_bin user_name
+
+  zsh_bin="$(command -v zsh 2>/dev/null || printf '/bin/zsh')"
+  [[ -x "$zsh_bin" ]] || return 1
+
+  user_name="${USER:-$(id -un)}"
+  env -i \
+    HOME="$HOME" \
+    USER="$user_name" \
+    SHELL="$zsh_bin" \
+    PATH="$(base_system_path)" \
+    "$zsh_bin" -lc "command -v '$cmd'" 2>/dev/null | tail -n 1
+}
+
+command_exists_in_clean_login_shell() {
+  local resolved
+  resolved="$(resolve_command_from_clean_login_shell "$1")" || return 1
+  [[ "$resolved" = /* && -x "$resolved" ]]
+}
+
+command_exists_in_stable_path_contract() {
+  local cmd="$1"
+  local user_name
+
+  user_name="${USER:-$(id -un)}"
+  env -i \
+    HOME="$HOME" \
+    USER="$user_name" \
+    PATH="$HOME/.local/bin:$(base_system_path)" \
+    /bin/sh -lc "command -v '$cmd' >/dev/null 2>&1"
+}
+
+path_is_in_base_system() {
+  case "$1" in
+    /usr/bin/*|/bin/*|/usr/sbin/*|/sbin/*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+refresh_local_bin_entrypoints() {
+  local profile="$1"
+  local cmd resolved link_path
+
+  mkdir -p "$HOME/.local/bin"
+
+  while IFS= read -r cmd; do
+    [[ -z "$cmd" ]] && continue
+    link_path="$HOME/.local/bin/$cmd"
+
+    if [[ -e "$link_path" && ! -L "$link_path" ]]; then
+      continue
+    fi
+
+    resolved="$(resolve_command_from_clean_login_shell "$cmd")" || continue
+    [[ "$resolved" = /* && -x "$resolved" ]] || continue
+    [[ "$resolved" == "$link_path" ]] && continue
+    path_is_in_base_system "$resolved" && continue
+
+    ln -sfn "$resolved" "$link_path"
+  done < <(profile_commands "$profile")
 }
 
 detect_os() {
@@ -147,7 +223,7 @@ handle_interrupt() {
   if [[ ${#COMPLETED_LAYERS[@]} -gt 0 ]]; then
     printf 'Completed layers: %s\n' "${COMPLETED_LAYERS[*]}"
   fi
-  printf 'Re-run ./init.sh to resume.\n'
+  printf 'Re-run ./setup.sh <profile> to resume.\n'
   exit 130
 }
 
@@ -155,9 +231,52 @@ configure_interrupt_trap() {
   trap handle_interrupt INT TERM
 }
 
+valid_profile() {
+  case "$1" in
+    minimal|full|macos|linux-headless|linux-desktop)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+print_setup_help() {
+  cat <<'EOF'
+Usage:
+  ./setup.sh <profile> [--dry-run] [--skip-install] [--allow-partial]
+  ./setup.sh --verify <profile>
+  ./setup.sh --layer <layer>
+  ./setup.sh --stow <package>
+
+Profiles:
+  minimal         Portable shell-focused environment
+  full            Minimal plus shared developer runtimes and tooling
+  macos           Full plus macOS-specific packages and config
+  linux-headless  Full plus Linux non-GUI configuration
+  linux-desktop   Linux-headless plus desktop/window-manager configuration
+
+Examples:
+  ./setup.sh macos
+  ./setup.sh linux-headless
+  ./setup.sh --verify macos
+  ./setup.sh --layer full
+  ./setup.sh --stow shell
+
+No profile is chosen automatically. Pick the exact profile you want.
+EOF
+}
+
 parse_args() {
+  if [[ $# -eq 0 ]]; then
+    SHOW_HELP=1
+    return 0
+  fi
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --help|-h)
+        SHOW_HELP=1
+        ;;
       --dry-run)
         DRY_RUN=1
         ;;
@@ -169,80 +288,57 @@ parse_args() {
         ;;
       --layer)
         shift
+        if [[ $# -eq 0 || "$1" == --* ]]; then
+          record_arg_error "--layer requires an explicit layer"
+          break
+        fi
+        if ! valid_profile "$1"; then
+          record_arg_error "Unknown layer: $1"
+          break
+        fi
         RUN_LAYER_ONLY="$1"
         ;;
       --stow)
         shift
+        if [[ $# -eq 0 || "$1" == --* ]]; then
+          record_arg_error "--stow requires a package name"
+          break
+        fi
         STOW_ONLY_PACKAGE="$1"
         ;;
       --verify)
         shift
-        if [[ $# -gt 0 && "$1" != --* ]]; then
-          VERIFY_PROFILE="$1"
-        else
-          VERIFY_PROFILE="auto"
-          continue
+        if [[ $# -eq 0 || "$1" == --* ]]; then
+          record_arg_error "--verify requires an explicit profile"
+          break
         fi
+        if ! valid_profile "$1"; then
+          record_arg_error "Unknown verify profile: $1"
+          break
+        fi
+        VERIFY_PROFILE="$1"
         ;;
-      minimal|full|macos|linux-headless|linux-desktop|auto)
+      minimal|full|macos|linux-headless|linux-desktop)
         REQUESTED_PROFILE="$1"
         ;;
       *)
-        record_error "Unknown argument: $1"
+        record_arg_error "Unknown argument: $1"
         ;;
     esac
     shift
   done
 
-  if [[ -n "$VERIFY_PROFILE" && "$VERIFY_PROFILE" == "auto" ]]; then
-    VERIFY_PROFILE="$(resolve_profile auto)"
-  fi
-}
-
-has_display_server() {
-  if [[ "$OS_FAMILY" != "linux" ]]; then
-    return 1
-  fi
-
-  [[ -n "${WAYLAND_DISPLAY:-}" ]] && return 0
-  case "${XDG_SESSION_TYPE:-}" in
-    wayland|x11) return 0 ;;
-  esac
-
-  if [[ -n "${DISPLAY:-}" && -z "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ]]; then
+  if [[ "$SHOW_HELP" -eq 1 || "${#ARG_ERRORS[@]}" -gt 0 ]]; then
     return 0
   fi
 
-  if [[ -z "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ]] && command_exists systemctl; then
-    systemctl is-active --quiet graphical.target >/dev/null 2>&1 && return 0
-  fi
-
-  return 1
-}
-
-resolve_profile() {
-  local requested="${1:-auto}"
-
-  if [[ "$requested" != "auto" && -n "$requested" ]]; then
-    printf '%s\n' "$requested"
+  if [[ -n "$RUN_LAYER_ONLY" || -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ]]; then
     return 0
   fi
 
-  case "$OS_FAMILY" in
-    darwin)
-      printf '%s\n' "macos"
-      ;;
-    linux)
-      if has_display_server; then
-        printf '%s\n' "linux-desktop"
-      else
-        printf '%s\n' "linux-headless"
-      fi
-      ;;
-    *)
-      printf '%s\n' "minimal"
-      ;;
-  esac
+  if [[ -z "$REQUESTED_PROFILE" ]]; then
+    SHOW_HELP=1
+  fi
 }
 
 profile_layers() {
@@ -311,7 +407,7 @@ print_profile_banner() {
   local profile="$1"
   shift
   local layers=("$@")
-  printf 'dotfiles init\n'
+  printf 'dotfiles setup\n'
   printf 'profile: %s\n' "$profile"
   printf 'layers: %s\n' "${layers[*]}"
 }
@@ -1302,8 +1398,12 @@ verify_commands() {
 
   while IFS= read -r cmd; do
     [[ -z "$cmd" ]] && continue
-    if ! command_exists "$cmd"; then
-      printf 'missing command: %s\n' "$cmd"
+    if ! command_exists_in_clean_login_shell "$cmd"; then
+      printf 'missing in clean login shell: %s\n' "$cmd"
+      failures=1
+    fi
+    if ! command_exists_in_stable_path_contract "$cmd"; then
+      printf 'missing in stable PATH contract: %s\n' "$cmd"
       failures=1
     fi
   done < <(profile_commands "$profile")
@@ -1326,7 +1426,7 @@ verify_profile() {
 
   if command_exists nvim; then
     if ! nvim_version_at_least "0.11"; then
-      printf 'neovim too old: %s (need >= 0.11). Run ./init.sh to upgrade.\n' \
+      printf 'neovim too old: %s (need >= 0.11). Run ./setup.sh <profile> to upgrade.\n' \
         "$(nvim --version 2>/dev/null | head -1 | sed 's/^NVIM v//')"
       failures=1
     fi
@@ -1428,17 +1528,19 @@ run_layer() {
 
 check_required_commands() {
   local profile="$1"
-  local cmd missing=()
+  local cmd missing_login=() missing_stable=()
 
   while IFS= read -r cmd; do
     [[ -z "$cmd" ]] && continue
-    if ! command_exists "$cmd"; then
-      missing+=("$cmd")
-    fi
+    command_exists_in_clean_login_shell "$cmd" || missing_login+=("$cmd")
+    command_exists_in_stable_path_contract "$cmd" || missing_stable+=("$cmd")
   done < <(profile_commands "$profile")
 
-  if [[ ${#missing[@]} -gt 0 ]]; then
-    record_error "Required commands missing for profile $profile: ${missing[*]}"
+  if [[ ${#missing_login[@]} -gt 0 ]]; then
+    record_error "Required commands missing in clean login shell for profile $profile: ${missing_login[*]}"
+  fi
+  if [[ ${#missing_stable[@]} -gt 0 ]]; then
+    record_error "Required commands missing from stable PATH contract for profile $profile: ${missing_stable[*]}"
   fi
 }
 
