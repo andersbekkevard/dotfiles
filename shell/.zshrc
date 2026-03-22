@@ -1,3 +1,7 @@
+if [[ "$OSTYPE" == darwin* && -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
@@ -11,12 +15,12 @@ for config_file in \
   [[ -r "$config_file" ]] && source "$config_file"
 done
 
-if [[ "$OSTYPE" == darwin* ]] && [[ -r "$HOME/.zsh/mac.zsh" ]]; then
-  source "$HOME/.zsh/mac.zsh"
-fi
-
 if [[ -r "$HOME/.secrets" ]] && LC_ALL=C grep -Iq . "$HOME/.secrets" 2>/dev/null; then
   source "$HOME/.secrets"
+fi
+
+if [[ "$OSTYPE" == darwin* ]] && [[ -r "$HOME/.zsh/mac.zsh" ]]; then
+  source "$HOME/.zsh/mac.zsh"
 fi
 
 [[ -r "$HOME/.zsh/tools.zsh" ]] && source "$HOME/.zsh/tools.zsh"
@@ -27,6 +31,3 @@ fi
 
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/tmp/google-cloud-sdk/path.zsh.inc' ]; then . '/tmp/google-cloud-sdk/path.zsh.inc'; fi
-
-# OpenClaw Completion
-source "/home/anders/.openclaw/completions/openclaw.zsh"
