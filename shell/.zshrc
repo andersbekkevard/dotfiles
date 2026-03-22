@@ -1,6 +1,4 @@
-if [[ "$OSTYPE" == darwin* && -x /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-fi
+[[ -o interactive && -z "${DOTFILES_PROFILE_SOURCED:-}" && -r "$HOME/.profile" ]] && source "$HOME/.profile"
 
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"

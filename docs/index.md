@@ -14,7 +14,7 @@ Use this page as the map for the `docs/` directory.
 | Topic | Canonical file | Notes |
 |---|---|---|
 | Daily usage, verify, maintenance | `docs/usage.md` | Operational commands and safe workflows |
-| Profiles and auto resolution | `docs/profiles.md` | Exact desktop/headless detection rules |
+| Profiles and selection | `docs/profiles.md` | Explicit profile choices and boundaries |
 | Runtime version and installer policy | `docs/runtimes.md` | Version floors and installer strategy |
 | Repository/layer architecture | `docs/architecture.md` | Stow packages + setup orchestration |
 | Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks and automation-visible wrappers belong |

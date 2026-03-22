@@ -6,4 +6,10 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$DOTFILES_DIR/setup/lib.sh"
 
 init_runtime
-verify_profile "$(resolve_profile "${1:-auto}")"
+
+if [[ $# -ne 1 ]] || ! valid_profile "$1"; then
+  printf 'usage: ./setup/verify.sh <profile>\n' >&2
+  exit 1
+fi
+
+verify_profile "$1"

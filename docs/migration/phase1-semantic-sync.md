@@ -33,7 +33,7 @@
 
 ## What remains for full PRD implementation
 - Single-repo architecture changes still pending:
-  - package-layered init/bootstrap (`init.sh`) and layer flags (`--layer`, `--verify`, `--stow`).
+  - package-layered bootstrap (`setup.sh`) and layer flags (`--layer`, `--verify`, `--stow`).
   - explicit profile chain implementation and headless/desktop/macos profile separation.
   - `.git-crypt` enablement and secret handling flow.
   - split stow package strategy with explicit `docs` as non-stowed.
@@ -42,5 +42,5 @@
 ## Risk areas for parity (macOS vs ThinkPad)
 - `main`/`ubuntu` behavior still reflects current branch split history in some files (`.zshrc` still sources machine/workstation helper paths and runtime details).
 - `macOS`-specific config currently depends on optional helper installation behavior (`brew --prefix` checks, zsh-ai sourcing).
-- Function/tool runtime version sources differ by OS and may need normalization when `init.sh` layers are introduced in phase 2.
+- Function/tool runtime version sources differed by OS and needed normalization as the layered `setup.sh` flow was introduced in phase 2.
 - Desktop-only package sets are currently Ubuntu-specific and not yet modeled as explicit profile gating in phase 1.

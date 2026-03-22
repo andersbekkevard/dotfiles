@@ -9,5 +9,4 @@ if command -v thefuck >/dev/null 2>&1 && thefuck --version >/dev/null 2>&1; then
   alias tf='fuck'
 fi
 
-[[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
 [[ -f "$HOME/.wt/wt.sh" ]] && source "$HOME/.wt/wt.sh"

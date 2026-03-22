@@ -1,10 +1,12 @@
 # Machine-local shell overrides live here.
 # This file is user-owned. Keep host-specific settings here instead of tracked
 # dotfiles, and compare against ~/.config/zsh/local.example.zsh after running
-# ./init.sh to review the latest template changes safely.
+# ./setup.sh to review the latest template changes safely.
 #
 # Good candidates:
 # - prompt/tmux accent
-# - host-specific PATH additions
-# - local aliases or completions
+# - host-specific aliases or completions
 # - laptop-only checks
+#
+# For env vars or PATH entries that automation and services must see, use
+# ~/.profile.local instead.

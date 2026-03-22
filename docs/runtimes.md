@@ -18,5 +18,7 @@ Why these choices:
 - Linux avoids Linuxbrew and uses apt plus official binaries/scripts instead.
 - All Linux binary downloads are architecture-aware (x86_64 and arm64/aarch64).
 - `fnm` node stack is hardened: PATH is re-evaluated after install, and pnpm falls back to `npm install -g pnpm` if corepack is unavailable.
-- Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, and related CLI entrypoints lives in `shell/.profile` and is pulled into zsh login shells via `shell/.zprofile`; interactive-only hooks such as `fnm --use-on-cd` stay in `shell/.zshrc`.
+- Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, Go user binaries, repo scripts, and related CLI entrypoints lives in `shell/.profile`. zsh login shells inherit that through `shell/.zprofile`, and interactive non-login zsh shells backfill by sourcing `~/.profile` from `shell/.zshrc` when needed.
+- Interactive-only hooks such as `fnm --use-on-cd`, completions, and prompt/theme behavior stay in `shell/.zshrc`.
+- `./setup.sh` refreshes `~/.local/bin` symlinks for commands that resolve outside the base system PATH so agents and non-login shells can rely on the same stable command layer.
 - Interactive zsh shells reject project-level `npm install` / `npm i` loudly; use `pnpm install` or `pnpm add` instead. Global installs via `npm ... -g` are allowed, though `pnpm add -g` remains the preferred default. The bootstrap may still invoke raw `npm install -g pnpm` internally as a non-interactive fallback when `corepack` is unavailable.

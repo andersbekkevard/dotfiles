@@ -7,22 +7,22 @@ Unified cross-platform dotfiles for macOS, Ubuntu desktop, and Ubuntu headless.
 ```bash
 git clone <repo-url> ~/.dotfiles
 cd ~/.dotfiles
-./init.sh
+./setup.sh macos
 ```
 
-Use an explicit profile to avoid surprises:
+Choose the exact profile you want:
 
 ```bash
-./init.sh minimal
-./init.sh full
-./init.sh macos
-./init.sh linux-headless
-./init.sh linux-desktop
+./setup.sh minimal
+./setup.sh full
+./setup.sh macos
+./setup.sh linux-headless
+./setup.sh linux-desktop
 ```
 
-With no explicit profile, `./init.sh` uses `auto`. On Linux, `auto` only selects `linux-desktop` when it sees runtime evidence of a local graphical session: `WAYLAND_DISPLAY`, `XDG_SESSION_TYPE=x11|wayland`, a non-SSH `DISPLAY`, or an active `graphical.target`. Installed GUI packages alone do not count, and SSH/X11-forwarded shells default to `linux-headless`.
+`./setup.sh` is the only root bootstrap entrypoint. Running it without a profile prints the available modes instead of auto-detecting one.
 
-On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./init.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
+On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./setup.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
 
 ## Architecture support
 
@@ -38,13 +38,11 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 ## Useful commands
 
 ```bash
-./init.sh --verify
-./init.sh --layer full
-./init.sh --stow nvim
-DOTFILES_ALLOW_PARTIAL=1 ./init.sh linux-headless
+./setup.sh --verify macos
+./setup.sh --layer full
+./setup.sh --stow nvim
+DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-headless
 ./setup/brew-drift
 ```
 
-`setup.sh` remains as a compatibility wrapper for `./init.sh` and now passes arguments through without forcing `linux-desktop`.
-
-Machine-local shell overrides live in `~/.zshrc.local`. `./init.sh` refreshes `~/.config/zsh/local.example.zsh` as the latest reference template without overwriting a customized local file.
+Machine-local login/runtime overrides live in `~/.profile.local`; interactive-only shell tweaks live in `~/.zshrc.local`. `./setup.sh` refreshes `~/.config/zsh/local.example.zsh` as the latest reference template without overwriting a customized local file, and refreshes stable `~/.local/bin` entrypoints for commands installed outside the base system PATH.
