@@ -9,11 +9,16 @@ Use this page as the map for the `docs/` directory.
 - Runtime/toolchain expectations: `docs/runtimes.md`
 - Structural changes to repo/setup: `docs/architecture.md`
 
+Operator invariant:
+
+- The only root bootstrap entrypoint is `./setup.sh`.
+- Files under `setup/` are internal helpers, manifests, and maintenance tools unless a doc explicitly says otherwise.
+
 ## Topic map
 
 | Topic | Canonical file | Notes |
 |---|---|---|
-| Daily usage, verify, maintenance | `docs/usage.md` | Operational commands and safe workflows |
+| Daily usage, verify, maintenance | `docs/usage.md` | Operational commands, explicit profiles, and the single entrypoint |
 | Profiles and selection | `docs/profiles.md` | Explicit profile choices and boundaries |
 | Runtime version and installer policy | `docs/runtimes.md` | Version floors and installer strategy |
 | Repository/layer architecture | `docs/architecture.md` | Stow packages + setup orchestration |

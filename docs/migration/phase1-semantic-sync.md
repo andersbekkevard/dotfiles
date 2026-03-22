@@ -1,5 +1,11 @@
 # Phase 1 Semantic Sync (2026-03-06)
 
+Historical note:
+
+- This file records what was true during phase 1.
+- It is not the source of truth for the current bootstrap or profile system.
+- For the current system, use `docs/usage.md`, `docs/profiles.md`, and `docs/architecture.md`.
+
 ## Scope completed in this phase
 
 - Created clean implementation branch/worktree at `feat/dotfiles-prd-v1-5-sync` from `main` using `wt`.
@@ -31,13 +37,15 @@
 - `backups/` cleanup/removal across timestamped snapshot directories.
 - legacy macOS-only tracked files removed from the synced branch (`.zshrc.mac`, Karabiner, LinearMouse artifacts).
 
-## What remains for full PRD implementation
-- Single-repo architecture changes still pending:
-  - package-layered bootstrap (`setup.sh`) and layer flags (`--layer`, `--verify`, `--stow`).
-  - explicit profile chain implementation and headless/desktop/macos profile separation.
-  - `.git-crypt` enablement and secret handling flow.
-  - split stow package strategy with explicit `docs` as non-stowed.
-  - explicit platform guards and machine-specific local overrides consolidation.
+## What remained after phase 1
+
+These were the follow-on items identified at the time. They are historical notes, not current pending work:
+
+- package-layered bootstrap and layer flags
+- explicit profile chain implementation and platform/profile separation
+- `git-crypt` enablement and secret handling flow
+- split stow package strategy with `docs/` as non-stowed
+- explicit platform guards and machine-specific local overrides consolidation
 
 ## Risk areas for parity (macOS vs ThinkPad)
 - `main`/`ubuntu` behavior still reflects current branch split history in some files (`.zshrc` still sources machine/workstation helper paths and runtime details).
