@@ -8,6 +8,12 @@ The repository is split into three categories:
 
 `setup.sh` requires an explicit profile, expands it into an additive layer chain, installs the required packages for each layer, backs up first-run conflicts, and stows the corresponding packages with `stow --no-folding`.
 
+Operator entrypoint rule:
+
+- `./setup.sh` is the only root bootstrap command.
+- Files under `setup/` are implementation details, manifests, or maintenance helpers.
+- The repo does not offer a second install entrypoint or an implicit auto-profile mode.
+
 Profiles are additive:
 
 ```text

@@ -10,9 +10,19 @@ cd ~/.dotfiles
 
 Explicit profile selection:
 
+- `./setup.sh` is the only root bootstrap entrypoint.
+- Files under `setup/` are support scripts, not alternate install entrypoints.
 - `./setup.sh` never auto-detects a profile.
 - Running `./setup.sh` with no profile prints the available profiles and maintenance modes.
 - Pick the exact target you want: `minimal`, `full`, `macos`, `linux-headless`, or `linux-desktop`.
+
+Typical first-run examples:
+
+```bash
+./setup.sh macos
+./setup.sh linux-headless
+./setup.sh linux-desktop
+```
 
 Common maintenance:
 

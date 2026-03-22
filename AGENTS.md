@@ -6,6 +6,8 @@ This file is the navigation map for coding agents working in this repo.
 
 Maintain a one-hit, idempotent, cross-platform dotfiles bootstrap (`setup.sh`) with predictable profile behavior and verifiable outcomes.
 
+Operator invariant: `./setup.sh` is the only root bootstrap entrypoint. Files under `setup/` are internal implementation files or maintenance helpers unless a doc explicitly says otherwise.
+
 ## Mandatory read order (before editing code)
 
 1. `README.md` (repo overview + quick start)
@@ -23,7 +25,7 @@ If the task touches secrets or migration, also read:
 
 | File | Primary purpose | Source of truth for |
 |---|---|---|
-| `README.md` | Entry point for humans and quick bootstrap | First-run workflow and high-level guarantees |
+| `README.md` | Entry point for humans and quick bootstrap | First-run workflow, explicit profiles, and high-level guarantees |
 | `docs/index.md` | Documentation directory map | Where each topic lives |
 | `docs/usage.md` | Day-to-day commands | How to run, verify, and maintain dotfiles |
 | `docs/profiles.md` | Profile behavior | Explicit profile selection and boundaries |
@@ -38,7 +40,7 @@ If the task touches secrets or migration, also read:
 When behavior changes, update docs in the same commit:
 
 - **CLI flow changes** (`setup.sh` flags, verify behavior) → update `docs/usage.md`
-- **Profile detection/selection changes** → update `docs/profiles.md`
+- **Profile selection changes** → update `docs/profiles.md`
 - **Runtime install/version policy changes** → update `docs/runtimes.md`
 - **Repo/package/layer structure changes** → update `docs/architecture.md`
 - **Secrets workflow changes** → update `docs/secrets.md`
