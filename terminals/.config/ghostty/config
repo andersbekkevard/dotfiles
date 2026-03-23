@@ -19,16 +19,8 @@ title =
 window-title-font-family = "MonoLisa Variable"
 window-save-state = always
 
-# Let the left Option key behave as Alt/Meta for tmux M- bindings,
-# while keeping the right Option key for macOS symbols and dead keys.
-macos-option-as-alt = left
-
-# Restore Norwegian left-Option 7/8/9 symbols while keeping left Option as Alt.
-keybind = alt+7=text:|
-keybind = alt+8=text:[
-keybind = alt+9=text:]
-keybind = alt+shift+8=text:{
-keybind = alt+shift+9=text:}
+# Keep Option native on macOS so symbol and dead-key input works normally.
+macos-option-as-alt = false
 
 # Shift+Enter sends newline sequence for Claude Code.
 keybind = shift+enter=text:\x1b\r
@@ -42,10 +34,6 @@ keybind = super+shift+z=esc:y
 # Extend selection to the beginning or end of the line.
 keybind = super+shift+left=adjust_selection:beginning_of_line
 keybind = super+shift+right=adjust_selection:end_of_line
-
-# Extend selection character-wise with Option+Shift+Arrow.
-keybind = alt+shift+left=adjust_selection:left
-keybind = alt+shift+right=adjust_selection:right
 
 # Norwegian-specific home row split navigation.
 keybind = super+ø=goto_split:previous
