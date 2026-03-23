@@ -1,5 +1,6 @@
 build-essential
 gh
+libclang-dev
 git-crypt
 unzip
 xclip

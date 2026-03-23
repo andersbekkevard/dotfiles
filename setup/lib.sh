@@ -725,6 +725,7 @@ ensure_fnm_available_now() {
   fi
 
   if [[ -n "$fnm_bin" ]]; then
+    export PATH="$(dirname "$fnm_bin"):$PATH"
     eval "$("$fnm_bin" env --use-on-cd --shell bash)"
   fi
 }
