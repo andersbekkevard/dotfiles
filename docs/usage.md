@@ -63,6 +63,8 @@ Prefix + c
 
 `Alt-a` and `Alt-d` move to the previous and next window. `Prefix + -`, `Prefix + _`, and `Prefix + c` create splits/windows in the current pane's working directory.
 
+`Prefix + Ctrl-c` is mapped to the same action as `Prefix + c`, so it opens a new tmux window in the current pane's working directory.
+
 `Prefix + x` keeps the confirmation prompt before killing the current pane. `Prefix + X` and `Prefix + Ctrl-x` kill the current pane immediately when you want the faster version.
 
 Tmux fingers:
