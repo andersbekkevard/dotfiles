@@ -209,6 +209,21 @@ init_runtime() {
   RUN_ID="$(date +%Y%m%d-%H%M%S)"
   detect_os
   detect_arch
+  seed_path
+}
+
+seed_path() {
+  local dirs=(
+    "$HOME/.local/bin"
+    "$HOME/.local/share/fnm"
+    "$HOME/.fnm"
+    "$HOME/.cargo/bin"
+    "$HOME/.bun/bin"
+  )
+  local d
+  for d in "${dirs[@]}"; do
+    [[ -d "$d" ]] && [[ ":$PATH:" != *":$d:"* ]] && export PATH="$d:$PATH"
+  done
 }
 
 cleanup_runtime() {
@@ -702,8 +717,15 @@ ensure_fnm_available_now() {
     return 0
   fi
 
+  local fnm_bin=""
   if [[ -x "$HOME/.local/share/fnm/fnm" ]]; then
-    eval "$("$HOME/.local/share/fnm/fnm" env --use-on-cd --shell bash)"
+    fnm_bin="$HOME/.local/share/fnm/fnm"
+  elif [[ -x "$HOME/.fnm/fnm" ]]; then
+    fnm_bin="$HOME/.fnm/fnm"
+  fi
+
+  if [[ -n "$fnm_bin" ]]; then
+    eval "$("$fnm_bin" env --use-on-cd --shell bash)"
   fi
 }
 
