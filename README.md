@@ -20,7 +20,7 @@ Choose the exact profile you want:
 ./setup.sh linux-desktop
 ```
 
-`./setup.sh` is the only root bootstrap entrypoint. Running it without a profile prints the available modes instead of auto-detecting one.
+`./setup.sh` is the only root bootstrap entrypoint.
 
 On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./setup.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
 
