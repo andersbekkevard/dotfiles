@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+now_ts="$(date +%s)"
+
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     printf '%s not found\n' "$1" >&2
@@ -81,6 +83,7 @@ warm_hex='#ffd75f'
 row_hex='#1a1a1a'
 
 color_reset=$'\033[0m'
+color_bold=$'\033[1m'
 color_fg="$(ansi_hex "$fg_hex")"
 color_bright="$(ansi_hex "$bright_hex")"
 color_dim="$(ansi_hex "$dim_hex")"
@@ -88,6 +91,16 @@ color_muted="$(ansi_hex "$muted_hex")"
 color_accent="$(ansi_hex "$accent_hex")"
 color_soft="$(ansi_hex "$accent_soft_hex")"
 color_warm="$(ansi_hex "$warm_hex")"
+
+# Command-type colors (pre-computed to avoid per-window subshells)
+color_cmd_shell="$(ansi_hex '#7aa2f7')"    # soft blue  — idle terminal
+color_cmd_editor="$(ansi_hex '#9ece6a')"   # green      — editing
+color_cmd_devrun="$(ansi_hex '#e0af68')"   # amber      — running process
+color_cmd_git="$(ansi_hex '#bb9af7')"      # lavender   — version control
+color_cmd_filemgr="$(ansi_hex '#73daca')"  # teal       — file browsing
+color_cmd_system="$(ansi_hex '#f7768e')"   # rose       — system/monitoring
+color_cmd_remote="$(ansi_hex '#ff9e64')"   # orange     — remote connection
+color_cmd_other="$(ansi_hex '#a9b1d6')"    # silver     — fallback
 
 shorten_home() {
   local path="${1:-}"
@@ -144,15 +157,18 @@ format_day() {
 
 format_age() {
   local ts="${1:-0}"
-  local now age
+  local age
 
   if [[ -z "$ts" || "$ts" == "0" ]]; then
     printf -- '-'
     return
   fi
 
-  now="$(date +%s)"
-  age=$(( now - ts ))
+  age=$(( now_ts - ts ))
+
+  if (( age < 0 )); then
+    age=0
+  fi
 
   if (( age < 60 )); then
     printf '%ss' "$age"
@@ -166,6 +182,7 @@ format_age() {
     format_day "$ts"
   fi
 }
+
 
 preview_rule() {
   local cols="${FZF_PREVIEW_COLUMNS:-72}"
@@ -200,6 +217,19 @@ render_window_line() {
   local label_color="${8:-$color_bright}"
   local cmd_cell path_cell label_cell
 
+  # Command-type color (inline to avoid subshell)
+  local cmd_ansi
+  case "$cmd" in
+    zsh|bash|sh|fish|dash)           cmd_ansi="$color_cmd_shell" ;;
+    nvim|vim|vi|emacs|nano|code|hx|kakoune) cmd_ansi="$color_cmd_editor" ;;
+    node|npm|pnpm|yarn|bun|python|python3|cargo|go|make|ruby|deno|java|tsc|claude) cmd_ansi="$color_cmd_devrun" ;;
+    git|lazygit|tig|gh|gitui)        cmd_ansi="$color_cmd_git" ;;
+    yazi|ranger|nnn|lf|mc|vifm)      cmd_ansi="$color_cmd_filemgr" ;;
+    htop|btop|top|watch|ps|journalctl|dmesg|strace|ltrace) cmd_ansi="$color_cmd_system" ;;
+    ssh|mosh|telnet)                  cmd_ansi="$color_cmd_remote" ;;
+    *)                                cmd_ansi="$color_cmd_other" ;;
+  esac
+
   printf -v label_cell '%-24s' "$(truncate_right "$label" 24)"
   printf -v cmd_cell '%-18s' "$(truncate_right "$cmd" 18)"
   printf -v path_cell '%-36s' "$(truncate_left "$(shorten_home "$path")" 36)"
@@ -208,7 +238,7 @@ render_window_line() {
     "$marker_color" "$marker" "$color_reset" \
     "$label_color" "$label_cell" "$color_reset" \
     "$color_fg" "$pane_count" "$color_reset" \
-    "$color_accent" "$cmd_cell" "$color_reset" \
+    "$cmd_ansi" "$cmd_cell" "$color_reset" \
     "$color_dim" "$path_cell" "$color_reset" \
     "$color_muted" "$age" "$color_reset"
 }
@@ -228,35 +258,213 @@ current_session() {
 }
 
 pause_for_input() {
-  printf '\nPress Enter to continue '
+  printf '\n%bPress Enter to continue%b ' "$color_dim" "$color_reset"
   IFS= read -r _
 }
 
-matches_query() {
-  local haystack="${1:-}"
-  local query="${2:-}"
-  local haystack_lower query_lower token
+# ── ANSI-aware truncate + pad ──────────────────────────────────────
+# Truncates text to exactly $width visible characters, preserving
+# ANSI escape sequences. Pads with spaces if shorter. Always appends
+# a reset so color doesn't bleed.
+ansi_truncpad() {
+  local text="$1" width="$2"
+  local visible=0 i=0 len=${#text} result="" ch seq c
 
-  if [[ -z "${query// }" ]]; then
-    return 0
-  fi
-
-  haystack_lower="$(to_lower "$haystack")"
-  query_lower="$(to_lower "$query")"
-
-  for token in $query_lower; do
-    [[ -z "$token" ]] && continue
-    if [[ "$haystack_lower" != *"$token"* ]]; then
-      return 1
+  while (( i < len && visible < width )); do
+    ch="${text:i:1}"
+    if [[ "$ch" == $'\033' ]]; then
+      seq="$ch"; i=$(( i + 1 ))
+      if (( i < len )) && [[ "${text:i:1}" == "[" ]]; then
+        seq+="${text:i:1}"; i=$(( i + 1 ))
+        while (( i < len )); do
+          c="${text:i:1}"; seq+="$c"; i=$(( i + 1 ))
+          [[ "$c" =~ [A-Za-z] ]] && break
+        done
+      fi
+      result+="$seq"
+    else
+      result+="$ch"
+      visible=$(( visible + 1 ))
+      i=$(( i + 1 ))
     fi
   done
 
+  while (( visible < width )); do
+    result+=" "; visible=$(( visible + 1 ))
+  done
+
+  result+=$'\033[0m'
+  printf '%s' "$result"
+}
+
+# ── Shared action-screen renderer ──────────────────────────────────
+# Renders a full-width, centered, themed UI for prompt actions:
+#   1. Title in top border
+#   2. Bordered pane capture (ANSI-safe)
+#   3. Bottom border + esc hint
+#
+# Usage:
+#   render_action_screen <title> <target>
+render_action_screen() {
+  local title="${1:-}" target="${2:-}"
+  local term_cols term_rows
+  term_cols="$(tput cols 2>/dev/null || printf '80')"
+  term_rows="$(tput lines 2>/dev/null || printf '40')"
+  local box_w=$(( term_cols - 2 ))
+  (( box_w < 40 )) && box_w=40
+  local inner_w=$(( box_w - 2 ))
+
+  # Budget: terminal rows minus (title + bottom + input + meta footer + blanks)
+  local overhead=7
+  local capture_lines=$(( term_rows - overhead ))
+  (( capture_lines < 5 )) && capture_lines=5
+
+  # Build reusable horizontal rule
+  local h_line="" p
+  for (( p = 0; p < inner_w; p++ )); do h_line+="─"; done
+
+  # Left margin for centering
+  local margin=$(( (term_cols - box_w) / 2 ))
+  local pad=""
+  for (( p = 0; p < margin; p++ )); do pad+=" "; done
+
+  # ── Build entire frame into a buffer, then flush at once ──
+  local buf=""
+
+  buf+=$'\n'
+
+  # ┌─ TITLE ──────────────────────────────┐
+  local title_len=${#title}
+  local title_right_len=$(( inner_w - title_len - 3 ))
+  (( title_right_len < 1 )) && title_right_len=1
+  local title_right=""
+  for (( p = 0; p < title_right_len; p++ )); do title_right+="─"; done
+  buf+="$(printf '%s%b┌─%b %b%b%s%b %b%s┐%b\n' \
+    "$pad" \
+    "$color_accent" "$color_reset" \
+    "$color_bold" "$color_accent" "$title" "$color_reset" \
+    "$color_accent" "$title_right" "$color_reset")"
+
+  # Bordered pane capture
+  if [[ -n "$target" ]]; then
+    local pane_id capture
+    pane_id="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null || true)"
+    if [[ -n "$pane_id" ]]; then
+      capture="$(tmux capture-pane -p -e -t "$pane_id" -S - -E - 2>/dev/null | tail -n "$capture_lines" || true)"
+    fi
+    if [[ -n "${capture:-}" ]]; then
+      while IFS= read -r line; do
+        buf+=$'\n'"$(printf '%s%b│%b%s%b│%b' \
+          "$pad" \
+          "$color_accent" "$color_reset" \
+          "$(ansi_truncpad "$line" "$inner_w")" \
+          "$color_accent" "$color_reset")"
+      done <<< "$capture"
+    else
+      local empty_msg=" (no output)"
+      buf+=$'\n'"$(printf '%s%b│%b%b%-*s%b%b│%b' \
+        "$pad" \
+        "$color_accent" "$color_reset" \
+        "$color_dim" "$inner_w" "$empty_msg" "$color_reset" \
+        "$color_accent" "$color_reset")"
+    fi
+  fi
+
+  # └──────────────────────────────────────┘
+  buf+=$'\n'"$(printf '%s%b└%s┘%b' "$pad" "$color_accent" "$h_line" "$color_reset")"
+
+  # Flush entire frame
+  printf '%s\n' "$buf"
+}
+
+# Render a muted inline metadata footer below the input prompt.
+# Args: session_name window_name command path
+render_action_footer() {
+  local session_name="${1:-}" window_name="${2:-}" cmd="${3:-}" path="${4:-}"
+
+  # Command-type color for window name (matches main list view)
+  local cmd_ansi
+  case "$cmd" in
+    zsh|bash|sh|fish|dash)           cmd_ansi="$color_cmd_shell" ;;
+    nvim|vim|vi|emacs|nano|code|hx|kakoune) cmd_ansi="$color_cmd_editor" ;;
+    node|npm|pnpm|yarn|bun|python|python3|cargo|go|make|ruby|deno|java|tsc|claude) cmd_ansi="$color_cmd_devrun" ;;
+    git|lazygit|tig|gh|gitui)        cmd_ansi="$color_cmd_git" ;;
+    yazi|ranger|nnn|lf|mc|vifm)      cmd_ansi="$color_cmd_filemgr" ;;
+    htop|btop|top|watch|ps|journalctl|dmesg|strace|ltrace) cmd_ansi="$color_cmd_system" ;;
+    ssh|mosh|telnet)                  cmd_ansi="$color_cmd_remote" ;;
+    *)                                cmd_ansi="$color_cmd_other" ;;
+  esac
+
+  printf ' %b─%b\n' "$color_muted" "$color_reset"
+  printf ' %b%s%b  %b·%b  %b%s%b  %b·%b  %b%s%b\n' \
+    "$color_bright" "$session_name" "$color_reset" \
+    "$color_muted" "$color_reset" \
+    "$cmd_ansi" "$window_name" "$color_reset" \
+    "$color_muted" "$color_reset" \
+    "$color_dim" "$(shorten_home "$path")" "$color_reset"
+}
+
+# Themed error message
+show_error() {
+  local msg="${1:-}"
+  printf '\n  %b✗ %s%b\n' "$(ansi_hex '#f7768e')" "$msg" "$color_reset"
+}
+
+# Read a line with ESC-to-cancel and Ctrl-C protection.
+# Returns 0 on Enter (result in REPLY), 1 on ESC/Ctrl-C.
+read_input() {
+  local prompt="${1:-}"
+  local result=""
+  local char next_char
+  local _cancelled=0
+
+  trap '_cancelled=1' INT
+  printf '%s' "$prompt"
+
+  while [[ "$_cancelled" == "0" ]]; do
+    IFS= read -rsn1 char || { _cancelled=1; break; }
+    case "$char" in
+      $'\033')
+        # Check if standalone ESC or start of escape sequence (arrow keys etc)
+        IFS= read -rsn1 -t 0.01 next_char || true
+        if [[ -z "$next_char" ]]; then
+          _cancelled=1
+          break
+        fi
+        # Consume rest of escape sequence
+        IFS= read -rsn1 -t 0.01 _ || true
+        ;;
+      '')
+        # Enter
+        break
+        ;;
+      $'\177'|$'\b')
+        # Backspace
+        if [[ -n "$result" ]]; then
+          result="${result%?}"
+          printf '\b \b'
+        fi
+        ;;
+      *)
+        result+="$char"
+        printf '%s' "$char"
+        ;;
+    esac
+  done
+
+  trap - INT
+  printf '\n'
+
+  if [[ "$_cancelled" == "1" ]]; then
+    return 1
+  fi
+
+  REPLY="$result"
   return 0
 }
 
 session_window_rows() {
   local session="${1:-}"
-  local activity window_id window_index window_name window_active pane_count pane_cmd pane_path search
 
   if [[ -z "$session" ]]; then
     return
@@ -264,8 +472,7 @@ session_window_rows() {
 
   tmux list-windows -t "$session" -F '#{window_activity}|#{window_id}|#{window_index}|#{window_name}|#{window_active}|#{window_panes}|#{pane_current_command}|#{pane_current_path}' 2>/dev/null \
     | while IFS='|' read -r activity window_id window_index window_name window_active pane_count pane_cmd pane_path; do
-        search="${session} ${window_index} ${window_name} ${pane_cmd} ${pane_path}"
-        printf '%s\t%s:%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        printf '%s\t%s:%s\t%s\t%s\t%s\t%s\t%s\n' \
           "$window_id" \
           "$window_index" \
           "$window_name" \
@@ -273,8 +480,7 @@ session_window_rows() {
           "$pane_count" \
           "$pane_cmd" \
           "$pane_path" \
-          "$activity" \
-          "$search"
+          "$activity"
       done
 }
 
@@ -285,181 +491,425 @@ emit_session_tree() {
   local attached="${4:-0}"
   local age="${5:--}"
   local window_rows="${6:-}"
-  local query="${7:-}"
-  local marker short_path name_cell path_cell meta_cell display
-  local window_id window_label window_active pane_count pane_cmd pane_path window_activity window_search
-  local window_display window_marker window_meta
-  local session_match matching_rows matching_count
+  local marker name_cell path_cell meta_cell display
+  local window_id window_label window_active pane_count pane_cmd pane_path window_activity
+  local window_marker tree_char cmd_ansi
+  local w_name_cell w_path_cell w_age_cell
 
-  session_match=0
-  if matches_query "${name} ${path}" "$query"; then
-    session_match=1
-  fi
-
-  matching_rows=''
-  matching_count=0
-
-  while IFS=$'\t' read -r window_id window_label window_active pane_count pane_cmd pane_path window_activity window_search; do
-    [[ -z "${window_id:-}" ]] && continue
-    if [[ "$session_match" == "1" ]] || matches_query "$window_search" "$query"; then
-      matching_rows+="${window_id}"$'\t'"${window_label}"$'\t'"${window_active}"$'\t'"${pane_count}"$'\t'"${pane_cmd}"$'\t'"${pane_path}"$'\t'"${window_activity}"$'\t'"${window_search}"$'\n'
-      matching_count=$(( matching_count + 1 ))
-    fi
-  done <<< "$window_rows"
-
-  if [[ -n "${query// }" && "$session_match" != "1" && "$matching_count" == "0" ]]; then
-    return
-  fi
-
-  marker='S'
+  # Session marker
   if [[ "$attached" != "0" ]]; then
     marker='*'
-  fi
-
-  short_path="$(shorten_home "$path")"
-  printf -v name_cell '%-18s' "$(truncate_right "$name" 18)"
-  printf -v path_cell '%-38s' "$(truncate_left "$short_path" 38)"
-  if [[ -n "${query// }" && "$session_match" != "1" && "$matching_count" != "$windows" ]]; then
-    printf -v meta_cell '[%s/%sw  %s]' "$matching_count" "$windows" "$age"
   else
-    printf -v meta_cell '[%sw  %s]' "$windows" "$age"
+    marker=' '
   fi
 
-  printf -v display '%s  %s  %s  %s' "$marker" "$name_cell" "$path_cell" "$meta_cell"
+  # Inline shorten_home
+  local short_path="$path"
+  [[ "$short_path" == "$HOME/"* ]] && short_path="~/${short_path#$HOME/}"
+  [[ "$short_path" == "$HOME" ]] && short_path="~"
+
+  printf -v name_cell '%-14s' "$(truncate_right "$name" 14)"
+  printf -v path_cell '%-20s' "$(truncate_left "$short_path" 20)"
+  printf -v meta_cell '[%sw %s]' "$windows" "$age"
+
+  # Session line: bold name, warm marker for attached
+  display="${color_warm}${marker}${color_reset} ${color_bold}${color_bright}${name_cell}${color_reset} ${color_dim}${path_cell}${color_reset} ${color_muted}${meta_cell}${color_reset}"
   printf '%s\t%s\t%s\t%s\n' "session" "$name" "$name" "$display"
 
-  while IFS=$'\t' read -r window_id window_label window_active pane_count pane_cmd pane_path window_activity window_search; do
+  # Count total windows for tree drawing
+  local total_windows=0
+  while IFS=$'\t' read -r window_id _; do
     [[ -z "${window_id:-}" ]] && continue
-    window_marker='-'
-    if [[ "$window_active" == "1" ]]; then
-      window_marker='*'
+    total_windows=$(( total_windows + 1 ))
+  done <<< "$window_rows"
+
+  # Emit window lines with tree characters
+  local window_num=0
+  while IFS=$'\t' read -r window_id window_label window_active pane_count pane_cmd pane_path window_activity; do
+    [[ -z "${window_id:-}" ]] && continue
+    window_num=$(( window_num + 1 ))
+
+    # Tree character
+    if (( window_num == total_windows )); then
+      tree_char='└─'
+    else
+      tree_char='├─'
     fi
 
-    printf -v name_cell '%-22s' "$(truncate_right "$window_label" 22)"
-    printf -v path_cell '%-30s' "$(truncate_left "$(shorten_home "$pane_path")" 30)"
-    printf -v window_meta '%-12s %4s' "$(truncate_right "$pane_cmd" 12)" "$(format_age "$window_activity")"
+    # Active marker
+    if [[ "$window_active" == "1" ]]; then
+      window_marker='*'
+    else
+      window_marker=' '
+    fi
 
-    printf -v window_display '   %s  %s  %s  %s' "$window_marker" "$name_cell" "$path_cell" "$window_meta"
+    # Command color (inline to avoid subshell)
+    case "$pane_cmd" in
+      zsh|bash|sh|fish|dash)           cmd_ansi="$color_cmd_shell" ;;
+      nvim|vim|vi|emacs|nano|code|hx|kakoune) cmd_ansi="$color_cmd_editor" ;;
+      node|npm|pnpm|yarn|bun|python|python3|cargo|go|make|ruby|deno|java|tsc|claude) cmd_ansi="$color_cmd_devrun" ;;
+      git|lazygit|tig|gh|gitui)        cmd_ansi="$color_cmd_git" ;;
+      yazi|ranger|nnn|lf|mc|vifm)      cmd_ansi="$color_cmd_filemgr" ;;
+      htop|btop|top|watch|ps|journalctl|dmesg|strace|ltrace) cmd_ansi="$color_cmd_system" ;;
+      ssh|mosh|telnet)                  cmd_ansi="$color_cmd_remote" ;;
+      *)                                cmd_ansi="$color_cmd_other" ;;
+    esac
+
+    # Inline shorten_home
+    local w_short_path="$pane_path"
+    [[ "$w_short_path" == "$HOME/"* ]] && w_short_path="~/${w_short_path#$HOME/}"
+    [[ "$w_short_path" == "$HOME" ]] && w_short_path="~"
+
+    printf -v w_name_cell '%-14s' "$(truncate_right "$window_label" 14)"
+    printf -v w_path_cell '%-20s' "$(truncate_left "$w_short_path" 20)"
+    printf -v w_age_cell '%4s' "$(format_age "$window_activity")"
+
+    local window_display
+    if [[ "$window_active" == "1" ]]; then
+      window_display="${color_dim}  ${tree_char}${color_reset} ${color_warm}${window_marker}${color_reset} ${cmd_ansi}${w_name_cell}${color_reset} ${color_dim}${w_path_cell}${color_reset} ${color_muted}${w_age_cell}${color_reset}"
+    else
+      window_display="${color_dim}  ${tree_char}${color_reset}   ${cmd_ansi}${w_name_cell}${color_reset} ${color_dim}${w_path_cell}${color_reset} ${color_muted}${w_age_cell}${color_reset}"
+    fi
+
     printf '%s\t%s\t%s\t%s\n' "window" "$name" "$window_id" "$window_display"
-  done <<< "$matching_rows"
+  done <<< "$window_rows"
+}
+
+list_sessions_only() {
+  # Sessions only — no window rows
+  local sessions_raw
+  sessions_raw="$(tmux list-sessions -F \
+    '#{session_activity}|#{session_name}|#{session_windows}|#{session_attached}|#{session_path}' \
+    2>/dev/null | sort -t '|' -k1,1nr)"
+
+  [[ -z "$sessions_raw" ]] && return
+
+  local activity name windows attached path age
+  while IFS='|' read -r activity name windows attached path; do
+    [[ -z "$name" ]] && continue
+    age="$(format_age "$activity")"
+
+    local marker=" "
+    [[ "$attached" != "0" ]] && marker="*"
+
+    local short_path="$path"
+    [[ "$short_path" == "$HOME/"* ]] && short_path="~/${short_path#$HOME/}"
+    [[ "$short_path" == "$HOME" ]] && short_path="~"
+
+    local name_cell path_cell meta_cell display
+    printf -v name_cell '%-14s' "$(truncate_right "$name" 14)"
+    printf -v path_cell '%-20s' "$(truncate_left "$short_path" 20)"
+    printf -v meta_cell '[%sw %s]' "$windows" "$age"
+
+    display="${color_warm}${marker}${color_reset} ${color_bold}${color_bright}${name_cell}${color_reset} ${color_dim}${path_cell}${color_reset} ${color_muted}${meta_cell}${color_reset}"
+    printf '%s\t%s\t%s\t%s\n' "session" "$name" "$name" "$display"
+  done <<< "$sessions_raw"
 }
 
 list_sessions() {
-  list_sessions_query ""
-}
+  local sessions_raw windows_raw
 
-list_sessions_query() {
-  local query="${1:-}"
-  local activity name windows attached path last_attached
-  local window_rows age
+  # Two tmux calls total, regardless of session count
+  sessions_raw="$(tmux list-sessions -F \
+    '#{session_activity}|#{session_name}|#{session_windows}|#{session_attached}|#{session_path}' \
+    2>/dev/null | sort -t '|' -k1,1nr)"
 
-  tmux list-sessions -F '#{session_activity}|#{session_name}|#{session_windows}|#{session_attached}|#{session_path}|#{?session_last_attached,#{session_last_attached},0}' 2>/dev/null \
-    | sort -t '|' -k1,1nr \
-    | while IFS='|' read -r activity name windows attached path last_attached; do
-        age="$(format_age "$activity")"
-        window_rows="$(session_window_rows "$name")"
-        emit_session_tree "$name" "$path" "$windows" "$attached" "$age" "$window_rows" "$query"
-      done
+  [[ -z "$sessions_raw" ]] && return
+
+  windows_raw="$(tmux list-windows -a -F \
+    '#{session_name}|#{window_activity}|#{window_id}|#{window_index}|#{window_name}|#{window_active}|#{window_panes}|#{pane_current_command}|#{pane_current_path}' \
+    2>/dev/null)"
+
+  local activity name windows attached path age
+  while IFS='|' read -r activity name windows attached path; do
+    [[ -z "$name" ]] && continue
+    age="$(format_age "$activity")"
+
+    # Extract this session's windows from bulk data
+    local session_windows=""
+    while IFS='|' read -r sname wactivity wid widx wname wactive wpanes wcmd wpath; do
+      [[ "$sname" != "$name" ]] && continue
+      session_windows+="${wid}"$'\t'"${widx}:${wname}"$'\t'"${wactive}"$'\t'"${wpanes}"$'\t'"${wcmd}"$'\t'"${wpath}"$'\t'"${wactivity}"$'\n'
+    done <<< "$windows_raw"
+
+    emit_session_tree "$name" "$path" "$windows" "$attached" "$age" "$session_windows"
+  done <<< "$sessions_raw"
 }
 
 preview_line() {
   local line="${1:-}"
-  local query="${2:-}"
-  local item_type session target
 
   if [[ -z "$line" ]]; then
     exit 0
   fi
 
-  item_type="$(printf '%s\n' "$line" | cut -f1)"
-  session="$(printf '%s\n' "$line" | cut -f2)"
-  target="$(printf '%s\n' "$line" | cut -f3)"
+  # Use parameter expansion instead of cut (avoids subshells)
+  local item_type session target rest
+  item_type="${line%%$'\t'*}"
+  rest="${line#*$'\t'}"
+  session="${rest%%$'\t'*}"
+  rest="${rest#*$'\t'}"
+  target="${rest%%$'\t'*}"
 
-  preview_item "$item_type" "$session" "$target" "$query"
+  preview_item "$item_type" "$session" "$target"
 }
 
 preview_session() {
   local session="${1:-}"
-  local query="${2:-}"
-  local metadata path windows attached activity last_attached
-  local window_id window_label window_active pane_count pane_cmd pane_path window_activity window_search
-  local window_rows age session_match filtered_rows
 
   if [[ -z "$session" ]]; then
     exit 0
   fi
 
-  metadata="$(tmux display-message -p -t "$session" '#{session_path}|#{session_windows}|#{session_attached}|#{session_activity}|#{?session_last_attached,#{session_last_attached},0}' 2>/dev/null || true)"
+  local metadata path win_count attached activity
+  metadata="$(tmux display-message -p -t "$session" '#{session_path}|#{session_windows}|#{session_attached}|#{session_activity}' 2>/dev/null || true)"
   if [[ -z "$metadata" ]]; then
     printf 'Session not found: %s\n' "$session"
     exit 0
   fi
 
-  IFS='|' read -r path windows attached activity last_attached <<<"$metadata"
+  IFS='|' read -r path win_count attached activity <<<"$metadata"
 
-  preview_section "SESSION"
-  preview_pair "name" "$session"
-  preview_pair "path" "$(shorten_home "$path")"
-  preview_pair "windows" "$windows"
-  if [[ "$attached" != "0" ]]; then
-    preview_pair "attached" "yes"
-  else
-    preview_pair "attached" "no"
-  fi
-  preview_pair "activity" "$(format_age "$activity") ago"
-  if [[ "$last_attached" == "0" ]]; then
-    preview_pair "last use" "-"
-  else
-    preview_pair "last use" "$(format_age "$last_attached") ago"
-  fi
+  local preview_lines=${FZF_PREVIEW_LINES:-30}
+  local preview_cols="${FZF_PREVIEW_COLUMNS:-72}"
 
-  age="$(format_age "$activity")"
-  window_rows="$(session_window_rows "$session")"
-  session_match=0
-  if matches_query "${session} ${path}" "$query"; then
-    session_match=1
-  fi
+  # ── Buffer all output, flush once ──
+  local buf=""
 
-  filtered_rows=''
-  while IFS=$'\t' read -r window_id window_label window_active pane_count pane_cmd pane_path window_activity window_search; do
-    [[ -z "${window_id:-}" ]] && continue
-    if [[ "$session_match" == "1" ]] || matches_query "$window_search" "$query"; then
-      filtered_rows+="${window_id}"$'\t'"${window_label}"$'\t'"${window_active}"$'\t'"${pane_count}"$'\t'"${pane_cmd}"$'\t'"${pane_path}"$'\t'"${window_activity}"$'\t'"${window_search}"$'\n'
+  # One-line session header
+  local short_path="$path"
+  [[ "$short_path" == "$HOME/"* ]] && short_path="~/${short_path#$HOME/}"
+  [[ "$short_path" == "$HOME" ]] && short_path="~"
+  buf+="$(printf '%b%b%s%b  %b%s%b  %b%sw%b' \
+    "$color_bold" "$color_bright" "$session" "$color_reset" \
+    "$color_dim" "$short_path" "$color_reset" \
+    "$color_muted" "$win_count" "$color_reset")"
+
+  # First pass: collect window info, classify, and capture content
+  local -a win_ids win_indices win_names win_actives win_cmds win_paths win_types
+  local -a win_captures win_capture_lines
+  local win_i=0 shell_count=0 full_count=0
+  while IFS='|' read -r w_activity w_id w_index w_name w_active w_panes w_cmd w_path; do
+    [[ -z "$w_id" ]] && continue
+    win_ids[win_i]="$w_id"
+    win_indices[win_i]="$w_index"
+    win_names[win_i]="$w_name"
+    win_actives[win_i]="$w_active"
+    win_cmds[win_i]="$w_cmd"
+    win_paths[win_i]="$w_path"
+
+    # Classify
+    case "$w_cmd" in
+      zsh|bash|sh|fish|dash)
+        win_types[win_i]="shell"
+        shell_count=$(( shell_count + 1 ))
+        ;;
+      *)
+        win_types[win_i]="full"
+        full_count=$(( full_count + 1 ))
+        ;;
+    esac
+
+    # Capture now — smart per type
+    local pane_id raw_capture=""
+    pane_id="$(tmux display-message -p -t "$w_id" '#{pane_id}' 2>/dev/null || true)"
+    if [[ -n "$pane_id" ]]; then
+      case "${win_types[win_i]}" in
+        shell)
+          raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n 3 || true)"
+          ;;
+        *)
+          case "$w_cmd" in
+            claude|codex|aider)
+              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | head -n -7 || true)"
+              ;;
+            node)
+              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | head -n -5 || true)"
+              ;;
+            *)
+              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null || true)"
+              ;;
+          esac
+          ;;
+      esac
     fi
-  done <<< "$window_rows"
+    win_captures[win_i]="$raw_capture"
 
-  if [[ -n "${query// }" ]]; then
-    printf '\n'
-    preview_section "FILTER"
-    preview_pair "query" "$query"
-    if [[ "$session_match" == "1" ]]; then
-      preview_pair "scope" "session match, showing all windows"
+    # Count actual lines in this capture
+    if [[ -n "$raw_capture" ]]; then
+      win_capture_lines[win_i]="$(printf '%s\n' "$raw_capture" | wc -l)"
     else
-      preview_pair "scope" "window match, showing filtered windows"
+      win_capture_lines[win_i]=0
     fi
-  fi
 
-  printf '\n'
-  preview_section "WINDOWS"
-  while IFS=$'\t' read -r window_id window_label window_active pane_count pane_cmd pane_path window_activity _; do
-    [[ -z "${window_id:-}" ]] && continue
-    if [[ "$window_active" == "1" ]]; then
-      render_window_line "*" "$color_warm" "$window_label" "$pane_count" "$pane_cmd" "$pane_path" "$(format_age "$window_activity")" "$color_bright"
+    win_i=$(( win_i + 1 ))
+  done < <(tmux list-windows -t "$session" -F '#{window_activity}|#{window_id}|#{window_index}|#{window_name}|#{window_active}|#{window_panes}|#{pane_current_command}|#{pane_current_path}' 2>/dev/null)
+
+  # Budget based on ACTUAL captured line counts
+  # Overhead: 1 header + 2 border lines per window
+  local total_overhead=$(( 1 + 2 * win_i ))
+  local available=$(( preview_lines - total_overhead ))
+  (( available < win_i )) && available=$win_i
+
+  # Shell captures are already short (3 lines max) — use their actual count
+  # Full windows: if total actual lines fit, show all; otherwise proportionally shrink
+  local shell_lines_used=0
+  local full_lines_total=0
+  local gi
+  for (( gi = 0; gi < win_i; gi++ )); do
+    if [[ "${win_types[gi]}" == "shell" ]]; then
+      local sl=${win_capture_lines[gi]}
+      (( sl > 3 )) && sl=3
+      shell_lines_used=$(( shell_lines_used + sl ))
     else
-      render_window_line " " "$color_dim" "$window_label" "$pane_count" "$pane_cmd" "$pane_path" "$(format_age "$window_activity")" "$color_fg"
+      full_lines_total=$(( full_lines_total + win_capture_lines[gi] ))
     fi
-  done <<< "$filtered_rows"
+  done
+
+  local full_budget=$(( available - shell_lines_used ))
+  (( full_budget < full_count )) && full_budget=$full_count
+
+  # Even distribution: base per full window + round-robin remainder
+  local -a win_content_lines
+  local base_each=0 remainder_lines=0
+  if (( full_count > 0 )); then
+    base_each=$(( full_budget / full_count ))
+    remainder_lines=$(( full_budget - base_each * full_count ))
+  fi
+  local full_idx=0
+  for (( gi = 0; gi < win_i; gi++ )); do
+    if [[ "${win_types[gi]}" == "shell" ]]; then
+      local sl=${win_capture_lines[gi]}
+      (( sl > 3 )) && sl=3
+      win_content_lines[gi]=$sl
+    else
+      local cl=$base_each
+      if (( full_idx < remainder_lines )); then
+        cl=$(( cl + 1 ))
+      fi
+      full_idx=$(( full_idx + 1 ))
+      (( cl > win_capture_lines[gi] )) && cl=${win_capture_lines[gi]}
+      (( cl < 1 )) && cl=1
+      win_content_lines[gi]=$cl
+    fi
+  done
+  # Redistribute surplus from short captures to others, round-robin
+  local changed=1
+  while (( changed )); do
+    changed=0
+    local surplus=0
+    for (( gi = 0; gi < win_i; gi++ )); do
+      [[ "${win_types[gi]}" == "shell" ]] && continue
+      if (( win_content_lines[gi] > win_capture_lines[gi] )); then
+        surplus=$(( surplus + win_content_lines[gi] - win_capture_lines[gi] ))
+        win_content_lines[gi]=${win_capture_lines[gi]}
+      fi
+    done
+    if (( surplus > 0 )); then
+      for (( gi = 0; gi < win_i && surplus > 0; gi++ )); do
+        [[ "${win_types[gi]}" == "shell" ]] && continue
+        if (( win_content_lines[gi] < win_capture_lines[gi] )); then
+          win_content_lines[gi]=$(( win_content_lines[gi] + 1 ))
+          surplus=$(( surplus - 1 ))
+          changed=1
+        fi
+      done
+    fi
+  done
+
+  # Render each window, tracking total lines output
+  local lines_output=1  # session header
+  for (( gi = 0; gi < win_i; gi++ )); do
+    local w_id="${win_ids[gi]}"
+    local w_index="${win_indices[gi]}"
+    local w_name="${win_names[gi]}"
+    local w_active="${win_actives[gi]}"
+    local w_cmd="${win_cmds[gi]}"
+    local w_path="${win_paths[gi]}"
+    local w_type="${win_types[gi]}"
+    local content_lines=${win_content_lines[gi]}
+
+    # Marker and label color
+    local marker=" " label_color="$color_fg"
+    if [[ "$w_active" == "1" ]]; then
+      marker="*"
+      label_color="$color_bright"
+    fi
+
+    # Command color
+    local cmd_ansi
+    case "$w_cmd" in
+      zsh|bash|sh|fish|dash)           cmd_ansi="$color_cmd_shell" ;;
+      nvim|vim|vi|emacs|nano|code|hx|kakoune) cmd_ansi="$color_cmd_editor" ;;
+      node|npm|pnpm|yarn|bun|python|python3|cargo|go|make|ruby|deno|java|tsc|claude) cmd_ansi="$color_cmd_devrun" ;;
+      git|lazygit|tig|gh|gitui)        cmd_ansi="$color_cmd_git" ;;
+      yazi|ranger|nnn|lf|mc|vifm)      cmd_ansi="$color_cmd_filemgr" ;;
+      htop|btop|top|watch|ps|journalctl|dmesg|strace|ltrace) cmd_ansi="$color_cmd_system" ;;
+      ssh|mosh|telnet)                  cmd_ansi="$color_cmd_remote" ;;
+      *)                                cmd_ansi="$color_cmd_other" ;;
+    esac
+
+    local w_short_path="$w_path"
+    [[ "$w_short_path" == "$HOME/"* ]] && w_short_path="~/${w_short_path#$HOME/}"
+    [[ "$w_short_path" == "$HOME" ]] && w_short_path="~"
+
+    # Box top border: ┌─ label ─...─┐
+    local label="┌─ ${marker} ${w_index}:${w_name}  ${w_cmd}  ${w_short_path} "
+    local label_len=${#label}
+    local right_pad=$(( preview_cols - label_len - 1 ))
+    (( right_pad < 0 )) && right_pad=0
+    local right_border=""
+    local p
+    for (( p = 0; p < right_pad; p++ )); do right_border+="─"; done
+
+    buf+=$'\n'"$(printf '%b┌─%b %b%s%b %b%s:%s%b  %b%s%b  %b%s%b %b%s┐%b' \
+      "$color_bright" "$color_reset" \
+      "$color_warm" "$marker" "$color_reset" \
+      "$label_color" "$w_index" "$w_name" "$color_reset" \
+      "$cmd_ansi" "$w_cmd" "$color_reset" \
+      "$color_dim" "$w_short_path" "$color_reset" \
+      "$color_bright" "$right_border" "$color_reset")"
+
+    # Captured content, trimmed to budget
+    local actual_content=0
+    if [[ -n "${win_captures[gi]}" ]]; then
+      local trimmed
+      trimmed="$(printf '%s\n' "${win_captures[gi]}" | tail -n "$content_lines")"
+      buf+=$'\n'"$trimmed"
+      actual_content="$(printf '%s\n' "$trimmed" | wc -l)"
+    else
+      buf+=$'\n'"$(printf '%b%s%b' "$color_dim" "(empty)" "$color_reset")"
+      actual_content=1
+    fi
+
+    # Box bottom border: └────┘
+    local bot_w=$(( preview_cols - 2 ))
+    local bottom_border=""
+    for (( p = 0; p < bot_w; p++ )); do bottom_border+="─"; done
+    buf+=$'\n'"$(printf '%b└%s┘%b' "$color_bright" "$bottom_border" "$color_reset")"
+
+    lines_output=$(( lines_output + 1 + actual_content + 1 ))  # top border + content + bottom border
+  done
+
+  # Fill remaining preview space so there's no gap at the bottom
+  while (( lines_output < preview_lines )); do
+    buf+=$'\n'
+    lines_output=$(( lines_output + 1 ))
+  done
+
+  # Flush entire preview at once
+  printf '%s\n' "$buf"
 }
 
 preview_window() {
   local session="${1:-}"
   local window_id="${2:-}"
-  local metadata window_index window_name pane_count pane_cmd pane_path activity output_preview active_pane_id
 
   if [[ -z "$window_id" ]]; then
     exit 0
   fi
 
+  local metadata window_index window_name pane_count pane_cmd pane_path activity
   metadata="$(tmux display-message -p -t "$window_id" '#{window_index}|#{window_name}|#{window_panes}|#{pane_current_command}|#{pane_current_path}|#{window_activity}' 2>/dev/null || true)"
   if [[ -z "$metadata" ]]; then
     printf 'Window not found: %s\n' "$window_id"
@@ -468,37 +918,54 @@ preview_window() {
 
   IFS='|' read -r window_index window_name pane_count pane_cmd pane_path activity <<<"$metadata"
 
-  preview_section "WINDOW"
-  preview_pair "session" "$session"
-  preview_pair "window" "${window_index}:${window_name}"
-  preview_pair "command" "$pane_cmd"
-  preview_pair "path" "$(shorten_home "$pane_path")"
-  preview_pair "panes" "$pane_count"
-  preview_pair "activity" "$(format_age "$activity") ago"
-
-  printf '\n'
-  preview_section "PEEK"
+  # Smart capture based on command type
+  local active_pane_id
   active_pane_id="$(tmux display-message -p -t "$window_id" '#{pane_id}' 2>/dev/null || true)"
   if [[ -z "$active_pane_id" ]]; then
     active_pane_id="$window_id"
   fi
-  output_preview="$(tmux capture-pane -p -e -t "$active_pane_id" -S - -E - 2>/dev/null | tail -n 12 || true)"
-  if [[ -n "$output_preview" ]]; then
-    printf '%s\n' "$output_preview"
-  else
-    printf '%b%s%b\n' "$color_dim" "(empty)" "$color_reset"
+  local preview_lines=$(( ${FZF_PREVIEW_LINES:-30} - 2 ))
+  (( preview_lines < 5 )) && preview_lines=5
+  local capture
+  case "$pane_cmd" in
+    claude|codex|aider)
+      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | head -n -5 | tail -n "$preview_lines")"
+      ;;
+    node)
+      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | head -n -2 | tail -n "$preview_lines")"
+      ;;
+    zsh|bash|sh|fish|dash)
+      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n "$preview_lines")"
+      ;;
+    *)
+      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | tail -n "$preview_lines")"
+      ;;
+  esac
+
+  # Buffer and flush at once
+  local buf=""
+  local short_path="$pane_path"
+  [[ "$short_path" == "$HOME/"* ]] && short_path="~/${short_path#$HOME/}"
+  [[ "$short_path" == "$HOME" ]] && short_path="~"
+  buf+="$(printf '%b%s%b %b>%b %b%s:%s%b  %b%s%b' \
+    "$color_dim" "$session" "$color_reset" \
+    "$color_dim" "$color_reset" \
+    "$color_bright" "$window_index" "$window_name" "$color_reset" \
+    "$color_dim" "$short_path" "$color_reset")"
+  if [[ -n "$capture" ]]; then
+    buf+=$'\n'"$capture"
   fi
+  printf '%s\n' "$buf"
 }
 
 preview_item() {
   local item_type="${1:-}"
   local session="${2:-}"
   local target="${3:-}"
-  local query="${4:-}"
 
   case "$item_type" in
     session)
-      preview_session "$session" "$query"
+      preview_session "$session"
       ;;
     window)
       preview_window "$session" "$target"
@@ -507,29 +974,74 @@ preview_item() {
 }
 
 prompt_new_session() {
-  local dir default_name name
+  # Run the zoxide fzf picker inline — we're already in a full-screen popup
+  new_session_ui
+}
 
-  dir="$(current_pane_path)"
-  default_name="$(basename "$dir")"
-  if [[ -z "$default_name" || "$default_name" == "/" || "$default_name" == "." ]]; then
-    default_name="main"
-  fi
+new_session_ui() {
+  local dir name
+  local fzf_color="--color=fg:${fg_hex},bg:-1,fg+:${bright_hex},bg+:${row_hex},hl:${accent_hex},hl+:${warm_hex},info:${dim_hex},prompt:${accent_hex},pointer:${accent_hex},marker:${warm_hex},header:${dim_hex},border:${border_hex},label:${accent_hex}"
 
-  printf 'New session name [%s]: ' "$default_name"
-  IFS= read -r name
-  name="${name:-$default_name}"
+  # Step 1: Type session name — enter creates at ~/, tab opens zoxide path picker
+  local output key_line query_line
+  output="$(printf '\n' | fzf \
+    --height=100% \
+    --layout=reverse \
+    --border=rounded \
+    --border-label=' new session ' \
+    --prompt='name> ' \
+    --header='enter → create at ~/  ·  tab → pick path' \
+    --header-first \
+    --info=hidden \
+    --print-query \
+    --expect=tab \
+    --disabled \
+    --no-sort \
+    --with-nth=99 \
+    $fzf_color \
+  )"
+  local fzf_rc=$?
 
-  if [[ -z "$name" ]]; then
-    return
+  query_line="$(printf '%s\n' "$output" | sed -n '1p')"
+  key_line="$(printf '%s\n' "$output" | sed -n '2p')"
+  name="$query_line"
+
+  # ESC exits with empty query, or fzf returns 130
+  if [[ -z "$name" ]] || (( fzf_rc == 130 )); then
+    return 0
   fi
 
   if tmux has-session -t "$name" 2>/dev/null; then
-    printf 'Session already exists: %s\n' "$name"
-    pause_for_input
-    return
+    printf '\n  %bSession already exists: %s%b\n' "$color_cmd_system" "$name" "$color_reset"
+    sleep 1
+    return 1
+  fi
+
+  # Step 2: If tab was pressed, pick path via zoxide
+  if [[ "$key_line" == "tab" ]] && command -v zoxide >/dev/null 2>&1; then
+    dir="$(zoxide query -l 2>/dev/null | sed "s|^$HOME/|~/|;s|^$HOME\$|~|" | fzf \
+      --layout=reverse \
+      --border=rounded \
+      --border-label=" path for: $name " \
+      --prompt='path> ' \
+      --header='Pick a directory' \
+      --header-first \
+      --info=inline-right \
+      $fzf_color \
+      --preview="lsd -A -l --color=always --icon=always --blocks permission,size,date,name --date '+%d/%m %H:%M' \"\$(echo {} | sed \"s|^~/|$HOME/|\")\"" \
+      --preview-window='right:40%' \
+    )" || return 0
+    [[ -z "$dir" ]] && return 0
+    # Expand ~ back to full path
+    dir="${dir/#\~/$HOME}"
+  else
+    dir="$HOME"
   fi
 
   tmux new-session -d -s "$name" -c "$dir"
+
+  # Signal the created session name so the caller can switch to it
+  NEW_SESSION_NAME="$name"
 }
 
 prompt_rename_session() {
@@ -540,15 +1052,27 @@ prompt_rename_session() {
     return
   fi
 
-  printf 'Rename %s to: ' "$session"
-  IFS= read -r new_name
+  local path window_name pane_cmd
+  path="$(tmux display-message -p -t "$session" '#{session_path}' 2>/dev/null || true)"
+  window_name="$(tmux display-message -p -t "$session" '#W' 2>/dev/null || true)"
+  pane_cmd="$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null || true)"
+
+  render_action_screen "RENAME SESSION" "$session"
+  render_action_footer "$session" "$window_name" "$pane_cmd" "$path"
+
+  printf '\n'
+  if ! read_input "$(printf ' %bRename to:%b ' "$color_accent" "$color_reset")"; then
+    return
+  fi
+  printf '\n'
+  new_name="$REPLY"
 
   if [[ -z "$new_name" || "$new_name" == "$session" ]]; then
     return
   fi
 
   if tmux has-session -t "$new_name" 2>/dev/null; then
-    printf 'Session already exists: %s\n' "$new_name"
+    show_error "Session already exists: $new_name"
     pause_for_input
     return
   fi
@@ -564,9 +1088,19 @@ prompt_rename_window() {
     return
   fi
 
-  current_name="$(tmux display-message -p -t "$window_id" '#W' 2>/dev/null || true)"
-  printf 'Rename %s to: ' "${current_name:-window}"
-  IFS= read -r new_name
+  local metadata pane_cmd pane_path session_name
+  metadata="$(tmux display-message -p -t "$window_id" '#S|#W|#{pane_current_command}|#{pane_current_path}' 2>/dev/null || true)"
+  IFS='|' read -r session_name current_name pane_cmd pane_path <<<"$metadata"
+
+  render_action_screen "RENAME WINDOW" "$window_id"
+  render_action_footer "$session_name" "${current_name:-window}" "$pane_cmd" "$pane_path"
+
+  printf '\n'
+  if ! read_input "$(printf ' %bRename to:%b ' "$color_accent" "$color_reset")"; then
+    return
+  fi
+  printf '\n'
+  new_name="$REPLY"
 
   if [[ -z "$new_name" || "$new_name" == "$current_name" ]]; then
     return
@@ -577,40 +1111,86 @@ prompt_rename_window() {
 
 prompt_kill_session() {
   local session="${1:-}"
-  local current answer
+  clear
 
   if [[ -z "$session" ]]; then
     return
   fi
 
+  local current
   current="$(current_session)"
-  if [[ -n "$current" && "$current" == "$session" ]]; then
-    printf 'Refusing to kill current session: %s\n' "$session"
-    pause_for_input
-    return
+  local is_current=0
+  [[ -n "$current" && "$current" == "$session" ]] && is_current=1
+
+  local metadata path window_name pane_cmd
+  metadata="$(tmux display-message -p -t "$session" '#{session_path}' 2>/dev/null || true)"
+  path="$metadata"
+  window_name="$(tmux display-message -p -t "$session" '#W' 2>/dev/null || true)"
+  pane_cmd="$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null || true)"
+
+  render_action_screen "KILL SESSION" "$session"
+  render_action_footer "$session" "$window_name" "$pane_cmd" "$path"
+
+  local prompt_msg
+  if (( is_current )); then
+    prompt_msg="$(printf ' %bKill %b%s%b (current, will switch)? [y/N]:%b ' "$color_accent" "$color_bright" "$session" "$color_accent" "$color_reset")"
+  else
+    prompt_msg="$(printf ' %bKill %b%s%b? [y/N]:%b ' "$color_accent" "$color_bright" "$session" "$color_accent" "$color_reset")"
   fi
 
-  printf 'Kill %s? [y/N]: ' "$session"
-  IFS= read -r answer
-  case "$answer" in
+  printf '\n'
+  if ! read_input "$prompt_msg"; then
+    return
+  fi
+  printf '\n'
+
+  case "$REPLY" in
     y|Y|yes|YES)
-      tmux kill-session -t "$session"
+      if (( is_current )); then
+        # Find the most recently active other session to switch to
+        local fallback
+        fallback="$(tmux list-sessions -F '#{session_activity}|#{session_name}' 2>/dev/null \
+          | sort -t '|' -k1,1nr \
+          | while IFS='|' read -r _ sname; do
+              [[ "$sname" != "$session" ]] && printf '%s' "$sname" && break
+            done)"
+        if [[ -n "$fallback" ]]; then
+          tmux switch-client -t "$fallback"
+          tmux kill-session -t "$session"
+          KILLED_CURRENT=1
+        else
+          show_error "No other session to switch to"
+          pause_for_input
+        fi
+      else
+        tmux kill-session -t "$session"
+      fi
       ;;
   esac
 }
 
 prompt_kill_window() {
+  clear
   local window_id="${1:-}"
-  local label answer
 
   if [[ -z "$window_id" ]]; then
     return
   fi
 
-  label="$(tmux display-message -p -t "$window_id" '#S:#{window_index}:#{window_name}' 2>/dev/null || true)"
-  printf 'Kill %s? [y/N]: ' "${label:-window}"
-  IFS= read -r answer
-  case "$answer" in
+  local metadata session_name window_name pane_cmd pane_path
+  metadata="$(tmux display-message -p -t "$window_id" '#S|#W|#{pane_current_command}|#{pane_current_path}' 2>/dev/null || true)"
+  IFS='|' read -r session_name window_name pane_cmd pane_path <<<"$metadata"
+
+  render_action_screen "KILL WINDOW" "$window_id"
+  render_action_footer "$session_name" "${window_name:-window}" "$pane_cmd" "$pane_path"
+
+  printf '\n'
+  if ! read_input "$(printf ' %bKill %b%s%b? [y/N]:%b ' "$color_accent" "$color_bright" "${window_name:-window}" "$color_accent" "$color_reset")"; then
+    return
+  fi
+  printf '\n'
+
+  case "$REPLY" in
     y|Y|yes|YES)
       tmux kill-window -t "$window_id"
       ;;
@@ -679,21 +1259,21 @@ run_session_picker() {
   [[ "$fzf_help" == *"--header-border"* ]] && fzf_opts+=(--header-border=line)
   [[ "$fzf_help" == *"--footer-border"* ]] && fzf_opts+=(--footer-border=line)
   [[ "$fzf_help" == *"--highlight-line"* ]] && fzf_opts+=(--highlight-line)
+
   picker_opts=(
     --prompt='> '
-    --header='Browse sessions on the left. Windows live underneath each session.'
+    --header='Sessions and windows. Type to filter.'
     --header-first
-    --footer='enter open selected item  ctrl-n new session  ctrl-r rename  ctrl-x kill  ctrl-/ details'
-    --preview="$0 preview-line {} {q}"
-    --preview-window='right:56%,wrap'
-    --bind="start:reload-sync($0 query-list {q})+first"
-    --bind="change:reload-sync($0 query-list {q})+first"
-    --bind='ctrl-/:toggle-preview'
+    --footer='C-s toggle · C-n new · C-r rename · C-x kill'
+    --preview="$0 preview-item {1} {2} {3}"
+    --preview-window='right:60%'
+    --bind="start:reload-sync($0 list)+first"
+    --bind="ctrl-s:transform:if [[ \$FZF_PROMPT == '> ' ]]; then echo 'reload-sync($0 list-sessions)+first+change-prompt(S> )'; else echo 'reload-sync($0 list)+first+change-prompt(> )'; fi"
     --expect=enter,ctrl-n,ctrl-r,ctrl-x
   )
 
-  [[ "$fzf_help" == *"--ghost"* ]] && picker_opts+=(--ghost='type a session, window, command, or path')
-  [[ "$fzf_help" == *"--input-label"* ]] && picker_opts+=(--input-label=' query ')
+  [[ "$fzf_help" == *"--ghost"* ]] && picker_opts+=(--ghost='type to filter sessions and windows')
+  [[ "$fzf_help" == *"--input-label"* ]] && picker_opts+=(--input-label=' filter ')
   [[ "$fzf_help" == *"--list-label"* ]] && picker_opts+=(--list-label=' sessions + windows ')
   [[ "$fzf_help" == *"--header-label"* ]] && picker_opts+=(--header-label=' scope ')
   [[ "$fzf_help" == *"--footer-label"* ]] && picker_opts+=(--footer-label=' actions ')
@@ -705,11 +1285,10 @@ run_session_picker() {
         "${fzf_opts[@]}" \
         "${picker_opts[@]}" \
         --ansi \
-        --disabled \
-        --phony \
         --delimiter=$'\t' \
         --with-nth=4 \
-        --border-label=' session search '
+        --tiebreak=index \
+        --border-label=' session picker '
     )" || return 0
 
     key="$(printf '%s\n' "$output" | sed -n '1p')"
@@ -728,7 +1307,12 @@ run_session_picker() {
         return 0
         ;;
       ctrl-n)
+        NEW_SESSION_NAME=""
         prompt_new_session
+        if [[ -n "$NEW_SESSION_NAME" ]]; then
+          switch_or_attach "$NEW_SESSION_NAME"
+          return 0
+        fi
         ;;
       ctrl-r)
         if [[ "$item_type" == "window" ]]; then
@@ -738,11 +1322,13 @@ run_session_picker() {
         fi
         ;;
       ctrl-x)
+        KILLED_CURRENT=""
         if [[ "$item_type" == "window" ]]; then
           prompt_kill_window "$target"
         else
           prompt_kill_session "$session"
         fi
+        # If we killed the current session, we switched — stay in picker (loop re-launches fzf)
         ;;
     esac
   done
@@ -756,14 +1342,17 @@ main() {
     list)
       list_sessions
       ;;
+    list-sessions)
+      list_sessions_only
+      ;;
     query-list)
-      list_sessions_query "${2:-}"
+      list_sessions
       ;;
     preview|preview-session)
-      preview_session "${2:-}" "${3:-}"
+      preview_session "${2:-}"
       ;;
     preview-line)
-      preview_line "${2:-}" "${3:-}"
+      preview_line "${2:-}"
       ;;
     preview-item)
       preview_item "${2:-}" "${3:-}" "${4:-}"
@@ -771,8 +1360,11 @@ main() {
     run|sessions)
       run_session_picker
       ;;
+    new-session-ui)
+      new_session_ui
+      ;;
     *)
-      printf 'Usage: %s [sessions|list|query-list <query>|preview-session <session> [query]|preview-line <line> [query]|preview-item <type> <session> <target> [query]]\n' "$0" >&2
+      printf 'Usage: %s [sessions|list|preview-item <type> <session> <target>]\n' "$0" >&2
       exit 1
       ;;
   esac
