@@ -119,14 +119,14 @@ Shell bootstrap verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" SHELL=/bin/zsh PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-  zsh -lc 'command -v git nvim fnm node pnpm cargo bun tree-sitter'
+  zsh -lc 'command -v git nvim ngrok fnm node pnpm cargo bun tree-sitter'
 ```
 
 Stable non-login command contract verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" PATH="$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
-  sh -lc 'command -v git nvim fnm node pnpm cargo bun tree-sitter wt'
+  sh -lc 'command -v git nvim ngrok fnm node pnpm cargo bun tree-sitter wt'
 ```
 
 Use the login-shell check to confirm shared bootstrap does not depend on interactive `~/.zshrc` state. Use the non-login check to confirm agents and scripts can resolve the same commands through the stable `~/.local/bin` contract.

@@ -24,6 +24,8 @@ Choose the exact profile you want:
 
 On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./setup.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
 
+The shared base layer installs the same core CLI set on every machine, including `ngrok`.
+
 ## Architecture support
 
 Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detected at runtime; GitHub release binaries (lazygit, yazi, lsd) and Go are fetched for the correct platform automatically. After setup completes, all required commands for the active profile are verified and missing tools reported as hard errors in the summary.
