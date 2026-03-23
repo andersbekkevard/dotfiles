@@ -1,0 +1,4 @@
+# tool|repo|asset-name-regex|binary-name
+# Arch placeholders: __UNAME_ARCH__ (x86_64/aarch64), __SHORT_ARCH__ (x86_64/arm64)
+sesh|joshmedeski/sesh|sesh_Linux___SHORT_ARCH__\.tar\.gz$|sesh
+gum|charmbracelet/gum|gum_.*_Linux___SHORT_ARCH__\.tar\.gz$|gum

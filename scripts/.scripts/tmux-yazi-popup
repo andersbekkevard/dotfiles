@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+if yazi "$@"; then
+	exit 0
+fi
+
+status=$?
+
+# Recover the popup terminal before showing fallback text or a shell.
+stty sane 2>/dev/null || true
+tput reset >/dev/null 2>&1 || clear
+
+cat <<EOF
+Yazi exited with status $status.
+
+This is usually a terminal-response issue between tmux and the terminal, not a
+problem with the tmux keybinding itself.
+
+If you recently changed tmux passthrough settings, restart tmux fully:
+  tmux kill-server && tmux || tmux
+
+Press Enter to continue in a shell in this popup.
+EOF
+
+read -r _
+exec zsh

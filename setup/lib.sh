@@ -386,19 +386,19 @@ profile_packages() {
 profile_commands() {
   case "$1" in
     minimal)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
       ;;
     linux-headless)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }
@@ -821,7 +821,7 @@ github_latest_asset_url() {
 }
 
 install_linux_release_binaries() {
-  local manifest="$DOTFILES_DIR/setup/packages/linux-binaries.full.txt"
+  local manifest="${1:-$DOTFILES_DIR/setup/packages/linux-binaries.full.txt}"
 
   if [[ "$OS_FAMILY" != "linux" || "$SKIP_INSTALL" -eq 1 ]]; then
     return 0

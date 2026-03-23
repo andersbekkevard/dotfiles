@@ -13,6 +13,7 @@ else
 		require("anders.lazy.full.completion"),
 		require("anders.lazy.full.telescope"),
 		require("anders.lazy.shared.flash"),
+		require("anders.lazy.full.smear_cursor"),
 		require("anders.lazy.full.oil"),
 		require("anders.lazy.full.vim-be-good"),
 		require("anders.lazy.full.99"),

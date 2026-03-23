@@ -29,3 +29,4 @@ fi
 
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/tmp/google-cloud-sdk/path.zsh.inc' ]; then . '/tmp/google-cloud-sdk/path.zsh.inc'; fi
+

@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/$(basename "${BASH_SOURCE[0]}")"
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+shorten_home() {
+  local path="${1:-}"
+
+  if [[ "$path" == "$HOME" ]]; then
+    printf '~'
+  elif [[ "$path" == "$HOME/"* ]]; then
+    printf '~/%s' "${path#$HOME/}"
+  else
+    printf '%s' "$path"
+  fi
+}
+
+list_sesh_json() {
+  case "${1:-all}" in
+    all)
+      sesh list -d -j
+      ;;
+    tmux)
+      sesh list -d -t -j
+      ;;
+    config)
+      sesh list -d -c -j
+      ;;
+    zoxide)
+      sesh list -d -z -j
+      ;;
+  esac
+}
+
+entries_sesh() {
+  local mode="${1:-all}"
+  local src name path target label
+
+  list_sesh_json "$mode" |
+    jq -r '
+      (. // [])[] |
+      [
+        .Src,
+        (if .Src == "tmux" or .Src == "config" then .Name else .Path end),
+        .Name,
+        .Path
+      ] | @tsv
+    ' |
+    while IFS=$'\t' read -r src target name path; do
+      [[ -z "$src" || -z "$target" ]] && continue
+      case "$src" in
+        tmux)
+          label="[tmux] $name"
+          ;;
+        config)
+          label="[cfg] $name"
+          ;;
+        zoxide)
+          label="[z] $(shorten_home "$path")"
+          ;;
+        *)
+          label="[$src] ${name:-$(shorten_home "$path")}"
+          ;;
+      esac
+      printf '%s\t%s\t%s\n' "$src" "$target" "$label"
+    done
+}
+
+entries_find() {
+  fd -H -d 2 -t d . "$HOME" -E .Trash -E .git -E node_modules |
+    while IFS= read -r path; do
+      printf 'find\t%s\t[find] %s\n' "$path" "$(shorten_home "$path")"
+    done
+}
+
+entries() {
+  if [[ "${1:-all}" == "find" ]]; then
+    entries_find
+    return
+  fi
+
+  entries_sesh "${1:-all}"
+}
+
+connect_target() {
+  local target="${1:-}"
+  [[ -n "$target" ]] && exec sesh connect "$target"
+  exit 0
+}
+
+kill_session() {
+  local src="${1:-}"
+  local target="${2:-}"
+
+  [[ "$src" == "tmux" && -n "$target" ]] && tmux kill-session -t "$target" >/dev/null 2>&1 || true
+}
+
+launch_fzf_palette() {
+  local selected src target
+
+  if ! selected="$(
+    entries all | fzf-tmux -p 55%,60% \
+      --ansi \
+      --no-sort \
+      --delimiter=$'\t' \
+      --with-nth=3 \
+      --border-label ' sesh ' \
+      --prompt '⚡  ' \
+      --header '  ^a all ^t tmux ^x zoxide ^g config ^d tmux kill ^f find' \
+      --bind 'tab:down,btab:up' \
+      --bind "ctrl-a:change-prompt(⚡  )+reload($SELF_PATH entries all)" \
+      --bind "ctrl-t:change-prompt(🪟  )+reload($SELF_PATH entries tmux)" \
+      --bind "ctrl-g:change-prompt(⚙️  )+reload($SELF_PATH entries config)" \
+      --bind "ctrl-x:change-prompt(📁  )+reload($SELF_PATH entries zoxide)" \
+      --bind "ctrl-f:change-prompt(🔎  )+reload($SELF_PATH entries find)" \
+      --bind "ctrl-d:execute-silent($SELF_PATH kill {1} {2})+change-prompt(⚡  )+reload($SELF_PATH entries all)"
+  )"; then
+    exit 0
+  fi
+
+  [[ -z "$selected" ]] && exit 0
+  IFS=$'\t' read -r src target _ <<<"$selected"
+  connect_target "$target"
+}
+
+launch_gum_palette() {
+  local selected
+
+  if ! selected="$(
+    entries all | cut -f2 | gum filter --limit 1 --placeholder 'Pick a sesh' --prompt='⚡'
+  )"; then
+    exit 0
+  fi
+  connect_target "$selected"
+}
+
+tmux_popup() {
+  tmux display-popup -E -w "${1:-40%}" -h "${2:-70%}" "${@:3}"
+}
+
+if [[ "${1:-}" == "entries" ]]; then
+  entries "${2:-all}"
+  exit 0
+fi
+
+if [[ "${1:-}" == "kill" ]]; then
+  kill_session "${2:-}" "${3:-}"
+  exit 0
+fi
+
+if [[ "${1:-}" == "gum" ]]; then
+  launch_gum_palette
+fi
+
+if require_cmd sesh && require_cmd fzf-tmux && require_cmd fd && require_cmd jq; then
+  launch_fzf_palette
+fi
+
+if require_cmd sesh && require_cmd gum && require_cmd jq; then
+  tmux_popup 40% 70% "$SELF_PATH gum"
+  exit 0
+fi
+
+if require_cmd sesh; then
+  tmux_popup 88% 82% -T "sessions" "sesh picker -i -d -s || true"
+  exit 0
+fi
+
+tmux_popup 88% 82% -T "tmux sessions" "$HOME/.scripts/tmux-session-picker sessions || true"
