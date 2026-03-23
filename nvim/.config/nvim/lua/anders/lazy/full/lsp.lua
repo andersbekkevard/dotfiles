@@ -53,6 +53,9 @@ return {
 				root_markers = { 'pyproject.toml', 'setup.py', 'setup.cfg', 'requirements.txt', 'Pipfile' },
 				capabilities = capabilities,
 				on_init = function(client)
+					if not client.workspace_folders or not client.workspace_folders[1] then
+						return
+					end
 					local root = client.workspace_folders[1].name
 					local venv = vim.fs.find({ '.venv', 'venv', 'env', '.env' },
 						{ path = root, upward = false })[1]
@@ -363,7 +366,13 @@ return {
 					vim.cmd("DiffviewOpen")
 				end
 			end, desc = "Toggle diff view" },
-			{ "<leader>gh", "<cmd>DiffviewFileHistory %<cr>", desc = "File history" },
+			{ "<leader>gh", function()
+				if next(require("diffview.lib").views) then
+					vim.cmd("DiffviewClose")
+				else
+					vim.cmd("DiffviewFileHistory %")
+				end
+			end, desc = "Toggle file history" },
 		},
 		opts = {},
 	},

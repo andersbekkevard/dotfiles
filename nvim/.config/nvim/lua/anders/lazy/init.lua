@@ -8,6 +8,14 @@ if vim.g.vscode then
 else
 	-- Full Neovim plugins
 	return {
+		{
+			"echasnovski/mini.icons",
+			lazy = false,
+			config = function()
+				require("mini.icons").setup()
+				MiniIcons.mock_nvim_web_devicons()
+			end,
+		},
 		require("anders.lazy.full.theme"),
 		require("anders.lazy.full.lsp"),
 		require("anders.lazy.full.completion"),
