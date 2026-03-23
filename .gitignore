@@ -3,6 +3,7 @@
 CLAUDE.md
 IMPROVEMENT.md
 git-crypt.key
+*.key
 
 # Generated or machine-local state.
 nvim/.config/nvim/lazy-lock.json
