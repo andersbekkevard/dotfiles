@@ -1029,7 +1029,7 @@ new_session_ui() {
       --info=inline-right \
       $fzf_color \
       --preview="lsd -A -l --color=always --icon=always --blocks permission,size,date,name --date '+%d/%m %H:%M' \"\$(echo {} | sed \"s|^~/|$HOME/|\")\"" \
-      --preview-window='right:40%' \
+      --preview-window='right:50%' \
     )" || return 0
     [[ -z "$dir" ]] && return 0
     # Expand ~ back to full path
