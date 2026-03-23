@@ -401,19 +401,19 @@ profile_packages() {
 profile_commands() {
   case "$1" in
     minimal)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
       ;;
     linux-headless)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }
@@ -686,6 +686,45 @@ ensure_gh_apt_repo() {
 
   as_root chmod go+r "$keyring"
   printf 'deb [arch=%s signed-by=%s] https://cli.github.com/packages stable main\n' "$(dpkg --print-architecture)" "$keyring" | as_root tee "$source_file" >/dev/null
+  apt_update_once
+}
+
+ensure_ngrok_apt_repo() {
+  if [[ "$OS_FAMILY" != "linux" || "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if grep -Rq "ngrok-agent.s3.amazonaws.com" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null; then
+    return 0
+  fi
+
+  if ! as_root true >/dev/null 2>&1; then
+    log_warn "Skipping ngrok apt repository setup; sudo/root unavailable."
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Configure ngrok apt repository"
+    return 0
+  fi
+
+  local keyring="/etc/apt/trusted.gpg.d/ngrok.asc"
+  local source_file="/etc/apt/sources.list.d/ngrok.list"
+
+  curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | as_root tee "$keyring" >/dev/null
+  local status=$?
+  if [[ $status -ne 0 ]]; then
+    record_error "Configure ngrok apt repository failed (exit $status)"
+    return 0
+  fi
+
+  printf 'deb https://ngrok-agent.s3.amazonaws.com bookworm main\n' | as_root tee "$source_file" >/dev/null
+  status=$?
+  if [[ $status -ne 0 ]]; then
+    record_error "Write ngrok apt repository source failed (exit $status)"
+    return 0
+  fi
+
   apt_update_once
 }
 

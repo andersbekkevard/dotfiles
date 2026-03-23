@@ -8,6 +8,7 @@ git
 htop
 jq
 locales
+ngrok
 procps
 ripgrep
 stow
