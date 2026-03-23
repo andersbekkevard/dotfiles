@@ -46,6 +46,10 @@ Prefix + e
 
 Opens a new tmux window running `yazi` in the current pane's working directory, which is the most reliable Yazi workflow on this setup because popup mode can trigger tmux terminal-response issues.
 
+Prefix + g
+
+Opens a tmux popup running `lazygit` in the current pane's working directory.
+
 Prefix + t
 
 Opens a tmux popup shell running `zsh` in the current pane's working directory, which is useful for quick command work without changing the current layout.
