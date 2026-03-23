@@ -4,6 +4,14 @@ set -euo pipefail
 
 now_ts="$(date +%s)"
 
+if date -r 0 '+%b %d' >/dev/null 2>&1; then
+  date_flavor="bsd"
+else
+  date_flavor="gnu"
+fi
+
+# Core helpers
+
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     printf '%s not found\n' "$1" >&2
@@ -148,7 +156,7 @@ truncate_left() {
 format_day() {
   local ts="${1:-0}"
 
-  if date -r "$ts" '+%b %d' >/dev/null 2>&1; then
+  if [[ "$date_flavor" == "bsd" ]]; then
     date -r "$ts" '+%b %d'
   else
     date -d "@$ts" '+%b %d'
@@ -183,6 +191,7 @@ format_age() {
   fi
 }
 
+# Preview and action-screen rendering
 
 preview_rule() {
   local cols="${FZF_PREVIEW_COLUMNS:-72}"
@@ -689,7 +698,8 @@ preview_session() {
   local -a win_ids win_indices win_names win_actives win_cmds win_paths win_types
   local -a win_captures win_capture_lines
   local win_i=0 shell_count=0 full_count=0
-  while IFS='|' read -r w_activity w_id w_index w_name w_active w_panes w_cmd w_path; do
+  local -a win_pane_ids
+  while IFS='|' read -r w_activity w_id w_index w_name w_active w_panes w_cmd w_path w_pane_id; do
     [[ -z "$w_id" ]] && continue
     win_ids[win_i]="$w_id"
     win_indices[win_i]="$w_index"
@@ -697,6 +707,7 @@ preview_session() {
     win_actives[win_i]="$w_active"
     win_cmds[win_i]="$w_cmd"
     win_paths[win_i]="$w_path"
+    win_pane_ids[win_i]="$w_pane_id"
 
     # Classify
     case "$w_cmd" in
@@ -712,7 +723,7 @@ preview_session() {
 
     # Capture now — smart per type
     local pane_id raw_capture=""
-    pane_id="$(tmux display-message -p -t "$w_id" '#{pane_id}' 2>/dev/null || true)"
+    pane_id="${win_pane_ids[win_i]}"
     if [[ -n "$pane_id" ]]; then
       case "${win_types[win_i]}" in
         shell)
@@ -743,7 +754,7 @@ preview_session() {
     fi
 
     win_i=$(( win_i + 1 ))
-  done < <(tmux list-windows -t "$session" -F '#{window_activity}|#{window_id}|#{window_index}|#{window_name}|#{window_active}|#{window_panes}|#{pane_current_command}|#{pane_current_path}' 2>/dev/null)
+  done < <(tmux list-windows -t "$session" -F '#{window_activity}|#{window_id}|#{window_index}|#{window_name}|#{window_active}|#{window_panes}|#{pane_current_command}|#{pane_current_path}|#{pane_id}' 2>/dev/null)
 
   # Budget based on ACTUAL captured line counts
   # Overhead: 1 header + 2 border lines per window
@@ -826,7 +837,6 @@ preview_session() {
     local w_active="${win_actives[gi]}"
     local w_cmd="${win_cmds[gi]}"
     local w_path="${win_paths[gi]}"
-    local w_type="${win_types[gi]}"
     local content_lines=${win_content_lines[gi]}
 
     # Marker and label color
@@ -909,18 +919,16 @@ preview_window() {
     exit 0
   fi
 
-  local metadata window_index window_name pane_count pane_cmd pane_path activity
-  metadata="$(tmux display-message -p -t "$window_id" '#{window_index}|#{window_name}|#{window_panes}|#{pane_current_command}|#{pane_current_path}|#{window_activity}' 2>/dev/null || true)"
+  local metadata window_index window_name pane_count pane_cmd pane_path activity active_pane_id
+  metadata="$(tmux display-message -p -t "$window_id" '#{window_index}|#{window_name}|#{window_panes}|#{pane_current_command}|#{pane_current_path}|#{window_activity}|#{pane_id}' 2>/dev/null || true)"
   if [[ -z "$metadata" ]]; then
     printf 'Window not found: %s\n' "$window_id"
     exit 0
   fi
 
-  IFS='|' read -r window_index window_name pane_count pane_cmd pane_path activity <<<"$metadata"
+  IFS='|' read -r window_index window_name pane_count pane_cmd pane_path activity active_pane_id <<<"$metadata"
 
   # Smart capture based on command type
-  local active_pane_id
-  active_pane_id="$(tmux display-message -p -t "$window_id" '#{pane_id}' 2>/dev/null || true)"
   if [[ -z "$active_pane_id" ]]; then
     active_pane_id="$window_id"
   fi
@@ -973,6 +981,8 @@ preview_item() {
   esac
 }
 
+# Interactive actions
+
 prompt_new_session() {
   # Run the zoxide fzf picker inline — we're already in a full-screen popup
   new_session_ui
@@ -984,6 +994,7 @@ new_session_ui() {
 
   # Step 1: Type session name — enter creates at ~/, tab opens zoxide path picker
   local output key_line query_line
+  local -a output_lines
   output="$(printf '\n' | fzf \
     --height=100% \
     --layout=reverse \
@@ -1002,8 +1013,9 @@ new_session_ui() {
   )"
   local fzf_rc=$?
 
-  query_line="$(printf '%s\n' "$output" | sed -n '1p')"
-  key_line="$(printf '%s\n' "$output" | sed -n '2p')"
+  mapfile -t output_lines <<< "$output"
+  query_line="${output_lines[0]:-}"
+  key_line="${output_lines[1]:-}"
   name="$query_line"
 
   # ESC exits with empty query, or fzf returns 130
@@ -1233,7 +1245,7 @@ switch_to_window() {
 run_session_picker() {
   local output key selected item_type session target
   local fzf_help
-  local -a fzf_opts picker_opts
+  local -a fzf_opts picker_opts output_lines
 
   if ! tmux list-sessions >/dev/null 2>&1; then
     printf 'No tmux sessions found\n'
@@ -1291,11 +1303,10 @@ run_session_picker() {
         --border-label=' session picker '
     )" || return 0
 
-    key="$(printf '%s\n' "$output" | sed -n '1p')"
-    selected="$(printf '%s\n' "$output" | sed -n '2p')"
-    item_type="$(printf '%s\n' "$selected" | cut -f1)"
-    session="$(printf '%s\n' "$selected" | cut -f2)"
-    target="$(printf '%s\n' "$selected" | cut -f3)"
+    mapfile -t output_lines <<< "$output"
+    key="${output_lines[0]:-}"
+    selected="${output_lines[1]:-}"
+    IFS=$'\t' read -r item_type session target _ <<< "$selected"
 
     case "$key" in
       enter)
@@ -1334,6 +1345,8 @@ run_session_picker() {
   done
 }
 
+# Picker entrypoint and CLI dispatch
+
 main() {
   require_cmd tmux
   require_cmd fzf
@@ -1342,15 +1355,18 @@ main() {
     list)
       list_sessions
       ;;
+    # Compatibility alias retained for existing callers.
     list-sessions)
       list_sessions_only
       ;;
+    # Compatibility alias retained for existing callers.
     query-list)
       list_sessions
       ;;
     preview|preview-session)
       preview_session "${2:-}"
       ;;
+    # Compatibility alias retained for existing callers.
     preview-line)
       preview_line "${2:-}"
       ;;
@@ -1360,6 +1376,7 @@ main() {
     run|sessions)
       run_session_picker
       ;;
+    # Compatibility alias retained for existing callers.
     new-session-ui)
       new_session_ui
       ;;
