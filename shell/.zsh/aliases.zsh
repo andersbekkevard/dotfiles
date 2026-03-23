@@ -1,10 +1,16 @@
 alias src="source ~/.zshrc"
 alias zrc="nvim ~/.dotfiles/shell/.zshrc"
 alias c="clear"
+
+alias nv="nvim"
+alias nv.="nvim."
 alias vim="nvim"
+alias vim.="nvim ."
 alias vi="nvim"
 alias vi.="nvim ."
-alias nv="nvim"
+alias v="nvim"
+alias v.="nvim ."
+
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
 alias co="codex --yolo"
@@ -57,5 +63,5 @@ if command -v fzf >/dev/null 2>&1 && command -v bat >/dev/null 2>&1; then
   alias fzfc="fzf --preview 'bat --style=numbers --color=always {}' --preview-window=right:60%"
 fi
 
-alias lc='rm -f *.aux *.log *.pytxcode && rm -rf pythontex-files-*/'
+# alias lc='rm -f *.aux *.log *.pytxcode && rm -rf pythontex-files-*/'
 alias sql='sqlite3'
