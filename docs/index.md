@@ -5,6 +5,7 @@ Use this page as the map for the `docs/` directory.
 ## Start here
 
 - New contributor / operator: `README.md` → `docs/usage.md`
+- Docs directory landing page: `docs/README.md`
 - Profile behavior/debugging: `docs/profiles.md`
 - Runtime/toolchain expectations: `docs/runtimes.md`
 - Structural changes to repo/setup: `docs/architecture.md`
@@ -18,6 +19,7 @@ Operator invariant:
 
 | Topic | Canonical file | Notes |
 |---|---|---|
+| Docs directory landing page | `docs/README.md` | Lightweight entrypoint for browsing the docs directory |
 | Daily usage, verify, maintenance | `docs/usage.md` | Operational commands, explicit profiles, and the single entrypoint |
 | Profiles and selection | `docs/profiles.md` | Explicit profile choices and boundaries |
 | Runtime version and installer policy | `docs/runtimes.md` | Version floors and installer strategy |
