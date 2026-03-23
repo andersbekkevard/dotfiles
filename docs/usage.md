@@ -40,7 +40,17 @@ Tmux session picker:
 Prefix + s
 ```
 
-`Prefix + s` opens a tmux popup session/window picker with search, preview, and inline actions (`Ctrl-n` new session, `Ctrl-r` rename, `Ctrl-x` kill). `Alt-s` opens the same popup without a prefix, and `Prefix + S` jumps back to the previous tmux session.
+`sp` opens `sesh picker` directly from the shell. `Prefix + s` opens a blog-style `sesh` launcher inside tmux. When `sesh`, `fzf-tmux`, `fd`, and `jq` are available, the launcher mirrors the article workflow with `Ctrl-a` all entries, `Ctrl-t` tmux sessions, `Ctrl-g` configured sessions, `Ctrl-x` zoxide entries, `Ctrl-f` filesystem search, and `Ctrl-d` to kill the highlighted tmux session before reloading. If `fzf-tmux` is unavailable but `gum` is installed, the binding falls back to the article's simpler `gum filter` flow. If only `sesh` is available, it falls back to `sesh picker`. If `sesh` is unavailable, it falls back to the built-in tmux session/window picker with search, preview, and inline actions (`Ctrl-n` new session, `Ctrl-r` rename, `Ctrl-x` kill). `Alt-s` opens the same launcher without a prefix, and `Prefix + S` jumps back to the previous tmux session.
+
+Prefix + e
+
+Opens a new tmux window running `yazi` in the current pane's working directory, which is the most reliable Yazi workflow on this setup because popup mode can trigger tmux terminal-response issues.
+
+Prefix + t
+
+Opens a tmux popup shell running `zsh` in the current pane's working directory, which is useful for quick command work without changing the current layout.
+
+Managed `sesh` defaults live in `~/.config/sesh/sesh.toml`. The baseline includes curated sessions for `Downloads`, dotfiles, tmux config, and notes, a `node_dev` startup script under `~/.config/sesh/scripts/node_dev`, and a default startup command that opens Neovim with `:Telescope find_files`.
 
 Tmux navigation:
 
@@ -52,6 +62,21 @@ Prefix + c
 ```
 
 `Alt-a` and `Alt-d` move to the previous and next window. `Prefix + -`, `Prefix + _`, and `Prefix + c` create splits/windows in the current pane's working directory.
+
+`Prefix + x` keeps the confirmation prompt before killing the current pane. `Prefix + X` and `Prefix + Ctrl-x` kill the current pane immediately when you want the faster version.
+
+Tmux fingers:
+
+```text
+Prefix + F
+Prefix + J
+```
+
+`Prefix + F` opens `tmux-fingers` hint mode for quickly selecting paths, SHAs, URLs, numbers, and other detected text in the current pane. `Prefix + J` opens `tmux-fingers` jump mode, which moves the cursor to the selected match instead of only copying it. The first TPM install may require completing the plugin's one-time installation wizard.
+
+Tmux state persistence:
+
+`tmux-resurrect` is available for manual save/restore on `Prefix + Ctrl-s` and `Prefix + Ctrl-r`. `tmux-continuum` is also installed and runs periodic background saves, but automatic restore is not enabled by default, so a fresh tmux server will not restore itself unless you opt into that later.
 
 Rapid tmux session cleanup:
 

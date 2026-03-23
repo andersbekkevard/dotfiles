@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if command -v pnpm >/dev/null 2>&1; then
+  tmux split-window -v -l 10 'pnpm dev'
+elif command -v npm >/dev/null 2>&1; then
+  tmux split-window -v -l 10 'npm run dev'
+fi
+
+tmux select-pane -t :.+
+tmux send-keys "nvim +GoToFile" Enter

@@ -9,6 +9,7 @@ run_minimal_layer() {
   elif [[ "$OS_FAMILY" == "linux" ]]; then
     apt_update_once
     apt_install_manifest "$DOTFILES_DIR/setup/packages/apt.minimal.txt"
+    install_linux_release_binaries "$DOTFILES_DIR/setup/packages/linux-binaries.minimal.txt"
     ensure_linux_command_aliases
     ensure_neovim_011
   fi

@@ -9,4 +9,8 @@ if command -v thefuck >/dev/null 2>&1 && thefuck --version >/dev/null 2>&1; then
   alias tf='fuck'
 fi
 
+if command -v sesh >/dev/null 2>&1; then
+  eval "$(sesh completion zsh)"
+fi
+
 [[ -f "$HOME/.wt/wt.sh" ]] && source "$HOME/.wt/wt.sh"
