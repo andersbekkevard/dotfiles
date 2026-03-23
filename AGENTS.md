@@ -26,6 +26,7 @@ If the task touches secrets or migration, also read:
 | File | Primary purpose | Source of truth for |
 |---|---|---|
 | `README.md` | Entry point for humans and quick bootstrap | First-run workflow, explicit profiles, and high-level guarantees |
+| `docs/README.md` | Documentation landing page | Fast entrypoint for browsing the docs directory |
 | `docs/index.md` | Documentation directory map | Where each topic lives |
 | `docs/usage.md` | Day-to-day commands | How to run, verify, and maintain dotfiles |
 | `docs/profiles.md` | Profile behavior | Explicit profile selection and boundaries |
@@ -46,6 +47,30 @@ When behavior changes, update docs in the same commit:
 - **Secrets workflow changes** → update `docs/secrets.md`
 
 Also update `README.md` if the change affects first-run expectations.
+
+## Issue Tracking
+
+This repo uses [beads_rust](https://github.com/Dicklesworthstone/beads_rust) via `br` for local-first issue tracking.
+
+- Tracker data lives in `.beads/`.
+- `br` is non-invasive: it never runs `git` commands for you.
+- After changing issues, run `br sync --flush-only` and then stage `.beads/` manually.
+- Do not edit SQLite files in `.beads/` directly.
+
+Preferred CLI flow:
+
+```bash
+br ready
+br list --status=open
+br show <id>
+br create "Title" --type task --priority 2
+br update <id> --status in_progress
+br close <id> --reason "Completed"
+br sync --flush-only
+git add .beads/
+```
+
+Use `br ready` at the start of work to find unblocked issues. If you discover new follow-up work during a change, capture it with `br create` instead of leaving it implicit.
 
 ## Quality bar for docs
 
