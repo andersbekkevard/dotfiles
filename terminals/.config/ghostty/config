@@ -1,5 +1,9 @@
 # Ghostty configuration managed by dotfiles.
 
+# font-family = "MesloLGSDZ Nerd Font Mono"
+# font-family = Monaco
+# font-family = "JetBrains Mono Medium"
+# font-family = monospace
 font-size = 16
 
 # theme = Brogrammer
