@@ -1055,7 +1055,15 @@ ensure_default_shell_zsh() {
     return 0
   fi
 
-  chsh -s "$zsh_path" >/dev/null 2>&1
+  log_info "Changing default shell to $zsh_path"
+  if [[ $EUID -eq 0 ]]; then
+    chsh -s "$zsh_path"
+  elif [[ "$HAS_SUDO" -eq 1 ]]; then
+    sudo chsh -s "$zsh_path" "$USER"
+  else
+    log_warn "chsh will prompt for your password."
+    chsh -s "$zsh_path"
+  fi
   local status=$?
   if [[ $status -ne 0 ]]; then
     record_error "Change default shell to zsh failed (exit $status)"
