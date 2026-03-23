@@ -63,7 +63,7 @@ Prefix + c
 
 `Alt-a` and `Alt-d` move to the previous and next window. `Prefix + -`, `Prefix + _`, and `Prefix + c` create splits/windows in the current pane's working directory.
 
-On macOS in Ghostty, left `Option` is reserved for `Alt`/Meta terminal bindings, while right `Option` stays native for macOS symbols and dead keys such as `~`.
+On macOS in Ghostty, `Option` stays native for macOS symbols and dead keys such as `~`; Ghostty does not reserve it for terminal `Alt`/Meta bindings.
 
 `Prefix + Ctrl-c` is mapped to the same action as `Prefix + c`, so it opens a new tmux window in the current pane's working directory.
 
