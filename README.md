@@ -24,7 +24,7 @@ Choose the exact profile you want:
 
 On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./setup.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
 
-The shared base layer installs the same core CLI set on every machine, including `ngrok`.
+The shared base layer installs the same core CLI set on every machine, including `ngrok` and `git-delta`.
 
 ## Architecture support
 

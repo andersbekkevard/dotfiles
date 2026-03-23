@@ -401,19 +401,19 @@ profile_packages() {
 profile_commands() {
   case "$1" in
     minimal)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew
       ;;
     linux-headless)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }
@@ -726,6 +726,66 @@ ensure_ngrok_apt_repo() {
   fi
 
   apt_update_once
+}
+
+install_git_delta_linux() {
+  if [[ "$OS_FAMILY" != "linux" || "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if command_exists delta; then
+    return 0
+  fi
+
+  local package_name="git-delta"
+  local repo="dandavison/delta"
+  local pattern="git-delta_.*_${ARCH_GO}\\.deb$"
+  local apt_has_package=0
+
+  if command_exists apt-cache && apt-cache show "$package_name" >/dev/null 2>&1; then
+    apt_has_package=1
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    if [[ "$apt_has_package" -eq 1 ]]; then
+      log_info "[dry-run] Install git-delta from apt"
+    else
+      log_info "[dry-run] Install git-delta from GitHub release (.deb)"
+    fi
+    return 0
+  fi
+
+  if ! as_root true >/dev/null 2>&1; then
+    log_warn "Skipping git-delta install; sudo/root unavailable."
+    return 0
+  fi
+
+  if [[ "$apt_has_package" -eq 1 ]]; then
+    run_cmd_allow_failure "Install git-delta from apt" as_root apt-get install -y "$package_name"
+    return 0
+  fi
+
+  local url
+  url="$(github_latest_asset_url "$repo" "$pattern")"
+  if [[ -z "$url" ]]; then
+    record_error "Could not resolve download URL for git-delta"
+    return 0
+  fi
+
+  local tmp_dir package_path
+  tmp_dir="$(mktemp -d)"
+  package_path="$tmp_dir/$(basename "$url")"
+
+  curl -fsSL "$url" -o "$package_path"
+  local status=$?
+  if [[ $status -ne 0 ]]; then
+    rm -rf "$tmp_dir"
+    record_error "Download git-delta release failed (exit $status)"
+    return 0
+  fi
+
+  run_cmd_allow_failure "Install git-delta from GitHub release (.deb)" as_root apt-get install -y "$package_path"
+  rm -rf "$tmp_dir"
 }
 
 install_script_if_missing() {
