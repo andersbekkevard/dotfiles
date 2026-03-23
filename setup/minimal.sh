@@ -10,6 +10,7 @@ run_minimal_layer() {
     ensure_ngrok_apt_repo
     apt_update_once
     apt_install_manifest "$DOTFILES_DIR/setup/packages/apt.minimal.txt"
+    install_git_delta_linux
     install_linux_release_binaries "$DOTFILES_DIR/setup/packages/linux-binaries.minimal.txt"
     ensure_linux_command_aliases
     ensure_neovim_011

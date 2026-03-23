@@ -19,10 +19,11 @@ title =
 window-title-font-family = "MonoLisa Variable"
 window-save-state = always
 
-# Let both Option keys behave as Alt/Meta so tmux M- bindings work.
-macos-option-as-alt = true
+# Let the left Option key behave as Alt/Meta for tmux M- bindings,
+# while keeping the right Option key for macOS symbols and dead keys.
+macos-option-as-alt = left
 
-# Restore Norwegian Option+7/8/9 symbols while keeping Option as Alt.
+# Restore Norwegian left-Option 7/8/9 symbols while keeping left Option as Alt.
 keybind = alt+7=text:|
 keybind = alt+8=text:[
 keybind = alt+9=text:]
