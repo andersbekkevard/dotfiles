@@ -15,6 +15,7 @@ alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
 alias co="codex --yolo"
 alias sp="sesh picker"
+alias t="tmux"
 
 alias nodesize='bash ~/.scripts/nodesize.sh'
 alias pysize='bash ~/.scripts/pysize.sh'
