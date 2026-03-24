@@ -4,14 +4,24 @@ alias secrets='cursor ~/.secrets'
 alias c.='cursor .'
 alias c-a='cursor-agent'
 
-ghotty() {
-  if ! command -v ghostty &>/dev/null && [[ ! -d /Applications/Ghostty.app ]]; then
-    echo "ghotty: ghostty not available" >&2
+ghostty() {
+  if [[ ! -d /Applications/Ghostty.app ]]; then
+    echo "ghostty: Ghostty.app not found" >&2
     return 1
   fi
   local dir="${1:-.}"
   dir="$(cd "$dir" 2>/dev/null && pwd)" || { echo "ghotty: invalid path: $1" >&2; return 1; }
-  open -a Ghostty --new --args --working-directory="$dir"
+  osascript -e '
+    tell application "Ghostty"
+      activate
+      tell application "System Events" to keystroke "t" using command down
+      delay 0.3
+      tell application "System Events"
+        keystroke "cd '"'$dir'"' && clear"
+        keystroke return
+      end tell
+    end tell
+  '
 }
 
 
