@@ -14,13 +14,12 @@ Explicit profile selection:
 - Files under `setup/` are support scripts, not alternate install entrypoints.
 - `./setup.sh` never auto-detects a profile.
 - Running `./setup.sh` with no profile prints the available profiles and maintenance modes.
-- Pick the exact target you want: `minimal`, `full`, `macos`, `linux-headless`, or `linux-desktop`.
+- Pick the exact target you want: `minimal`, `full`, `macos`, or `linux-desktop`.
 
 Typical first-run examples:
 
 ```bash
 ./setup.sh macos
-./setup.sh linux-headless
 ./setup.sh linux-desktop
 ```
 
@@ -30,7 +29,7 @@ Common maintenance:
 ./setup.sh --verify macos
 ./setup.sh --layer linux-desktop
 ./setup.sh --stow shell
-DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-headless
+DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
 ./setup/brew-drift
 ```
 

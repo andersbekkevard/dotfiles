@@ -8,9 +8,12 @@ for config_file in \
   "$HOME/.zsh/core.zsh" \
   "$HOME/.zsh/env.zsh" \
   "$HOME/.zsh/aliases.zsh" \
-  "$HOME/.zsh/helpers.zsh" \
   "$HOME/.zsh/languages.zsh"; do
   [[ -r "$config_file" ]] && source "$config_file"
+done
+
+for script_file in "$HOME"/.scripts/*.zsh; do
+  [[ -r "$script_file" ]] && source "$script_file"
 done
 
 if [[ -r "$HOME/.secrets" ]] && LC_ALL=C grep -Iq . "$HOME/.secrets" 2>/dev/null; then

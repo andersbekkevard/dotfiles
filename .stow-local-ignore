@@ -5,6 +5,7 @@
 README.*
 manifest\.json
 
+archive
 docs
 setup
 init\.sh

@@ -3,11 +3,10 @@ export UV_PYTHON='3.13'
 
 export FNM_DIR="${FNM_DIR:-$HOME/.local/share/fnm}"
 if [[ -x "$FNM_DIR/fnm" ]]; then
-  eval "$("$FNM_DIR/fnm" env --use-on-cd --shell zsh)"
+  eval "$("$FNM_DIR/fnm" env --shell zsh)"
 fi
 
 export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
-[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 
 if [[ "$OSTYPE" == darwin* ]]; then
   export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"

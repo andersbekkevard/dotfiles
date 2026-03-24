@@ -33,6 +33,5 @@ vim.opt.softtabstop = 8
 vim.opt.tabstop = 8
 vim.opt.expandtab = false
 
--- Perform a source zshrc
 vim.opt.shell = "/bin/zsh"
-vim.opt.shellcmdflag = "-i -c"
+vim.opt.shellcmdflag = "-c"

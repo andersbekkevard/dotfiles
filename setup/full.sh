@@ -18,5 +18,5 @@ run_full_layer() {
     install_go_linux
   fi
 
-  stow_packages lazygit wt
+  stow_packages lazygit wt lsd
 }

@@ -7,19 +7,15 @@ Portable shell-focused environment with zsh, tmux, neovim, and core CLI tools.
 ## `full`
 
 Adds development runtimes and shared developer tooling on top of `minimal`.
-On Linux, this includes `gh`, `git-crypt`, `lazygit`, and `yazi`.
+Includes `gh`, `git-crypt`, `lazygit`, `yazi`, `lsd`, and `lazydocker`.
 
 ## `macos`
 
 Adds macOS-only packages, keyboard/mouse configuration, and terminal configs on top of `full`.
 
-## `linux-headless`
-
-Selects the Linux non-GUI profile on top of `full`, without desktop/window-manager config.
-
 ## `linux-desktop`
 
-Adds desktop packages and window-manager configuration on top of `linux-headless`.
+Adds Linux desktop packages and window-manager configuration on top of `full`.
 
 ## Selection rule
 
@@ -30,7 +26,6 @@ There is no second root bootstrap script. Profile choice is part of the operator
 That keeps first-run bootstrap deterministic and makes the chosen machine contract obvious from the command line:
 
 - `./setup.sh macos`
-- `./setup.sh linux-headless`
 - `./setup.sh linux-desktop`
 - `./setup.sh full`
 - `./setup.sh minimal`
