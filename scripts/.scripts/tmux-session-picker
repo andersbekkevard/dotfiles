@@ -285,9 +285,9 @@ capture_recent_pane_lines() {
 render_action_screen() {
   local title="${1:-}" target="${2:-}"
   local term_cols term_rows
-  term_cols="$(tput cols 2>/dev/null || printf '80')"
-  term_rows="$(tput lines 2>/dev/null || printf '40')"
-  local box_w=$(( term_cols - 2 ))
+  term_cols="$(tmux display-message -p '#{pane_width}' 2>/dev/null || tput cols 2>/dev/null || printf '80')"
+  term_rows="$(tmux display-message -p '#{pane_height}' 2>/dev/null || tput lines 2>/dev/null || printf '40')"
+  local box_w=$(( term_cols - 3 ))
   (( box_w < 40 )) && box_w=40
   local inner_w=$(( box_w - 2 ))
 
@@ -982,9 +982,8 @@ new_session_ui() {
   )"
   local fzf_rc=$?
 
-  mapfile -t output_lines <<< "$output"
-  query_line="${output_lines[0]:-}"
-  key_line="${output_lines[1]:-}"
+  query_line="$(head -n1 <<< "$output")"
+  key_line="$(sed -n '2p' <<< "$output")"
   name="$query_line"
 
   # ESC exits with empty query, or fzf returns 130
@@ -1036,8 +1035,8 @@ prompt_rename_session() {
 
   # Show all windows with boxes, reusing the session preview
   local term_cols term_rows
-  term_cols="$(tput cols 2>/dev/null || printf '80')"
-  term_rows="$(tput lines 2>/dev/null || printf '40')"
+  term_cols="$(tmux display-message -p '#{pane_width}' 2>/dev/null || tput cols 2>/dev/null || printf '80')"
+  term_rows="$(tmux display-message -p '#{pane_height}' 2>/dev/null || tput lines 2>/dev/null || printf '40')"
   local save_cols="${FZF_PREVIEW_COLUMNS:-}" save_lines="${FZF_PREVIEW_LINES:-}"
   export FZF_PREVIEW_COLUMNS="$term_cols"
   export FZF_PREVIEW_LINES="$(( term_rows - 8 ))"
@@ -1096,6 +1095,7 @@ prompt_rename_window() {
   metadata="$(tmux display-message -p -t "$window_id" '#S|#W|#{pane_current_command}|#{pane_current_path}' 2>/dev/null || true)"
   IFS='|' read -r session_name current_name pane_cmd pane_path <<<"$metadata"
 
+  clear
   render_action_screen "RENAME WINDOW" "$window_id"
   render_action_footer "$session_name" "${current_name:-window}" "$pane_cmd" "$pane_path"
 
@@ -1128,8 +1128,8 @@ prompt_kill_session() {
 
   # Show all windows with boxes, reusing the session preview
   local term_cols term_rows
-  term_cols="$(tput cols 2>/dev/null || printf '80')"
-  term_rows="$(tput lines 2>/dev/null || printf '40')"
+  term_cols="$(tmux display-message -p '#{pane_width}' 2>/dev/null || tput cols 2>/dev/null || printf '80')"
+  term_rows="$(tmux display-message -p '#{pane_height}' 2>/dev/null || tput lines 2>/dev/null || printf '40')"
   local save_cols="${FZF_PREVIEW_COLUMNS:-}" save_lines="${FZF_PREVIEW_LINES:-}"
   export FZF_PREVIEW_COLUMNS="$term_cols"
   export FZF_PREVIEW_LINES="$(( term_rows - 8 ))"
@@ -1319,9 +1319,8 @@ run_session_picker() {
         --border-label=' session picker '
     )" || return 0
 
-    mapfile -t output_lines <<< "$output"
-    key="${output_lines[0]:-}"
-    selected="${output_lines[1]:-}"
+    key="$(head -n1 <<< "$output")"
+    selected="$(sed -n '2p' <<< "$output")"
     IFS=$'\t' read -r item_type session target _ <<< "$selected"
 
     case "$key" in

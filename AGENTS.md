@@ -78,7 +78,7 @@ Use `br ready` at the start of work to find unblocked issues. If you discover ne
 - State invariants explicitly (what must always be true).
 - Avoid duplicate normative rules across files; link to the canonical file instead.
 - Prefer concrete failure modes + remediation over vague guidance.
-- Keep terminology stable (`minimal`, `full`, `macos`, `linux-headless`, `linux-desktop`).
+- Keep terminology stable (`minimal`, `full`, `macos`, `linux-desktop`).
 
 ## Commit hygiene
 

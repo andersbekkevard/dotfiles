@@ -8,8 +8,6 @@ source "$DOTFILES_DIR/setup/lib.sh"
 source "$DOTFILES_DIR/setup/minimal.sh"
 # shellcheck source=setup/full.sh
 source "$DOTFILES_DIR/setup/full.sh"
-# shellcheck source=setup/linux-headless.sh
-source "$DOTFILES_DIR/setup/linux-headless.sh"
 # shellcheck source=setup/linux-desktop.sh
 source "$DOTFILES_DIR/setup/linux-desktop.sh"
 # shellcheck source=setup/macos.sh

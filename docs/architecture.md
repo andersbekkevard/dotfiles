@@ -3,8 +3,9 @@
 The repository is split into three categories:
 
 1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, and `linux-desktop/`.
-2. Setup logic under `setup/`, driven by `setup.sh`.
+2. Setup logic under `setup/`, with library modules in `setup/lib/` (core, profiles, packages, runtimes, shell-setup, stow, verify), driven by `setup.sh`.
 3. Documentation under `docs/`.
+4. Retired configs and scripts under `archive/`.
 
 `setup.sh` requires an explicit profile, expands it into an additive layer chain, installs the required packages for each layer, backs up first-run conflicts, and stows the corresponding packages with `stow --no-folding`.
 
@@ -20,8 +21,7 @@ Profiles are additive:
 minimal
   -> full
      -> macos
-     -> linux-headless
-        -> linux-desktop
+     -> linux-desktop
 ```
 
 Shell startup is split by responsibility:

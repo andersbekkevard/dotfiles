@@ -10,7 +10,7 @@
 
 Why these choices:
 
-- Neovim 0.12
+- Neovim >= 0.11 is the minimum floor because the Lua plugin ecosystem and built-in LSP client require it.
 - `nvim-treesitter` now shells out to the external `tree-sitter` binary for parser builds, and the distro `tree-sitter-cli` package can be too old to support `tree-sitter build`. Installing from Cargo keeps the CLI compatible with the plugin.
 - `fnm` keeps shell startup fast and satisfies the PRD hard constraint against `nvm`, `volta`, and `mise`.
 - `uv` replaces separate Python version, venv, and package tooling.

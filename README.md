@@ -16,7 +16,6 @@ Choose the exact profile you want:
 ./setup.sh minimal
 ./setup.sh full
 ./setup.sh macos
-./setup.sh linux-headless
 ./setup.sh linux-desktop
 ```
 
@@ -32,7 +31,7 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 
 ## Repository layout
 
-- `shell/`, `git/`, `nvim/`, `tmux/`, `scripts/`, `terminals/`, `wt/`, `lazygit/`, `btop/`, `fd/`, `macos/`, `linux-desktop/`: GNU Stow packages.
+- `shell/`, `git/`, `nvim/`, `tmux/`, `scripts/`, `terminals/`, `wt/`, `lazygit/`, `btop/`, `fd/`, `lsd/`, `macos/`, `linux-desktop/`: GNU Stow packages.
 - `setup/`: non-stowed setup and verification scripts plus package manifests.
 - `docs/`: architecture, runtime, profile, local-override, secrets, and migration documentation (`docs/index.md` is the map).
 - `AGENTS.md`: LLM/coding-agent navigation, read order, and documentation source-of-truth matrix.
@@ -43,7 +42,7 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 ./setup.sh --verify macos
 ./setup.sh --layer full
 ./setup.sh --stow nvim
-DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-headless
+DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
 ./setup/brew-drift
 ```
 
