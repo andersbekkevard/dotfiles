@@ -191,75 +191,6 @@ format_age() {
   fi
 }
 
-# Preview and action-screen rendering
-
-preview_rule() {
-  local cols="${FZF_PREVIEW_COLUMNS:-72}"
-
-  if (( cols < 40 )); then
-    cols=40
-  fi
-
-  printf '%*s\n' "$cols" '' | tr ' ' '-'
-}
-
-preview_section() {
-  printf '%b%s%b\n' "$color_soft" "$1" "$color_reset"
-  preview_rule
-}
-
-preview_pair() {
-  local key="${1:-}"
-  local value="${2:-}"
-
-  printf '%b%-10s%b %b%s%b\n' "$color_dim" "$key" "$color_reset" "$color_fg" "$value" "$color_reset"
-}
-
-render_window_line() {
-  local marker="${1:- }"
-  local marker_color="${2:-$color_fg}"
-  local label="${3:-}"
-  local pane_count="${4:-0}"
-  local cmd="${5:-}"
-  local path="${6:-}"
-  local age="${7:--}"
-  local label_color="${8:-$color_bright}"
-  local cmd_cell path_cell label_cell
-
-  # Command-type color (inline to avoid subshell)
-  local cmd_ansi
-  case "$cmd" in
-    zsh|bash|sh|fish|dash)           cmd_ansi="$color_cmd_shell" ;;
-    nvim|vim|vi|emacs|nano|code|hx|kakoune) cmd_ansi="$color_cmd_editor" ;;
-    node|npm|pnpm|yarn|bun|python|python3|cargo|go|make|ruby|deno|java|tsc|claude) cmd_ansi="$color_cmd_devrun" ;;
-    git|lazygit|tig|gh|gitui)        cmd_ansi="$color_cmd_git" ;;
-    yazi|ranger|nnn|lf|mc|vifm)      cmd_ansi="$color_cmd_filemgr" ;;
-    htop|btop|top|watch|ps|journalctl|dmesg|strace|ltrace) cmd_ansi="$color_cmd_system" ;;
-    ssh|mosh|telnet)                  cmd_ansi="$color_cmd_remote" ;;
-    *)                                cmd_ansi="$color_cmd_other" ;;
-  esac
-
-  printf -v label_cell '%-24s' "$(truncate_right "$label" 24)"
-  printf -v cmd_cell '%-18s' "$(truncate_right "$cmd" 18)"
-  printf -v path_cell '%-36s' "$(truncate_left "$(shorten_home "$path")" 36)"
-
-  printf '%b%s%b  %b%s%b  %b%3sp%b  %b%s%b  %b%s%b  %b%4s%b\n' \
-    "$marker_color" "$marker" "$color_reset" \
-    "$label_color" "$label_cell" "$color_reset" \
-    "$color_fg" "$pane_count" "$color_reset" \
-    "$cmd_ansi" "$cmd_cell" "$color_reset" \
-    "$color_dim" "$path_cell" "$color_reset" \
-    "$color_muted" "$age" "$color_reset"
-}
-
-current_pane_path() {
-  if [[ -n "${TMUX:-}" ]]; then
-    tmux display-message -p "#{pane_current_path}" 2>/dev/null || pwd
-  else
-    pwd
-  fi
-}
-
 current_session() {
   if [[ -n "${TMUX:-}" ]]; then
     tmux display-message -p "#S" 2>/dev/null || true
@@ -304,6 +235,38 @@ ansi_truncpad() {
 
   result+=$'\033[0m'
   printf '%s' "$result"
+}
+
+capture_recent_pane_lines() {
+  local pane_id="${1:-}"
+  local keep_lines="${2:-20}"
+
+  [[ -z "$pane_id" ]] && return
+
+  tmux capture-pane -p -e -t "$pane_id" -S - -E - 2>/dev/null \
+    | awk -v keep="$keep_lines" '
+        {
+          lines[++count] = $0
+          if ($0 ~ /[^[:space:]]/) {
+            last_nonempty = count
+          }
+        }
+
+        END {
+          if (!last_nonempty) {
+            exit
+          }
+
+          start = last_nonempty - keep + 1
+          if (start < 1) {
+            start = 1
+          }
+
+          for (i = start; i <= last_nonempty; i++) {
+            print lines[i]
+          }
+        }
+      ' || true
 }
 
 # ── Shared action-screen renderer ──────────────────────────────────
@@ -359,7 +322,7 @@ render_action_screen() {
     local pane_id capture
     pane_id="$(tmux display-message -p -t "$target" '#{pane_id}' 2>/dev/null || true)"
     if [[ -n "$pane_id" ]]; then
-      capture="$(tmux capture-pane -p -e -t "$pane_id" -S - -E - 2>/dev/null | tail -n "$capture_lines" || true)"
+      capture="$(capture_recent_pane_lines "$pane_id" "$capture_lines")"
     fi
     if [[ -n "${capture:-}" ]]; then
       while IFS= read -r line; do
@@ -470,27 +433,6 @@ read_input() {
 
   REPLY="$result"
   return 0
-}
-
-session_window_rows() {
-  local session="${1:-}"
-
-  if [[ -z "$session" ]]; then
-    return
-  fi
-
-  tmux list-windows -t "$session" -F '#{window_activity}|#{window_id}|#{window_index}|#{window_name}|#{window_active}|#{window_panes}|#{pane_current_command}|#{pane_current_path}' 2>/dev/null \
-    | while IFS='|' read -r activity window_id window_index window_name window_active pane_count pane_cmd pane_path; do
-        printf '%s\t%s:%s\t%s\t%s\t%s\t%s\t%s\n' \
-          "$window_id" \
-          "$window_index" \
-          "$window_name" \
-          "$window_active" \
-          "$pane_count" \
-          "$pane_cmd" \
-          "$pane_path" \
-          "$activity"
-      done
 }
 
 emit_session_tree() {
@@ -1081,24 +1023,47 @@ new_session_ui() {
 prompt_rename_session() {
   local session="${1:-}"
   local new_name
+  clear
 
   if [[ -z "$session" ]]; then
     return
   fi
 
-  local path window_name pane_cmd
-  path="$(tmux display-message -p -t "$session" '#{session_path}' 2>/dev/null || true)"
-  window_name="$(tmux display-message -p -t "$session" '#W' 2>/dev/null || true)"
-  pane_cmd="$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null || true)"
+  # Show all windows with boxes, reusing the session preview
+  local term_cols term_rows
+  term_cols="$(tput cols 2>/dev/null || printf '80')"
+  term_rows="$(tput lines 2>/dev/null || printf '40')"
+  local save_cols="${FZF_PREVIEW_COLUMNS:-}" save_lines="${FZF_PREVIEW_LINES:-}"
+  export FZF_PREVIEW_COLUMNS="$term_cols"
+  export FZF_PREVIEW_LINES="$(( term_rows - 8 ))"
 
-  render_action_screen "RENAME SESSION" "$session"
-  render_action_footer "$session" "$window_name" "$pane_cmd" "$path"
+  # Buffer everything, then print at once
+  local buf=""
+  local h_rule="" p
+  for (( p = 0; p < term_cols - 2; p++ )); do h_rule+="─"; done
+
+  buf+="$(printf '%b┌%s┐%b\n' "$color_accent" "$h_rule" "$color_reset")"
+  buf+=$'\n'"$(preview_session "$session")"
+  buf+=$'\n'"$(printf '%b└%s┘%b\n' "$color_accent" "$h_rule" "$color_reset")"
+
+  [[ -n "$save_cols" ]] && export FZF_PREVIEW_COLUMNS="$save_cols" || unset FZF_PREVIEW_COLUMNS
+  [[ -n "$save_lines" ]] && export FZF_PREVIEW_LINES="$save_lines" || unset FZF_PREVIEW_LINES
+
+  local path
+  path="$(tmux display-message -p -t "$session" '#{session_path}' 2>/dev/null || true)"
+  local short_path="$path"
+  [[ "$short_path" == "$HOME/"* ]] && short_path="~/${short_path#$HOME/}"
+  [[ "$short_path" == "$HOME" ]] && short_path="~"
+  buf+="$(printf '  %b%s%b  %b%s%b\n' \
+    "$color_bright" "$session" "$color_reset" \
+    "$color_dim" "$short_path" "$color_reset")"
+
+  printf '%s\n' "$buf"
 
   printf '\n'
-  if ! read_input "$(printf ' %bRename to:%b ' "$color_accent" "$color_reset")"; then
+  if ! read_input "$(printf '  %bRename to:%b ' "$color_accent" "$color_reset")"; then
     return
   fi
-  printf '\n'
   new_name="$REPLY"
 
   if [[ -z "$new_name" || "$new_name" == "$session" ]]; then
@@ -1106,7 +1071,7 @@ prompt_rename_session() {
   fi
 
   if tmux has-session -t "$new_name" 2>/dev/null; then
-    show_error "Session already exists: $new_name"
+    printf '\n  %bSession already exists: %s%b\n' "$color_cmd_system" "$new_name" "$color_reset"
     pause_for_input
     return
   fi
@@ -1156,32 +1121,51 @@ prompt_kill_session() {
   local is_current=0
   [[ -n "$current" && "$current" == "$session" ]] && is_current=1
 
-  local metadata path window_name pane_cmd
-  metadata="$(tmux display-message -p -t "$session" '#{session_path}' 2>/dev/null || true)"
-  path="$metadata"
-  window_name="$(tmux display-message -p -t "$session" '#W' 2>/dev/null || true)"
-  pane_cmd="$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null || true)"
+  # Show all windows with boxes, reusing the session preview
+  local term_cols term_rows
+  term_cols="$(tput cols 2>/dev/null || printf '80')"
+  term_rows="$(tput lines 2>/dev/null || printf '40')"
+  local save_cols="${FZF_PREVIEW_COLUMNS:-}" save_lines="${FZF_PREVIEW_LINES:-}"
+  export FZF_PREVIEW_COLUMNS="$term_cols"
+  export FZF_PREVIEW_LINES="$(( term_rows - 8 ))"
 
-  render_action_screen "KILL SESSION" "$session"
-  render_action_footer "$session" "$window_name" "$pane_cmd" "$path"
+  # Buffer everything, then print at once
+  local buf=""
+  local h_rule="" p
+  for (( p = 0; p < term_cols - 2; p++ )); do h_rule+="─"; done
+
+  buf+="$(printf '%b┌%s┐%b\n' "$color_cmd_system" "$h_rule" "$color_reset")"
+  buf+=$'\n'"$(preview_session "$session")"
+  buf+=$'\n'"$(printf '%b└%s┘%b\n' "$color_cmd_system" "$h_rule" "$color_reset")"
+
+  [[ -n "$save_cols" ]] && export FZF_PREVIEW_COLUMNS="$save_cols" || unset FZF_PREVIEW_COLUMNS
+  [[ -n "$save_lines" ]] && export FZF_PREVIEW_LINES="$save_lines" || unset FZF_PREVIEW_LINES
+
+  local path
+  path="$(tmux display-message -p -t "$session" '#{session_path}' 2>/dev/null || true)"
+  local short_path="$path"
+  [[ "$short_path" == "$HOME/"* ]] && short_path="~/${short_path#$HOME/}"
+  [[ "$short_path" == "$HOME" ]] && short_path="~"
+  buf+="$(printf '  %b%s%b  %b%s%b\n' \
+    "$color_bright" "$session" "$color_reset" \
+    "$color_dim" "$short_path" "$color_reset")"
+
+  printf '%s\n' "$buf"
 
   local prompt_msg
   if (( is_current )); then
-    prompt_msg="$(printf ' %bKill %b%s%b (current, will switch)? [y/N]:%b ' "$color_accent" "$color_bright" "$session" "$color_accent" "$color_reset")"
+    prompt_msg="$(printf '\n  %bKill %b%s%b (current, will switch)? [y/N]:%b ' "$color_cmd_system" "$color_bright" "$session" "$color_cmd_system" "$color_reset")"
   else
-    prompt_msg="$(printf ' %bKill %b%s%b? [y/N]:%b ' "$color_accent" "$color_bright" "$session" "$color_accent" "$color_reset")"
+    prompt_msg="$(printf '\n  %bKill %b%s%b? [y/N]:%b ' "$color_cmd_system" "$color_bright" "$session" "$color_cmd_system" "$color_reset")"
   fi
 
-  printf '\n'
   if ! read_input "$prompt_msg"; then
     return
   fi
-  printf '\n'
 
   case "$REPLY" in
     y|Y|yes|YES)
       if (( is_current )); then
-        # Find the most recently active other session to switch to
         local fallback
         fallback="$(tmux list-sessions -F '#{session_activity}|#{session_name}' 2>/dev/null \
           | sort -t '|' -k1,1nr \
@@ -1193,7 +1177,7 @@ prompt_kill_session() {
           tmux kill-session -t "$session"
           KILLED_CURRENT=1
         else
-          show_error "No other session to switch to"
+          printf '\n  %bNo other session to switch to%b\n' "$color_cmd_system" "$color_reset"
           pause_for_input
         fi
       else
@@ -1266,7 +1250,7 @@ switch_to_window() {
 
 run_session_picker() {
   local output key selected item_type session target
-  local fzf_help
+  local fzf_help ctrl_s_bind
   local -a fzf_opts picker_opts output_lines
 
   if ! tmux list-sessions >/dev/null 2>&1; then
@@ -1294,6 +1278,11 @@ run_session_picker() {
   [[ "$fzf_help" == *"--footer-border"* ]] && fzf_opts+=(--footer-border=line)
   [[ "$fzf_help" == *"--highlight-line"* ]] && fzf_opts+=(--highlight-line)
 
+  ctrl_s_bind="ctrl-s:transform:if [[ \$FZF_PROMPT == '> ' ]]; then echo 'reload-sync($0 list-sessions)+first+change-prompt(S> )'; else echo 'reload-sync($0 list)+first+change-prompt(> )'; fi"
+  if [[ "$fzf_help" == *"--list-label"* ]]; then
+    ctrl_s_bind="ctrl-s:transform:if [[ \$FZF_PROMPT == '> ' ]]; then echo 'reload-sync($0 list-sessions)+first+change-prompt(S> )+change-list-label( sessions )'; else echo 'reload-sync($0 list)+first+change-prompt(> )+change-list-label( sessions + windows )'; fi"
+  fi
+
   picker_opts=(
     --prompt='> '
     --header='Sessions and windows. Type to filter.'
@@ -1302,7 +1291,7 @@ run_session_picker() {
     --preview="$0 preview-item {1} {2} {3}"
     --preview-window='right:60%'
     --bind="start:reload-sync($0 list)+first"
-    --bind="ctrl-s:transform:if [[ \$FZF_PROMPT == '> ' ]]; then echo 'reload-sync($0 list-sessions)+first+change-prompt(S> )'; else echo 'reload-sync($0 list)+first+change-prompt(> )'; fi"
+    --bind="$ctrl_s_bind"
     --expect=enter,ctrl-n,ctrl-r,ctrl-x
   )
 
