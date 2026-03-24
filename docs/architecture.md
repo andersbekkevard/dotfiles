@@ -48,3 +48,27 @@ Shell startup is split by responsibility:
 Machine-specific runtime behavior belongs in `~/.profile.local`; interactive-only shell behavior belongs in `~/.zshrc.local`. `./setup.sh` refreshes the latest reference template into `~/.config/zsh/local.example.zsh` and only rewrites `~/.zshrc.local` when it still exactly matches a managed template.
 
 For the full contract on machine-local shell tweaks vs automation-visible command overrides, see `docs/local-overrides.md`.
+
+## XDG Base Directory Specification
+
+This repo follows the [XDG Base Directory Specification](https://xdgbasedirectoryspecification.com/) on a best-effort basis.
+
+**What we do:**
+
+- Export `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, and `XDG_CACHE_HOME` with spec-correct defaults in `shell/.zshenv`.
+- Place tool configs under `~/.config/` via stow (nvim, git ignore, terminals, btop, lsd, lazygit, fd, sesh, etc.).
+- Place shared data under `~/.local/share/` where tools support it (rofi themes, fnm, pnpm).
+
+**Known deviations:**
+
+| Item | Current location | XDG-correct location | Reason |
+|---|---|---|---|
+| zsh dotfiles (`.zshrc`, `.zshenv`, …) | `$HOME` | `$XDG_CONFIG_HOME/zsh/` via `ZDOTDIR` | zsh reads `~/.zshenv` before `ZDOTDIR` is set; bootstrapping `ZDOTDIR` requires `/etc/zsh/zshenv` which we don't own on all hosts |
+| `.gitconfig` | `$HOME/.gitconfig` | `$XDG_CONFIG_HOME/git/config` | git supports XDG; migration planned |
+| `.tmux.conf` | `$HOME/.tmux.conf` | `$XDG_CONFIG_HOME/tmux/tmux.conf` | tmux supports XDG since v3.1; migration planned |
+| `HISTFILE` | `$HOME/.zsh_history` | `$XDG_STATE_HOME/zsh/history` | `XDG_STATE_HOME` not yet exported |
+| `.oh-my-zsh` | `$HOME/.oh-my-zsh` | — | upstream default, no XDG support |
+| `.bun` | `$HOME/.bun` | — | upstream default, no XDG support |
+| `.cargo` | `$HOME/.cargo` | — | upstream default (`CARGO_HOME` exists but breaks toolchain assumptions) |
+
+**Policy:** when adding a new tool, prefer its XDG-compliant config path if the tool supports one. Only fall back to `$HOME`-root dotfiles when the tool has no XDG support or when the migration cost outweighs the benefit.
