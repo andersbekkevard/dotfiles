@@ -11,6 +11,11 @@ else
 fi
 
 # Core helpers
+# POSIX-compatible replacement for GNU `head -n -N` (drop last N lines)
+drop_last() {
+  local n="${1:?usage: drop_last N}"
+  awk -v n="$n" '{buf[NR]=$0} END {for(i=1;i<=NR-n;i++) print buf[i]}'
+}
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -696,10 +701,10 @@ preview_session() {
         *)
           case "$w_cmd" in
             claude|codex|aider)
-              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | head -n -7 || true)"
+              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | drop_last 7 || true)"
               ;;
             node)
-              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | head -n -5 || true)"
+              raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null | drop_last 5 || true)"
               ;;
             *)
               raw_capture="$(tmux capture-pane -p -e -T -t "$pane_id" 2>/dev/null || true)"
@@ -901,10 +906,10 @@ preview_window() {
   local capture
   case "$pane_cmd" in
     claude|codex|aider)
-      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | head -n -5 | tail -n "$preview_lines")"
+      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | drop_last 5 | tail -n "$preview_lines")"
       ;;
     node)
-      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | head -n -2 | tail -n "$preview_lines")"
+      capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | drop_last 2 | tail -n "$preview_lines")"
       ;;
     zsh|bash|sh|fish|dash)
       capture="$(tmux capture-pane -p -e -T -t "$active_pane_id" 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n "$preview_lines")"
