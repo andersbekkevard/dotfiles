@@ -7,9 +7,9 @@ run_minimal_layer() {
     ensure_homebrew
     brew_bundle "$DOTFILES_DIR/setup/packages/Brewfile.minimal"
   elif [[ "$OS_FAMILY" == "linux" ]]; then
-    ensure_ngrok_apt_repo
     apt_update_once
     apt_install_manifest "$DOTFILES_DIR/setup/packages/apt.minimal.txt"
+    ensure_ngrok_apt_repo
     install_git_delta_linux
     install_linux_release_binaries "$DOTFILES_DIR/setup/packages/linux-binaries.minimal.txt"
     ensure_linux_command_aliases
