@@ -80,6 +80,22 @@ Use `br ready` at the start of work to find unblocked issues. If you discover ne
 - Prefer concrete failure modes + remediation over vague guidance.
 - Keep terminology stable (`minimal`, `full`, `macos`, `linux-desktop`).
 
+## Installation ordering invariant
+
+Layer scripts (`setup/minimal.sh`, `setup/full.sh`, etc.) are dependency-ordered sequences. Every line assumes the lines above it have already succeeded. When changing installation logic, **verify the prerequisite chain before and after the change**:
+
+- A step that downloads (curl, wget) must run after the package manager installs those tools.
+- A step that adds an external apt repo must run after curl is available and before packages from that repo are installed.
+- A step that parses JSON (jq) must run after jq is installed.
+- `apt_update_once` caches its result; any repo added *after* the first call needs its own forced `apt-get update`.
+
+**Before merging any change to a layer script or package manifest**, mentally (or actually) trace the sequence on a blank machine where only the base OS packages exist. Ask: "Is every tool this line uses already installed by a previous line?"
+
+Concrete failure modes to watch for:
+- `curl | tee` in a pipeline: `$?` captures tee's exit, not curl's. Check the output file is non-empty (`[[ -s "$file" ]]`) instead.
+- External repo source lines missing `[signed-by=...]` will cause GPG errors on `apt update`.
+- Removing a package from an apt manifest without ensuring it's installed elsewhere silently drops it.
+
 ## Commit hygiene
 
 - Keep changes scoped (`fix:`, `docs:`, `refactor:` etc.).

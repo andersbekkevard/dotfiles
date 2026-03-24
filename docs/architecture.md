@@ -24,6 +24,20 @@ minimal
      -> linux-desktop
 ```
 
+## Installation ordering
+
+Each layer script is a dependency-ordered sequence — every line assumes lines above it succeeded. On a blank machine, only base OS packages exist when `setup.sh` starts.
+
+Rules:
+- Steps that download (`curl`, `wget`) must come after those tools are installed via the package manager.
+- Steps that add external apt repos must come after `curl` is available and before packages from that repo are requested.
+- `apt_update_once` is flag-guarded; any repo added after the first call needs its own `apt-get update`.
+- External apt source lines must include `[signed-by=...]` or apt will reject the repo's GPG signature.
+
+When changing layer scripts or package manifests, trace the full sequence on a blank machine and confirm every tool each line uses is already installed by a previous line.
+
+## Shell startup
+
 Shell startup is split by responsibility:
 
 - `shell/.profile` owns runtime-critical, POSIX-safe PATH/bootstrap and is the single shared owner of baseline PATH assembly.
