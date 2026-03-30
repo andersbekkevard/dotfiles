@@ -6,7 +6,7 @@ return {
 	-------------------------------------------------------------------------------
 	{
 		"nvim-telescope/telescope.nvim",
-		-- Remove tag to get latest version
+		lazy = false,
 		dependencies = {
 			"nvim-lua/plenary.nvim"
 		},
@@ -52,6 +52,24 @@ return {
 				builtin.grep_string({ search = vim.fn.expand("<cword>") })
 			end, { desc = 'Find word under cursor' })
 			vim.keymap.set('n', '<leader>fr', builtin.oldfiles, { desc = 'Find recent files' })
+			vim.keymap.set('n', '<leader>fd', function()
+				builtin.find_files({
+					find_command = { "fd", "--type", "d", "--hidden", "--exclude", ".git", "--exclude", ".venv", "--exclude", "node_modules" },
+					prompt_title = "Find Directory",
+					attach_mappings = function(prompt_bufnr, map)
+						local actions = require("telescope.actions")
+						local action_state = require("telescope.actions.state")
+						actions.select_default:replace(function()
+							local entry = action_state.get_selected_entry()
+							actions.close(prompt_bufnr)
+							local dir = vim.fn.fnamemodify(entry[1], ":p")
+							vim.cmd.cd(dir)
+							require("oil").open(dir)
+						end)
+						return true
+					end,
+				})
+			end, { desc = 'Find directory (cd + Oil)' })
 
 			-- Commented out: grep with command-line input (use <leader>fg live_grep instead)
 			-- vim.keymap.set('n', '<leader>sg', function()
