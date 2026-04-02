@@ -24,40 +24,6 @@ require_cmd() {
   fi
 }
 
-to_lower() {
-  printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]'
-}
-
-detect_theme_color() {
-  local accent_option theme
-
-  accent_option="$(tmux show-option -gqv @hal_theme_accent_bg 2>/dev/null || true)"
-  case "$accent_option" in
-    colour25)
-      printf 'blue'
-      return
-      ;;
-    colour28)
-      printf 'green'
-      return
-      ;;
-    colour52)
-      printf 'red'
-      return
-      ;;
-  esac
-
-  theme="$(to_lower "${HAL_THEME_COLOR:-red}")"
-  case "$theme" in
-    blue|green|red)
-      printf '%s' "$theme"
-      ;;
-    *)
-      printf 'red'
-      ;;
-  esac
-}
-
 ansi_hex() {
   local hex="${1#\#}"
   local r g b
@@ -69,24 +35,18 @@ ansi_hex() {
   printf '\033[38;2;%d;%d;%dm' "$r" "$g" "$b"
 }
 
-theme_color="$(detect_theme_color)"
-case "$theme_color" in
-  blue)
-    accent_hex='#60a5fa'
-    accent_soft_hex='#93c5fd'
-    border_hex='#1d4ed8'
-    ;;
-  green)
-    accent_hex='#4ade80'
-    accent_soft_hex='#86efac'
-    border_hex='#166534'
-    ;;
-  red|*)
-    accent_hex='#f87171'
-    accent_soft_hex='#fca5a5'
-    border_hex='#7f1d1d'
-    ;;
-esac
+theme_color="$(tmux show-option -gqv @dotfiles_theme_color 2>/dev/null || true)"
+if [[ -r "$HOME/.scripts/theme.lib.sh" ]]; then
+  # Shared palette mapping for prompt/tmux helpers.
+  # shellcheck disable=SC1090
+  . "$HOME/.scripts/theme.lib.sh"
+  theme_load_palette "$theme_color"
+fi
+
+theme_color="${THEME_COLOR:-red}"
+accent_hex="${DOTFILES_THEME_HEX_ACCENT:-#f87171}"
+accent_soft_hex="${DOTFILES_THEME_HEX_ACCENT_SOFT:-#fca5a5}"
+border_hex="${DOTFILES_THEME_HEX_BORDER:-#7f1d1d}"
 
 fg_hex='#f8fafc'
 bright_hex='#ffffff'

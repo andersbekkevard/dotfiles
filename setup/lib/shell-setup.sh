@@ -137,6 +137,58 @@ write_local_overrides_template() {
     case "$1" in
       linux-desktop)
         cat <<'EOF'
+export THEME_COLOR="blue"
+
+if [[ -f /etc/tlp.d/01-server-mode.conf && -o interactive ]]; then
+  _threshold="$(cat /sys/class/power_supply/BAT0/charge_control_end_threshold 2>/dev/null)"
+  if [[ "$_threshold" != "80" ]]; then
+    printf '\033[0;31m[!] TLP battery threshold not enforced (reads %s%%)\033[0m\n' "${_threshold:-?}"
+  fi
+  unset _threshold
+fi
+
+if [[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]]; then
+  source "$HOME/.openclaw/completions/openclaw.zsh"
+fi
+
+command -v openclaw >/dev/null 2>&1 && alias tui="openclaw tui"
+EOF
+        ;;
+      macos)
+        cat <<'EOF'
+export THEME_COLOR="blue"
+EOF
+        ;;
+      *)
+        cat <<'EOF'
+export THEME_COLOR="blue"
+EOF
+        ;;
+    esac
+  }
+
+  render_previous_current_local_overrides() {
+    # Snapshot of the previous managed template so untouched ~/.zshrc.local
+    # files can be migrated from HAL_THEME_COLOR to THEME_COLOR in place.
+    cat <<'EOF'
+# Machine-local shell overrides live here.
+# This file is user-owned. Keep host-specific settings here instead of tracked
+# dotfiles, and compare against ~/.config/zsh/local.example.zsh after running
+# ./setup.sh to review the latest template changes safely.
+#
+# Good candidates:
+# - prompt/tmux accent
+# - host-specific aliases or completions
+# - laptop-only checks
+#
+# For env vars or PATH entries that automation and services must see, use
+# ~/.profile.local instead.
+EOF
+    printf '\n# Profile scaffold for %s\n' "$1"
+
+    case "$1" in
+      linux-desktop)
+        cat <<'EOF'
 export HAL_THEME_COLOR="red"
 
 if [[ -f /etc/tlp.d/01-server-mode.conf && -o interactive ]]; then
@@ -237,10 +289,15 @@ EOF
     local candidate_profile
     local candidate_version
 
-    for candidate_version in current legacy; do
+    for candidate_version in current previous legacy; do
       for candidate_profile in minimal full macos linux-headless linux-desktop; do
         if [[ "$candidate_version" == "current" ]]; then
           if diff -q "$candidate" <(render_current_local_overrides "$candidate_profile") >/dev/null 2>&1; then
+            printf '%s|%s\n' "$candidate_version" "$candidate_profile"
+            return 0
+          fi
+        elif [[ "$candidate_version" == "previous" ]]; then
+          if diff -q "$candidate" <(render_previous_current_local_overrides "$candidate_profile") >/dev/null 2>&1; then
             printf '%s|%s\n' "$candidate_version" "$candidate_profile"
             return 0
           fi
@@ -271,7 +328,7 @@ EOF
     fi
   fi
 
-  if [[ "$managed_version" == "legacy" || ( "$managed_version" == "current" && "$managed_profile" != "$profile" ) ]]; then
+  if [[ "$managed_version" == "legacy" || "$managed_version" == "previous" || ( "$managed_version" == "current" && "$managed_profile" != "$profile" ) ]]; then
     backup_target="$target.pre-locality-migration-$RUN_ID.bak"
     if [[ "$DRY_RUN" -eq 1 ]]; then
       log_info "[dry-run] Refresh untouched ~/.zshrc.local from managed template"

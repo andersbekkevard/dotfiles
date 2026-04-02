@@ -69,6 +69,15 @@ return {
 			}
 			vim.lsp.enable('pyright')
 
+			-- TypeScript / JavaScript
+			vim.lsp.config.ts_ls = {
+				cmd = { 'typescript-language-server', '--stdio' },
+				filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+				root_markers = { 'tsconfig.json', 'jsconfig.json', 'package.json', '.git' },
+				capabilities = capabilities,
+			}
+			vim.lsp.enable('ts_ls')
+
 			-- Java
 			vim.lsp.config.jdtls = {
 				cmd = { 'jdtls' },
@@ -184,6 +193,9 @@ return {
 				'sql',
 				'markdown',
 				'markdown_inline',
+				'typescript',
+				'tsx',
+				'javascript',
 			}):wait(300000)
 		end,
 		config = function()
@@ -191,7 +203,7 @@ return {
 
 			vim.api.nvim_create_autocmd('FileType', {
 				group = treesitter_group,
-				pattern = { 'python', 'rust', 'java', 'lua', 'vim', 'help', 'sql', 'markdown' },
+				pattern = { 'python', 'rust', 'java', 'lua', 'vim', 'help', 'sql', 'markdown', 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
 				callback = function(args)
 					pcall(vim.treesitter.start, args.buf)
 					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"

@@ -4,7 +4,7 @@
 # ./setup.sh to review the latest template changes safely.
 #
 # Good candidates:
-# - prompt/tmux accent
+# - prompt/tmux accent via THEME_COLOR (blue default; also red, green, purple, yellow, orange, teal)
 # - host-specific aliases or completions
 # - laptop-only checks
 #
