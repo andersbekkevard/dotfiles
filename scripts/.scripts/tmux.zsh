@@ -1,3 +1,9 @@
+_dotfiles_theme_load() {
+  [[ -r "$HOME/.scripts/theme.lib.sh" ]] || return 1
+  . "$HOME/.scripts/theme.lib.sh"
+  theme_load_palette "${THEME_COLOR:-}"
+}
+
 ts() {
   if ! command -v tmux >/dev/null 2>&1; then
     echo "tmux is not installed"
@@ -37,13 +43,10 @@ ts() {
   recent_threshold=300
   stale_threshold=3600
 
+  _dotfiles_theme_load >/dev/null 2>&1 || true
+
   local accent_color current_color attached_color quiet_color neutral_color reset_color bold_on
-  case "${HAL_THEME_COLOR:-}" in
-    red) accent_color=$'\033[1;31m' ;;
-    blue) accent_color=$'\033[1;34m' ;;
-    green) accent_color=$'\033[1;32m' ;;
-    *) accent_color=$'\033[1;36m' ;;
-  esac
+  accent_color="${DOTFILES_THEME_ANSI_ACCENT:-$'\033[38;2;248;113;113m'}"
   current_color=$'\033[38;5;152m'
   attached_color=$'\033[38;5;110m'
   quiet_color=$'\033[38;5;245m'
@@ -204,13 +207,10 @@ tk() {
   recent_threshold=300
   stale_threshold=3600
 
+  _dotfiles_theme_load >/dev/null 2>&1 || true
+
   local accent_color current_color attached_color quiet_color neutral_color reset_color bold_on
-  case "${HAL_THEME_COLOR:-}" in
-    red) accent_color=$'\033[1;31m' ;;
-    blue) accent_color=$'\033[1;34m' ;;
-    green) accent_color=$'\033[1;32m' ;;
-    *) accent_color=$'\033[1;36m' ;;
-  esac
+  accent_color="${DOTFILES_THEME_ANSI_ACCENT:-$'\033[38;2;248;113;113m'}"
   current_color=$'\033[38;5;152m'
   attached_color=$'\033[38;5;110m'
   quiet_color=$'\033[38;5;245m'
@@ -345,5 +345,37 @@ td() {
     fi
   else
     tmux new-session -s dev
+  fi
+}
+
+tn() {
+  if ! command -v tmux >/dev/null 2>&1; then
+    echo "tmux is not installed"
+    return 1
+  fi
+
+  local session_name
+  session_name="${PWD##*/}"
+
+  if [[ -z "$session_name" ]] || [[ "$session_name" == "/" ]]; then
+    session_name="root"
+  fi
+
+  session_name="${session_name//:/_}"
+  session_name="${session_name// /_}"
+
+  if tmux has-session -t "$session_name" 2>/dev/null; then
+    if [[ -n "${TMUX:-}" ]]; then
+      tmux switch-client -t "$session_name"
+    else
+      tmux attach-session -t "$session_name"
+    fi
+  else
+    if [[ -n "${TMUX:-}" ]]; then
+      tmux new-session -d -s "$session_name" -c "$PWD"
+      tmux switch-client -t "$session_name"
+    else
+      tmux new-session -s "$session_name" -c "$PWD"
+    fi
   fi
 }

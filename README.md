@@ -1,4 +1,4 @@
-# .dotfiles
+# dotfiles
 
 Unified cross-platform dotfiles for macOS, Ubuntu desktop, and Ubuntu headless.
 

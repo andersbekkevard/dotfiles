@@ -66,6 +66,25 @@ install_fnm_node_stack() {
   fi
 }
 
+install_typescript_language_tools() {
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if command_exists pnpm; then
+    run_cmd_allow_failure \
+      "Install TypeScript language tools with pnpm" \
+      pnpm add -g typescript typescript-language-server
+  elif command_exists npm; then
+    run_cmd_allow_failure \
+      "Install TypeScript language tools with npm (pnpm unavailable)" \
+      npm install -g typescript typescript-language-server
+  elif [[ "$DRY_RUN" -eq 0 ]]; then
+    record_error "Neither pnpm nor npm available; TypeScript language tools not installed"
+    return 0
+  fi
+}
+
 install_shared_runtimes() {
   install_script_if_missing uv "Install uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
   install_script_if_missing rustup "Install rustup" "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
@@ -78,6 +97,7 @@ install_shared_runtimes() {
     record_error "cargo not on PATH after rustup install; tree-sitter CLI skipped"
   fi
   install_fnm_node_stack
+  install_typescript_language_tools
 }
 
 install_go_linux() {

@@ -5,6 +5,7 @@
 - Python: `uv`
 - Rust: `rustup`
 - Node.js: `fnm` plus `corepack` for `pnpm`
+- TypeScript LSP: global `typescript` plus `typescript-language-server` for Neovim `ts_ls`
 - Bun: official install script
 - Go: Homebrew on macOS, official tarball on Linux
 
@@ -13,6 +14,7 @@ Why these choices:
 - Neovim >= 0.11 is the minimum floor because the Lua plugin ecosystem and built-in LSP client require it.
 - `nvim-treesitter` now shells out to the external `tree-sitter` binary for parser builds, and the distro `tree-sitter-cli` package can be too old to support `tree-sitter build`. Installing from Cargo keeps the CLI compatible with the plugin.
 - `fnm` keeps shell startup fast and satisfies the PRD hard constraint against `nvm`, `volta`, and `mise`.
+- TypeScript buffers rely on an external language server binary; the full-profile runtime bootstrap installs both `typescript` and `typescript-language-server` after the Node toolchain is available.
 - `uv` replaces separate Python version, venv, and package tooling.
 - `rustup` is the canonical Rust toolchain installer.
 - Linux avoids Linuxbrew and uses apt plus official binaries/scripts instead.

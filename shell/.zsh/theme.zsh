@@ -1,36 +1,20 @@
 # Machine-specific accent color for prompt/tmux identity.
-# Set HAL_THEME_COLOR in ~/.zshrc.local (red|blue|green, extend as needed).
-: "${HAL_THEME_COLOR:=red}"
-export HAL_THEME_COLOR
+# Set THEME_COLOR in ~/.zshrc.local (blue default; also red|green|purple|yellow|orange|teal).
+if [[ -r "$HOME/.scripts/theme.lib.sh" ]]; then
+  . "$HOME/.scripts/theme.lib.sh"
+  theme_load_palette "${THEME_COLOR:-}"
+fi
 
-case "${HAL_THEME_COLOR:l}" in
-  blue)
-    _hal_dir_bg=25
-    _hal_direnv_bg=25
-    _hal_vcs_loading_bg=24
-    _hal_prompt_ok_fg=39
-    ;;
-  green)
-    _hal_dir_bg=28
-    _hal_direnv_bg=28
-    _hal_vcs_loading_bg=22
-    _hal_prompt_ok_fg=42
-    ;;
-  red|*)
-    _hal_dir_bg=52
-    _hal_direnv_bg=52
-    _hal_vcs_loading_bg=88
-    _hal_prompt_ok_fg=196
-    ;;
-esac
-
-typeset -g POWERLEVEL9K_DIR_BACKGROUND="$_hal_dir_bg"
-typeset -g POWERLEVEL9K_DIRENV_BACKGROUND="$_hal_direnv_bg"
-typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND="$_hal_vcs_loading_bg"
-typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND="$_hal_prompt_ok_fg"
+typeset -g POWERLEVEL9K_DIR_BACKGROUND="${DOTFILES_THEME_DIR_BG:-25}"
+typeset -g POWERLEVEL9K_DIRENV_BACKGROUND="${DOTFILES_THEME_DIRENV_BG:-25}"
+typeset -g POWERLEVEL9K_VCS_LOADING_BACKGROUND="${DOTFILES_THEME_VCS_LOADING_BG:-24}"
+typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND="${DOTFILES_THEME_PROMPT_OK_FG:-39}"
 
 if (( ${+functions[p10k]} )); then
   p10k reload
 fi
 
-unset _hal_dir_bg _hal_direnv_bg _hal_vcs_loading_bg _hal_prompt_ok_fg
+unset DOTFILES_THEME_DIR_BG DOTFILES_THEME_DIRENV_BG DOTFILES_THEME_VCS_LOADING_BG
+unset DOTFILES_THEME_PROMPT_OK_FG DOTFILES_THEME_TMUX_ACCENT_BG DOTFILES_THEME_TMUX_MODE_BG
+unset DOTFILES_THEME_TMUX_CLOCK DOTFILES_THEME_HEX_ACCENT DOTFILES_THEME_HEX_ACCENT_SOFT
+unset DOTFILES_THEME_HEX_BORDER DOTFILES_THEME_ANSI_ACCENT

@@ -41,6 +41,15 @@ Prefix + s
 
 `sp` opens `sesh picker` directly from the shell. `Prefix + s` opens a blog-style `sesh` launcher inside tmux. When `sesh`, `fzf-tmux`, `fd`, and `jq` are available, the launcher mirrors the article workflow with `Ctrl-a` all entries, `Ctrl-t` tmux sessions, `Ctrl-g` configured sessions, `Ctrl-x` zoxide entries, `Ctrl-f` filesystem search, and `Ctrl-d` to kill the highlighted tmux session before reloading. If `fzf-tmux` is unavailable but `gum` is installed, the binding falls back to the article's simpler `gum filter` flow. If only `sesh` is available, it falls back to `sesh picker`. If `sesh` is unavailable, it falls back to the built-in tmux session/window picker with an always-visible preview and inline actions (`Ctrl-n` new session, `Ctrl-r` rename, `Ctrl-x` kill). `Alt-s` opens the same launcher without a prefix, and `Prefix + S` jumps back to the previous tmux session.
 
+Quick tmux session targets:
+
+```bash
+td
+tn
+```
+
+`td` jumps to the `dev` tmux session, creating it if needed. `tn` uses the current directory name as the tmux session name: if that session already exists it attaches or switches to it, otherwise it creates a new session rooted at the current working directory.
+
 Prefix + e
 
 Opens a new tmux window running `yazi` in the current pane's working directory, which is the most reliable Yazi workflow on this setup because popup mode can trigger tmux terminal-response issues.
@@ -108,15 +117,19 @@ Machine-specific accent color (prompt + tmux):
 
 ```bash
 # ~/.zshrc.local
-export HAL_THEME_COLOR="red"   # linux-desktop
-# export HAL_THEME_COLOR="blue"  # macos
-# export HAL_THEME_COLOR="green" # headless/minimal
+export THEME_COLOR="blue"     # system default
+# export THEME_COLOR="red"     # alternate palette
+# export THEME_COLOR="green"   # alternate palette
+# export THEME_COLOR="purple"  # alternate palette
+# export THEME_COLOR="yellow"  # alternate palette
+# export THEME_COLOR="orange"  # alternate palette
+# export THEME_COLOR="teal"    # alternate palette
 
 source ~/.zshrc
 tmux source-file ~/.tmux.conf
 ```
 
-`./setup.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
+`THEME_COLOR` is normalized through one shared palette map, so prompt, tmux, and tmux helper UIs all stay in sync. `./setup.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
 
 Machine-local runtime env and PATH overrides belong in `~/.profile.local`. Use `~/.zshrc.local` only for interactive shell behavior.
 
@@ -124,14 +137,14 @@ Shell bootstrap verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" SHELL=/bin/zsh PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-  zsh -lc 'command -v git nvim ngrok delta fnm node pnpm cargo bun tree-sitter'
+  zsh -lc 'command -v git nvim ngrok delta fnm node pnpm cargo bun tree-sitter typescript-language-server'
 ```
 
 Stable non-login command contract verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" PATH="$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
-  sh -lc 'command -v git nvim ngrok delta fnm node pnpm cargo bun tree-sitter wt'
+  sh -lc 'command -v git nvim ngrok delta fnm node pnpm cargo bun tree-sitter typescript-language-server wt'
 ```
 
 Use the login-shell check to confirm shared bootstrap does not depend on interactive `~/.zshrc` state. Use the non-login check to confirm agents and scripts can resolve the same commands through the stable `~/.local/bin` contract.
