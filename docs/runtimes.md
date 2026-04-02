@@ -17,7 +17,6 @@ Why these choices:
 - TypeScript buffers rely on an external language server binary; the full-profile runtime bootstrap installs both `typescript` and `typescript-language-server` after the Node toolchain is available.
 - `uv` replaces separate Python version, venv, and package tooling.
 - `rustup` is the canonical Rust toolchain installer.
-- Linux avoids Linuxbrew and uses apt plus official binaries/scripts instead.
 - All Linux binary downloads are architecture-aware (x86_64 and arm64/aarch64).
 - `fnm` node stack is hardened: PATH is re-evaluated after install, and pnpm falls back to `npm install -g pnpm` if corepack is unavailable.
 - Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, Go user binaries, repo scripts, and related CLI entrypoints lives in `shell/.profile`. zsh login shells inherit that through `shell/.zprofile`, and interactive non-login zsh shells backfill by sourcing `~/.profile` from `shell/.zshrc` when needed.

@@ -17,9 +17,8 @@ Operator invariant: `./setup.sh` is the only root bootstrap entrypoint. Files un
 5. `docs/architecture.md` (repo layout and layer model)
 6. `setup/lib.sh` + relevant `setup/*.sh` layer files for the change
 
-If the task touches secrets or migration, also read:
+If the task touches secrets, also read:
 - `docs/secrets.md`
-- `docs/migration.md`
 
 ## Documentation map (source-of-truth matrix)
 
@@ -33,7 +32,6 @@ If the task touches secrets or migration, also read:
 | `docs/runtimes.md` | Runtime/toolchain policy | Version floors and installer strategy |
 | `docs/architecture.md` | Structural model | Stow layout, layering, ownership boundaries |
 | `docs/secrets.md` | Secrets handling | `git-crypt` unlock/export flow |
-| `docs/migration.md` | Historical context | Why current architecture exists |
 | `docs/design-principles.md` | General engineering philosophy | Cross-project standards (not bootstrap behavior) |
 
 ## Update rules

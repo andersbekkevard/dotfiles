@@ -27,6 +27,3 @@ fi
 [[ -r "$HOME/.zsh/tools.zsh" ]] && source "$HOME/.zsh/tools.zsh"
 [[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 [[ -r "$HOME/.zsh/theme.zsh" ]] && source "$HOME/.zsh/theme.zsh"
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/tmp/google-cloud-sdk/path.zsh.inc' ]; then . '/tmp/google-cloud-sdk/path.zsh.inc'; fi
