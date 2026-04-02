@@ -68,11 +68,11 @@ Why:
 - it keeps service/runtime behavior aligned with human shell behavior
 
 Current pattern:
-- `~/.local/bin/env` is a shared PATH-normalization snippet
+- `~/.local/bin/env` can be a shared PATH-normalization snippet when you need one
 - `shell/.profile` sources it to reassert `~/.local/bin` after shared runtime bootstrap mutates PATH
 - services that need deterministic command resolution should also put `~/.local/bin` first in their explicit PATH
 
-`~/.local/bin/env` is **not** a shell primitive. It only applies where startup files explicitly source it.
+`~/.local/bin/env` is **not** a shell primitive and is not repo-managed by default. It only applies where startup files explicitly source it.
 
 ## Machine-local overrides
 
@@ -88,7 +88,7 @@ Installer pollution workflow:
 1. Let the installer finish, even if it appends to a tracked startup file.
 2. Inspect the repo diff with `git diff shell/.profile` or the affected shell file.
 3. Move the machine-specific lines into `~/.profile.local`.
-4. Restore the tracked file with `git checkout -- shell/.profile`.
+4. Restore the tracked file with `git restore -- shell/.profile`.
 
 ## What belongs in `~/.zshrc.local`
 

@@ -29,6 +29,9 @@ Common maintenance:
 ./setup.sh --verify macos
 ./setup.sh --layer linux-desktop
 ./setup.sh --stow shell
+./setup.sh full --dry-run
+./setup.sh full --skip-install
+./setup.sh linux-desktop --allow-partial
 DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
 ./setup/brew-drift
 ```
@@ -39,7 +42,7 @@ Tmux session picker:
 Prefix + s
 ```
 
-`sp` opens `sesh picker` directly from the shell. `Prefix + s` opens a blog-style `sesh` launcher inside tmux. When `sesh`, `fzf-tmux`, `fd`, and `jq` are available, the launcher mirrors the article workflow with `Ctrl-a` all entries, `Ctrl-t` tmux sessions, `Ctrl-g` configured sessions, `Ctrl-x` zoxide entries, `Ctrl-f` filesystem search, and `Ctrl-d` to kill the highlighted tmux session before reloading. If `fzf-tmux` is unavailable but `gum` is installed, the binding falls back to the article's simpler `gum filter` flow. If only `sesh` is available, it falls back to `sesh picker`. If `sesh` is unavailable, it falls back to the built-in tmux session/window picker with an always-visible preview and inline actions (`Ctrl-n` new session, `Ctrl-r` rename, `Ctrl-x` kill). `Alt-s` opens the same launcher without a prefix, and `Prefix + S` jumps back to the previous tmux session.
+`Prefix + s` opens the repo-managed `tmux-session-picker` popup. It uses `fzf` to show sessions and windows together, keeps an always-visible preview on the right, and supports inline actions: `Enter` switches, `Ctrl-s` toggles between sessions-only and sessions-plus-windows, `Ctrl-n` creates a new session, `Ctrl-r` renames the current selection, and `Ctrl-x` kills the selected session or window. In the new-session flow, `Tab` opens a `zoxide` path picker when `zoxide` is available; otherwise the new session starts at `~/`. `Alt-s` opens the same picker without a prefix, and `Prefix + S` jumps back to the previous tmux session.
 
 Quick tmux session targets:
 
@@ -61,8 +64,6 @@ Opens a tmux popup running `lazygit` in the current pane's working directory.
 Prefix + t
 
 Opens a tmux popup shell running `zsh` in the current pane's working directory, which is useful for quick command work without changing the current layout.
-
-Managed `sesh` defaults live in `~/.config/sesh/sesh.toml`. The baseline includes curated sessions for `Downloads`, dotfiles, tmux config, and notes, a `node_dev` startup script under `~/.config/sesh/scripts/node_dev`, and a default startup command that opens Neovim with `:Telescope find_files`.
 
 Tmux navigation:
 
@@ -111,7 +112,13 @@ wt config
 
 `wt new` creates the worktree, runs any repo-defined setup hooks, and `cd`s into the new path. It does not auto-launch Claude Code or any other follow-up command unless `~/.config/wt/config.json` explicitly opts in with `"autoLaunch": true` alongside a non-empty `"command"` value.
 
-For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./setup.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `DOTFILES_ALLOW_PARTIAL=1`.
+Setup flags:
+
+- `--dry-run` prints the install/stow plan without changing the machine.
+- `--skip-install` skips package/runtime installers and only applies repo-managed setup work such as stow and local-template refreshes.
+- `--allow-partial` is the CLI equivalent of `DOTFILES_ALLOW_PARTIAL=1`; use it when you intentionally want Linux setup to continue without privileged apt/system steps.
+
+For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./setup.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `--allow-partial` or `DOTFILES_ALLOW_PARTIAL=1`.
 
 Machine-specific accent color (prompt + tmux):
 

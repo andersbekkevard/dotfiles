@@ -42,7 +42,8 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 ./setup.sh --verify macos
 ./setup.sh --layer full
 ./setup.sh --stow nvim
-DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
+./setup.sh full --dry-run
+./setup.sh linux-desktop --allow-partial
 ./setup/brew-drift
 ```
 

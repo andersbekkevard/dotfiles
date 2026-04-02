@@ -2,7 +2,7 @@
 
 The repository is split into three categories:
 
-1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, and `linux-desktop/`.
+1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, `tmux/`, `terminals/`, `wt/`, and `linux-desktop/`.
 2. Setup logic under `setup/`, with library modules in `setup/lib/` (core, profiles, packages, runtimes, shell-setup, stow, verify), driven by `setup.sh`.
 3. Documentation under `docs/`.
 4. Retired configs and scripts under `archive/`.
@@ -56,7 +56,7 @@ This repo follows the [XDG Base Directory Specification](https://xdgbasedirector
 **What we do:**
 
 - Export `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, and `XDG_CACHE_HOME` with spec-correct defaults in `shell/.zshenv`.
-- Place tool configs under `~/.config/` via stow (nvim, git ignore, terminals, btop, lsd, lazygit, fd, sesh, etc.).
+- Place tool configs under `~/.config/` via stow (nvim, git ignore, terminals, btop, lsd, lazygit, fd, wt, etc.).
 - Place shared data under `~/.local/share/` where tools support it (rofi themes, fnm, pnpm).
 
 **Known deviations:**

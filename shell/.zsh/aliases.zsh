@@ -14,6 +14,7 @@ alias v.="nvim ."
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
 alias co="codex --yolo"
+alias dstow='stow --restow --target="$HOME" --dir="$HOME/.dotfiles" --no-folding shell git nvim tmux scripts fd btop lazygit wt lsd terminals macos linux-desktop'
 alias sp="sesh picker"
 alias t="tmux"
 

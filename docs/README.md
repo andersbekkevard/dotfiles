@@ -20,6 +20,7 @@ Typical commands:
 ```bash
 br ready
 br list --status=open
+br show <id>
 br create "Title" --type task --priority 2
 br update <id> --status in_progress
 br close <id> --reason "Completed"
