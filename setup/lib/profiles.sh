@@ -40,13 +40,13 @@ profile_commands() {
       printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt typescript-language-server
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit lazydocker gh yazi git-crypt typescript-language-server
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt brew typescript-language-server
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit lazydocker gh yazi git-crypt brew typescript-language-server
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit gh yazi git-crypt typescript-language-server i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok delta sesh gum tree-sitter fnm node pnpm uv cargo rustc bun lazygit lazydocker gh yazi git-crypt typescript-language-server i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }
