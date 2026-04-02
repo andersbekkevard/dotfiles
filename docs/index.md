@@ -26,7 +26,6 @@ Operator invariant:
 | Repository/layer architecture | `docs/architecture.md` | Stow packages + setup orchestration |
 | Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks and automation-visible wrappers belong |
 | Secrets and git-crypt flow | `docs/secrets.md` | Unlock/export behavior |
-| Migration history and rationale | `docs/migration.md` | Historical context from old branch model |
 | General engineering principles | `docs/design-principles.md` | Broader coding standards |
 
 ## Rule of one canonical owner
