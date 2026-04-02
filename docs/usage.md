@@ -29,12 +29,15 @@ Common maintenance:
 ./setup.sh --verify macos
 ./setup.sh --layer linux-desktop
 ./setup.sh --stow shell
+dstow
 ./setup.sh full --dry-run
 ./setup.sh full --skip-install
 ./setup.sh linux-desktop --allow-partial
 DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
 ./setup/brew-drift
 ```
+
+`dstow` re-stows every managed dotfiles package with `stow --restow --no-folding`, preferring `~/.dotfiles` and falling back to `~/dotfiles`.
 
 Tmux session picker:
 
