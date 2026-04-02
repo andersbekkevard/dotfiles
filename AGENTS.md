@@ -28,7 +28,7 @@ If the task touches secrets or migration, also read:
 | `README.md` | Entry point for humans and quick bootstrap | First-run workflow, explicit profiles, and high-level guarantees |
 | `docs/README.md` | Documentation landing page | Fast entrypoint for browsing the docs directory |
 | `docs/index.md` | Documentation directory map | Where each topic lives |
-| `docs/usage.md` | Day-to-day commands | How to run, verify, and maintain dotfiles |
+| `docs/usage.md` | Day-to-day dotfiles operation | How to run, verify, stow, and customize dotfiles itself |
 | `docs/profiles.md` | Profile behavior | Explicit profile selection and boundaries |
 | `docs/runtimes.md` | Runtime/toolchain policy | Version floors and installer strategy |
 | `docs/architecture.md` | Structural model | Stow layout, layering, ownership boundaries |
@@ -41,6 +41,7 @@ If the task touches secrets or migration, also read:
 When behavior changes, update docs in the same commit:
 
 - **CLI flow changes** (`setup.sh` flags, verify behavior) → update `docs/usage.md`
+- **Tool usage docs** for tmux, Neovim, `wt`, and other installed software do **not** belong in `docs/usage.md`; keep that file focused on operating the dotfiles repo itself
 - **Profile selection changes** → update `docs/profiles.md`
 - **Runtime install/version policy changes** → update `docs/runtimes.md`
 - **Repo/package/layer structure changes** → update `docs/architecture.md`
@@ -79,6 +80,7 @@ Use `br ready` at the start of work to find unblocked issues. If you discover ne
 - Avoid duplicate normative rules across files; link to the canonical file instead.
 - Prefer concrete failure modes + remediation over vague guidance.
 - Keep terminology stable (`minimal`, `full`, `macos`, `linux-desktop`).
+- Keep `docs/usage.md` scoped to dotfiles operations, not tutorials for bundled tools.
 
 ## Installation ordering invariant
 

@@ -6,10 +6,15 @@ Start here:
 
 - Repo overview and bootstrap entrypoint: `../README.md`
 - Documentation map: `index.md`
-- Daily operator workflow: `usage.md`
+- Daily dotfiles operator workflow: `usage.md`
 - Profile selection semantics: `profiles.md`
 - Runtime and installer policy: `runtimes.md`
 - Repo/package architecture: `architecture.md`
+
+Documentation boundary:
+
+- `usage.md` explains how to bootstrap, verify, stow, and customize the dotfiles setup itself.
+- General how-to guides for installed tools do not belong there; keep those in upstream docs or tool-local help.
 
 ## Beads Workflow
 

@@ -29,91 +29,12 @@ Common maintenance:
 ./setup.sh --verify macos
 ./setup.sh --layer linux-desktop
 ./setup.sh --stow shell
-dstow
 ./setup.sh full --dry-run
 ./setup.sh full --skip-install
 ./setup.sh linux-desktop --allow-partial
 DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
 ./setup/brew-drift
 ```
-
-`dstow` re-stows every managed dotfiles package with `stow --restow --no-folding`, preferring `~/.dotfiles` and falling back to `~/dotfiles`.
-
-Tmux session picker:
-
-```text
-Prefix + s
-```
-
-`Prefix + s` opens the repo-managed `tmux-session-picker` popup. It uses `fzf` to show sessions and windows together, keeps an always-visible preview on the right, and supports inline actions: `Enter` switches, `Ctrl-s` toggles between sessions-only and sessions-plus-windows, `Ctrl-n` creates a new session, `Ctrl-r` renames the current selection, and `Ctrl-x` kills the selected session or window. In the new-session flow, `Tab` opens a `zoxide` path picker when `zoxide` is available; otherwise the new session starts at `~/`. `Alt-s` opens the same picker without a prefix, and `Prefix + S` jumps back to the previous tmux session.
-
-Quick tmux session targets:
-
-```bash
-td
-tn
-```
-
-`td` jumps to the `dev` tmux session, creating it if needed. `tn` uses the current directory name as the tmux session name: if that session already exists it attaches or switches to it, otherwise it creates a new session rooted at the current working directory.
-
-Prefix + e
-
-Opens a new tmux window running `yazi` in the current pane's working directory, which is the most reliable Yazi workflow on this setup because popup mode can trigger tmux terminal-response issues.
-
-Prefix + g
-
-Opens a tmux popup running `lazygit` in the current pane's working directory.
-
-Prefix + t
-
-Opens a tmux popup shell running `zsh` in the current pane's working directory, which is useful for quick command work without changing the current layout.
-
-Tmux navigation:
-
-```text
-Alt-a / Alt-d
-Prefix + -
-Prefix + _
-Prefix + c
-```
-
-`Alt-a` and `Alt-d` move to the previous and next window. `Prefix + -`, `Prefix + _`, and `Prefix + c` create splits/windows in the current pane's working directory.
-
-On macOS in Ghostty, `Option` stays native for macOS symbols and dead keys such as `~`; Ghostty does not reserve it for terminal `Alt`/Meta bindings.
-
-`Prefix + Ctrl-c` is mapped to the same action as `Prefix + c`, so it opens a new tmux window in the current pane's working directory.
-
-`Prefix + x` keeps the confirmation prompt before killing the current pane. `Prefix + X` and `Prefix + Ctrl-x` kill the current pane immediately when you want the faster version.
-
-Tmux fingers:
-
-```text
-Prefix + F
-Prefix + J
-```
-
-`Prefix + F` opens `tmux-fingers` hint mode for quickly selecting paths, SHAs, URLs, numbers, and other detected text in the current pane. `Prefix + J` opens `tmux-fingers` jump mode, which moves the cursor to the selected match instead of only copying it. The first TPM install may require completing the plugin's one-time installation wizard.
-
-Tmux state persistence:
-
-`tmux-resurrect` is available for manual save/restore on `Prefix + Ctrl-s` and `Prefix + Ctrl-r`. `tmux-continuum` is also installed and runs periodic background saves, but automatic restore is not enabled by default, so a fresh tmux server will not restore itself unless you opt into that later.
-
-Rapid tmux session cleanup:
-
-```bash
-tk
-```
-
-`tk` opens an `fzf` picker for tmux sessions, previews the session windows, and asks for confirmation before killing the selected session.
-
-Worktree workflow:
-
-```bash
-wt new my-branch
-wt config
-```
-
-`wt new` creates the worktree, runs any repo-defined setup hooks, and `cd`s into the new path. It does not auto-launch Claude Code or any other follow-up command unless `~/.config/wt/config.json` explicitly opts in with `"autoLaunch": true` alongside a non-empty `"command"` value.
 
 Setup flags:
 
@@ -122,6 +43,11 @@ Setup flags:
 - `--allow-partial` is the CLI equivalent of `DOTFILES_ALLOW_PARTIAL=1`; use it when you intentionally want Linux setup to continue without privileged apt/system steps.
 
 For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./setup.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `--allow-partial` or `DOTFILES_ALLOW_PARTIAL=1`.
+
+Scope:
+
+- This page documents how to operate the dotfiles repo itself: bootstrap, verify, stow, local overrides, and repo-managed customization points.
+- It does not document general usage of installed tools such as tmux, Neovim, `wt`, or other bundled CLIs.
 
 Machine-specific accent color (prompt + tmux):
 
