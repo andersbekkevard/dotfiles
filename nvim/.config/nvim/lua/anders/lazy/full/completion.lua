@@ -31,6 +31,21 @@ return {
 		config = function()
 			local cmp = require 'cmp'
 			local cmp_autopairs = require('nvim-autopairs.completion.cmp')
+
+			local function copilot_suggestion_visible()
+				local ok, suggestion = pcall(require, "copilot.suggestion")
+				return ok and suggestion.is_visible()
+			end
+
+			local function accept_copilot_suggestion()
+				local ok, suggestion = pcall(require, "copilot.suggestion")
+				if ok then
+					suggestion.accept()
+					return true
+				end
+
+				return false
+			end
 			
 			cmp.setup({
 				snippet = {
@@ -49,7 +64,9 @@ return {
 					['<CR>'] = cmp.mapping.confirm({ select = true, behavior = cmp.ConfirmBehavior.Insert }),
 					-- Tab to accept completion or insert tab if no completion available (VS Code behavior)
 					['<Tab>'] = cmp.mapping(function(fallback)
-						if cmp.visible() then
+						if copilot_suggestion_visible() then
+							accept_copilot_suggestion()
+						elseif cmp.visible() then
 							cmp.select_next_item()
 						else
 							fallback() -- Insert actual tab character
@@ -69,7 +86,7 @@ return {
 					{ name = 'path' },
 				}),
 				experimental = {
-					ghost_text = true,
+					ghost_text = false,
 				},
 			})
 

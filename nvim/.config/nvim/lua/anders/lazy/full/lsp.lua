@@ -166,6 +166,15 @@ return {
 		end
 	},
 
+	-- Signature help (auto-popup on '(')
+	{
+		"ray-x/lsp_signature.nvim",
+		event = "LspAttach",
+		opts = {
+			hint_prefix = "-> ",
+		},
+	},
+
 	-- ! More for rust
 	{
 		'rust-lang/rust.vim',
@@ -181,9 +190,11 @@ return {
 	-- Treesitter for better syntax highlighting
 	{
 		'nvim-treesitter/nvim-treesitter',
+		branch = 'main',
 		lazy = false,
-		build = function()
-			require('nvim-treesitter').install({
+		build = ':TSUpdate',
+		config = function()
+			local parsers = {
 				'python',
 				'rust',
 				'java',
@@ -196,9 +207,13 @@ return {
 				'typescript',
 				'tsx',
 				'javascript',
-			}):wait(300000)
-		end,
-		config = function()
+			}
+
+			local install = require('nvim-treesitter').install(parsers)
+			if install and install.wait then
+				install:wait(300000)
+			end
+
 			local treesitter_group = vim.api.nvim_create_augroup('anders_treesitter', { clear = true })
 
 			vim.api.nvim_create_autocmd('FileType', {

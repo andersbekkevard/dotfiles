@@ -90,6 +90,9 @@ if not vim.g.vscode then
 	-- LazyGit
 	vim.keymap.set('n', '<leader>lg', ":LazyGit<enter>", { desc = '[L]azy [G]it' })
 
+	-- Close all buffers and return to Oil
+	vim.keymap.set('n', '<leader>qa', '<cmd>silent! %bd|Oil<cr>', { desc = 'Close all buffers and open Oil' })
+
 	-- Window navigation handled by vim-tmux-navigator plugin (C-h/j/k/l)
 
 	-- Resize splits with Ctrl + arrow keys (moves the split border in the arrow direction)
