@@ -11,7 +11,21 @@ return {
 		keys = {
 			{
 				"<leader>cp",
-				"<cmd>Copilot toggle<cr>",
+				function()
+					local client = require("copilot.client")
+					local command = require("copilot.command")
+					local state
+
+					if client.is_disabled() then
+						command.enable()
+						state = "enabled"
+					else
+						command.disable()
+						state = "disabled"
+					end
+
+					vim.api.nvim_echo({ { "Copilot: " .. state, "Normal" } }, false, {})
+				end,
 				desc = "Toggle Copilot",
 			},
 		},
