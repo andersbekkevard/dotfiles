@@ -106,7 +106,7 @@
 
 | Keybind | Mode | Action |
 |---------|------|--------|
-| `<leader>cp` | Normal | Toggle Copilot on or off |
+| `<leader>cp` | Normal | Toggle Copilot globally and echo the new state |
 | `<M-l>` | Insert | Accept Copilot suggestion |
 | `<M-]>` | Insert | Next Copilot suggestion |
 | `<M-[>` | Insert | Previous Copilot suggestion |
