@@ -7,6 +7,9 @@ return {
 	{
 		"folke/which-key.nvim",
 		event = "VeryLazy",
+		keys = {
+			{ "<leader>wk", function() require("which-key").show({ global = false }) end, desc = "Buffer local keymaps" },
+		},
 		config = function()
 			-- Highlight on yank
 			local highlight_group = vim.api.nvim_create_augroup('YankHighlight', { clear = true })

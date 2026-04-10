@@ -1,6 +1,6 @@
 # Neovim Keybinds Summary
 
-**Last Updated:** October 29, 2025
+**Last Updated:** April 10, 2026
 
 ---
 
@@ -96,9 +96,21 @@
 | `<C-b>` | Insert | Scroll completion docs up |
 | `<C-f>` | Insert | Scroll completion docs down |
 | `<C-e>` | Insert | Abort completion |
-| `<Tab>` | Insert | Select next completion item (or insert tab) |
+| `<Tab>` | Insert | Accept Copilot suggestion, else select next completion item, else insert tab |
 | `<S-Tab>` | Insert | Select previous completion item |
 | `<CR>` | Insert | Confirm completion selection |
+
+---
+
+## Copilot
+
+| Keybind | Mode | Action |
+|---------|------|--------|
+| `<leader>cp` | Normal | Toggle Copilot on or off |
+| `<M-l>` | Insert | Accept Copilot suggestion |
+| `<M-]>` | Insert | Next Copilot suggestion |
+| `<M-[>` | Insert | Previous Copilot suggestion |
+| `<C-]>` | Insert | Dismiss Copilot suggestion |
 
 ---
 
