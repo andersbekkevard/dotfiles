@@ -4,6 +4,88 @@ _dotfiles_theme_load() {
   theme_load_palette "${THEME_COLOR:-}"
 }
 
+# Give tmux stable transient names for CLIs whose process name is not useful.
+_dotfiles_tmux_command_name() {
+  local command_text="${3:-${2:-${1:-}}}"
+  local -a words
+  local word
+
+  [[ -n "$command_text" ]] || return 1
+
+  words=(${(z)command_text})
+  for word in "${words[@]}"; do
+    case "$word" in
+      [A-Za-z_][A-Za-z0-9_]*=*)
+        continue
+        ;;
+      builtin|command|env|nocorrect|noglob|sudo|time)
+        continue
+        ;;
+    esac
+
+    printf '%s\n' "${word:t}"
+    return 0
+  done
+
+  return 1
+}
+
+_dotfiles_tmux_window_title_for_command() {
+  local command_name="${1:-}"
+
+  case "$command_name" in
+    cc|claude)
+      printf 'claude\n'
+      ;;
+    co|codex)
+      printf 'codex\n'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+_dotfiles_tmux_preexec_title() {
+  local command_name window_title
+  local -a tmux_target
+
+  [[ -n "${TMUX:-}" ]] || return 0
+
+  command_name="$(_dotfiles_tmux_command_name "$@")" || return 0
+  window_title="$(_dotfiles_tmux_window_title_for_command "$command_name")" || return 0
+
+  DOTFILES_TMUX_TRANSIENT_TITLE="$window_title"
+  [[ -n "${TMUX_PANE:-}" ]] && tmux_target=(-t "$TMUX_PANE")
+  tmux rename-window "${tmux_target[@]}" "$window_title" 2>/dev/null || true
+}
+
+_dotfiles_tmux_precmd_restore() {
+  local current_window_name
+  local -a tmux_target
+
+  [[ -n "${TMUX:-}" ]] || return 0
+  [[ -n "${DOTFILES_TMUX_TRANSIENT_TITLE:-}" ]] || return 0
+
+  [[ -n "${TMUX_PANE:-}" ]] && tmux_target=(-t "$TMUX_PANE")
+  current_window_name="$(tmux display-message -p "${tmux_target[@]}" '#W' 2>/dev/null || true)"
+  if [[ -n "$current_window_name" ]] && [[ "$current_window_name" != "$DOTFILES_TMUX_TRANSIENT_TITLE" ]]; then
+    unset DOTFILES_TMUX_TRANSIENT_TITLE
+    return 0
+  fi
+
+  tmux set-window-option "${tmux_target[@]}" automatic-rename on 2>/dev/null || true
+  unset DOTFILES_TMUX_TRANSIENT_TITLE
+}
+
+if (( ${preexec_functions[(I)_dotfiles_tmux_preexec_title]:-0} == 0 )); then
+  add-zsh-hook preexec _dotfiles_tmux_preexec_title
+fi
+
+if (( ${precmd_functions[(I)_dotfiles_tmux_precmd_restore]:-0} == 0 )); then
+  add-zsh-hook precmd _dotfiles_tmux_precmd_restore
+fi
+
 ts() {
   if ! command -v tmux >/dev/null 2>&1; then
     echo "tmux is not installed"
