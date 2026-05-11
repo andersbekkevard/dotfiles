@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="${CODEX_SESSIONS_ROOT:-$HOME/.codex/sessions}"
+BASE_URL="${CODEX_SESSIONS_EUPHONY_BASE_URL:-http://127.0.0.1:8765}"
+VIEWER_ROOT="${CODEX_SESSIONS_VIEWER_ROOT:-$BASE_URL/viewer}"
+RAW_ROOT="${CODEX_SESSIONS_RAW_ROOT:-$BASE_URL}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HELPER="$SCRIPT_DIR/_codex_sessions_picker.py"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/codex-sessions-picker"
+CACHE_FILE="$CACHE_DIR/index.json"
+
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf 'Missing required command: %s\n' "$1" >&2
+    exit 1
+  fi
+}
+
+copy_to_clipboard() {
+  if command -v pbcopy >/dev/null 2>&1; then
+    printf '%s' "$1" | pbcopy
+    return 0
+  fi
+  if command -v wl-copy >/dev/null 2>&1; then
+    printf '%s' "$1" | wl-copy
+    return 0
+  fi
+  if command -v xclip >/dev/null 2>&1; then
+    printf '%s' "$1" | xclip -selection clipboard
+    return 0
+  fi
+  return 1
+}
+
+open_url() {
+  if command -v open >/dev/null 2>&1; then
+    open "$1"
+    return 0
+  fi
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$1" >/dev/null 2>&1 &
+    return 0
+  fi
+  printf 'No URL opener found for %s\n' "$1" >&2
+  return 1
+}
+
+require_cmd fzf
+require_cmd python3
+require_cmd curl
+
+[[ -d "$ROOT_DIR" ]] || {
+  printf 'Sessions directory not found: %s\n' "$ROOT_DIR" >&2
+  exit 1
+}
+[[ -x "$HELPER" ]] || {
+  printf 'Helper not found or not executable: %s\n' "$HELPER" >&2
+  exit 1
+}
+
+if ! curl -fsS --max-time 1 "$BASE_URL/viewer/" >/dev/null 2>&1; then
+  printf 'Local Euphony server not reachable at %s\n' "$BASE_URL" >&2
+  printf 'Start your local codex/euphony server first.\n' >&2
+  exit 1
+fi
+
+mkdir -p "$CACHE_DIR"
+python3 "$HELPER" refresh --root "$ROOT_DIR" --cache-file "$CACHE_FILE" >/dev/null
+
+reload_base="python3 '$HELPER' query --cache-file '$CACHE_FILE' --viewer-root '$VIEWER_ROOT' --raw-root '$RAW_ROOT' --query"
+
+selection="$(
+  fzf --disabled --no-sort --delimiter $'\t' --with-nth=1 \
+      --prompt='codex sessions > ' \
+      --height=95% --layout=reverse --border \
+      --preview "python3 '$HELPER' preview --cache-file '$CACHE_FILE' --file {4}" \
+      --preview-window='right,65%,wrap' \
+      --header='enter=open viewer  ctrl-y=copy viewer URL  ctrl-r=copy raw URL  ctrl-o=open raw' \
+      --bind "start:reload:$reload_base ''" \
+      --bind "change:reload:sleep 0.05; $reload_base {q} || true" \
+      --bind 'ctrl-/:toggle-preview' \
+      --expect=enter,ctrl-y,ctrl-r,ctrl-o
+)"
+
+status=$?
+if [[ $status -ne 0 || -z "$selection" ]]; then
+  exit 0
+fi
+
+key="$(printf '%s\n' "$selection" | head -n 1)"
+record="$(printf '%s\n' "$selection" | tail -n 1)"
+viewer_url="$(printf '%s' "$record" | awk -F '\t' '{print $2}')"
+raw_url="$(printf '%s' "$record" | awk -F '\t' '{print $3}')"
+file_path="$(printf '%s' "$record" | awk -F '\t' '{print $4}')"
+
+case "$key" in
+  ctrl-y)
+    copy_to_clipboard "$viewer_url" || true
+    printf 'Copied viewer URL\n'
+    ;;
+  ctrl-r)
+    copy_to_clipboard "$raw_url" || true
+    printf 'Copied raw URL\n'
+    ;;
+  ctrl-o)
+    open_url "$raw_url"
+    copy_to_clipboard "$raw_url" || true
+    printf 'Opened raw session and copied raw URL\n'
+    ;;
+  *)
+    open_url "$viewer_url"
+    copy_to_clipboard "$viewer_url" || true
+    printf 'Opened in Euphony and copied viewer URL\n'
+    ;;
+esac
+
+printf 'File: %s\n' "$file_path"

@@ -39,28 +39,17 @@ return {
 			suggestion = {
 				enabled = true,
 				auto_trigger = true,
-				hide_during_completion = true,
+				hide_during_completion = false,
+				debounce = 30,
 				keymap = {
-					accept = "<M-l>",
+					accept = false,
+					accept_word = "<M-Tab>",
+					accept_line = false,
 					next = "<M-]>",
 					prev = "<M-[>",
 					dismiss = "<C-]>",
 				},
 			},
 		},
-		config = function(_, opts)
-			require("copilot").setup(opts)
-
-			local ok, cmp = pcall(require, "cmp")
-			if ok then
-				cmp.event:on("menu_opened", function()
-					vim.b.copilot_suggestion_hidden = true
-				end)
-
-				cmp.event:on("menu_closed", function()
-					vim.b.copilot_suggestion_hidden = false
-				end)
-			end
-		end,
 	},
 }

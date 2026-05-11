@@ -66,6 +66,7 @@ return {
 					['<Tab>'] = cmp.mapping(function(fallback)
 						if copilot_suggestion_visible() then
 							accept_copilot_suggestion()
+							if cmp.visible() then cmp.close() end
 						elseif cmp.visible() then
 							cmp.select_next_item()
 						else

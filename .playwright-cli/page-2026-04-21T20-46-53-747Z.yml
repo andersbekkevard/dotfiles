@@ -1,0 +1,9 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - heading "Codex Sessions" [level=1] [ref=e4]
+    - paragraph [ref=e5]: Search by cwd, path, or recent messages. Arrow keys move, Enter opens the selected log in local Euphony.
+    - generic [ref=e6]:
+      - textbox "Search sessions..." [ref=e7]
+      - button "Clear" [ref=e8] [cursor=pointer]
+      - button "Open Euphony" [ref=e9] [cursor=pointer]
+  - generic [ref=e14]: Select a session.

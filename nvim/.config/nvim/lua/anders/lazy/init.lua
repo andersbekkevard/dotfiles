@@ -23,5 +23,6 @@ else
 		require("anders.lazy.full.bufferline"),
 		require("anders.lazy.full.vim-tmux-navigator"),
 		require("anders.lazy.full.zoxide"),
+		require("anders.lazy.full.nvim-ghost"),
 	}
 end
