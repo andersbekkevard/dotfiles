@@ -25,6 +25,9 @@ macos-option-as-alt = false
 # Shift+Enter sends newline sequence for Claude Code.
 keybind = shift+enter=text:\x1b\r
 
+# Option+Tab → Esc+Tab so nvim sees <M-Tab> (used by Copilot accept_word).
+keybind = alt+tab=text:\x1b\t
+
 # Make Cmd+Z send Alt+Z (undo in zsh).
 keybind = super+z=esc:z
 

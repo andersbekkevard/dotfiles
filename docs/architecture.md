@@ -2,7 +2,7 @@
 
 The repository is split into three categories:
 
-1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, `tmux/`, `terminals/`, `wt/`, and `linux-desktop/`.
+1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, `tmux/`, `terminals/`, `wt/`, and `linux-desktop/`. A package may materialize more than one target subtree under `$HOME`; for example, the `scripts/` package owns both interactive helper files under `~/.scripts/` and stable executable entrypoints under `~/.local/bin/`.
 2. Setup logic under `setup/`, with library modules in `setup/lib/` (core, profiles, packages, runtimes, shell-setup, stow, verify), driven by `setup.sh`.
 3. Documentation under `docs/`.
 4. Retired configs and scripts under `archive/`.
