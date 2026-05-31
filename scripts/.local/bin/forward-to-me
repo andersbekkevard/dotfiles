@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'EOF'
+usage: forward-to-me <remote_port> [local_port]
+
+Expose a service running on this remote host to Anders' local machine over SSH.
+
+Examples:
+  forward-to-me 3000
+  forward-to-me 5173 15173
+
+Environment:
+  FORWARD_HOME_SSH_HOST  SSH host alias for Anders' machine (default: anders-mac)
+EOF
+}
+
+is_port() {
+  [[ "$1" =~ ^[0-9]+$ ]] && (( "$1" >= 1 && "$1" <= 65535 ))
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if (( $# < 1 || $# > 2 )); then
+  usage
+  exit 2
+fi
+
+remote_port="$1"
+local_port="${2:-$remote_port}"
+home_host="${FORWARD_HOME_SSH_HOST:-anders-mac}"
+
+if ! is_port "$remote_port"; then
+  printf 'forward-to-me: invalid remote port: %s\n' "$remote_port" >&2
+  exit 2
+fi
+
+if ! is_port "$local_port"; then
+  printf 'forward-to-me: invalid local port: %s\n' "$local_port" >&2
+  exit 2
+fi
+
+printf 'Forwarding remote 127.0.0.1:%s to Anders Mac 127.0.0.1:%s via %s\n' \
+  "$remote_port" "$local_port" "$home_host" >&2
+printf 'Local URL for Anders: http://127.0.0.1:%s\n' "$local_port" >&2
+
+exec ssh -N \
+  -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 \
+  -R "127.0.0.1:${local_port}:127.0.0.1:${remote_port}" \
+  "$home_host"
