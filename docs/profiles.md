@@ -6,7 +6,7 @@ Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scrip
 
 ## `full`
 
-Adds shared development runtimes and tooling on top of `minimal`. This layer installs the managed runtime stack (`tree-sitter`, `uv`, `rustup`/`cargo`, `fnm`, `node`, `pnpm`, `bun`, and the TypeScript language server tools), stows `lazygit`, `wt`, and `lsd`, and installs shared developer CLIs such as `gh`, `git-crypt`, `yazi`, and `lazydocker`.
+Adds shared development runtimes and tooling on top of `minimal`. This layer installs the managed runtime stack (`tree-sitter`, `uv`, `rustup`/`cargo`, `fnm`, `node`, `pnpm`, `bun`, and the TypeScript language server tools), stows `lazygit`, `wt`, and `lsd`, and installs shared developer CLIs such as `gh`, `git-crypt`, `yazi`, `lazydocker`, and the PostgreSQL client (`psql`) used by Neovim Dadbod.
 
 ## `macos`
 

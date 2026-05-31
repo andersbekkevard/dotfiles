@@ -24,5 +24,6 @@ else
 		require("anders.lazy.full.vim-tmux-navigator"),
 		require("anders.lazy.full.zoxide"),
 		require("anders.lazy.full.nvim-ghost"),
+		require("anders.lazy.full.claudecode"),
 	}
 end

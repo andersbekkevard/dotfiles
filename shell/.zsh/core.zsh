@@ -49,5 +49,14 @@ setopt HIST_EXPIRE_DUPS_FIRST
 setopt SHARE_HISTORY
 
 bindkey -v
+bindkey -M vicmd ':' undefined-key
 bindkey '^[z' undo
 bindkey '^[y' redo
+
+repeat-previous-shell-command() {
+  zle up-history
+  zle accept-line
+}
+zle -N repeat-previous-shell-command
+bindkey $'\e[25~' repeat-previous-shell-command
+bindkey -M vicmd $'\e[25~' repeat-previous-shell-command

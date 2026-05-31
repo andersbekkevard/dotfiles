@@ -34,6 +34,31 @@ ensure_linux_command_aliases() {
   fi
 }
 
+ensure_postgresql_client_entrypoints() {
+  if [[ "$OS_FAMILY" != "darwin" ]]; then
+    return 0
+  fi
+
+  if ! command_exists brew; then
+    return 0
+  fi
+
+  local libpq_prefix psql_bin target
+  libpq_prefix="$(brew --prefix libpq 2>/dev/null)" || return 0
+  psql_bin="$libpq_prefix/bin/psql"
+  target="$HOME/.local/bin/psql"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Expose Homebrew libpq psql at $target"
+    return 0
+  fi
+
+  if [[ -x "$psql_bin" ]]; then
+    mkdir -p "$HOME/.local/bin"
+    ln -sfn "$psql_bin" "$target"
+  fi
+}
+
 nvim_version_at_least() {
   local required="$1"
   local current

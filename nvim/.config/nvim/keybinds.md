@@ -69,6 +69,7 @@
 | `<leader>m` | Normal | Change text up to next `_` (variable names) |
 | `<leader>M` | Normal | Change text up to previous `_` (variable names) |
 | `<leader>r` | Normal | Replace word under cursor with substitution pattern |
+| `Cmd+Enter` | All Neovim modes in Ghostty | Repeat previous `:` command |
 | `<Esc>` | Normal | Clear search highlight without saving |
 | `<Esc>` | Insert | Standard escape (normal escape functionality) |
 
@@ -134,7 +135,7 @@
 | Keybind | Action |
 |---------|--------|
 | `g?` | Show help |
-| `<CR>` | Select and open file/directory |
+| `<CR>` | Open configured browser file types (HTML/PDF/images) in Comet/Chrome and Office files (DOC/XLS/PPT) in their default app, otherwise select and open file/directory |
 | `<C-s>` | Open in vertical split |
 | `<C-h>` | Open in horizontal split |
 | `<C-t>` | Open in new tab |

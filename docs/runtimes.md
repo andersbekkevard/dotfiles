@@ -8,6 +8,7 @@
 - TypeScript LSP: global `typescript` plus `typescript-language-server` for Neovim `ts_ls`
 - Bun: official install script
 - Go: Homebrew on macOS, official tarball on Linux
+- PostgreSQL client: Homebrew `libpq` on macOS, `postgresql-client` on Linux. On macOS, `setup.sh` exposes Homebrew's keg-only `psql` through `~/.local/bin/psql` for Dadbod and non-interactive command resolution.
 
 Why these choices:
 
@@ -15,6 +16,7 @@ Why these choices:
 - `nvim-treesitter` now shells out to the external `tree-sitter` binary for parser builds, and the distro `tree-sitter-cli` package can be too old to support `tree-sitter build`. Installing from Cargo keeps the CLI compatible with the plugin.
 - `fnm` keeps shell startup fast and satisfies the PRD hard constraint against `nvm`, `volta`, and `mise`.
 - TypeScript buffers rely on an external language server binary; the full-profile runtime bootstrap installs both `typescript` and `typescript-language-server` after the Node toolchain is available.
+- SQL buffers that use Dadbod against PostgreSQL require the external `psql` client, so the full profile installs and verifies it.
 - `uv` replaces separate Python version, venv, and package tooling.
 - `rustup` is the canonical Rust toolchain installer.
 - All Linux binary downloads are architecture-aware (x86_64 and arm64/aarch64).
