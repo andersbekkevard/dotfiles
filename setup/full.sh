@@ -13,6 +13,7 @@ run_full_layer() {
     install_linux_release_binaries
   fi
 
+  ensure_postgresql_client_entrypoints
   install_shared_runtimes
   if [[ "$OS_FAMILY" == "linux" ]]; then
     install_go_linux

@@ -1,3 +1,55 @@
+local oil_open_rules = {
+	browser_extensions = {
+		html = true,
+		htm = true,
+		pdf = true,
+		png = true,
+		jpg = true,
+		jpeg = true,
+	},
+	default_app_extensions = {
+		doc = true,
+		docx = true,
+		ppt = true,
+		pptx = true,
+		xls = true,
+		xlsm = true,
+		xlsx = true,
+	},
+}
+
+-- Extension routing might not scale; replace this with MIME/app rules if it grows.
+local function entry_extension(entry)
+	if not entry or entry.type ~= "file" then
+		return nil
+	end
+
+	return (entry.name:match("^.+%.([^.]+)$") or ""):lower()
+end
+
+local function should_open_in_browser(entry)
+	local ext = entry_extension(entry)
+	return oil_open_rules.browser_extensions[ext] == true
+end
+
+local function should_open_in_default_app(entry)
+	local ext = entry_extension(entry)
+	return oil_open_rules.default_app_extensions[ext] == true
+end
+
+local function oil_entry_path(entry)
+	local dir = require("oil").get_current_dir()
+	if not dir or not entry then
+		return nil
+	end
+	return dir .. entry.name
+end
+
+local function has_desktop_session()
+	return (vim.env.DISPLAY ~= nil and vim.env.DISPLAY ~= "")
+		or (vim.env.WAYLAND_DISPLAY ~= nil and vim.env.WAYLAND_DISPLAY ~= "")
+end
+
 -- Try to open `path` in Comet, fall back to Chrome. Returns true if a job
 -- was launched. Safe on headless Linux: returns false instead of crashing.
 local function open_in_browser(path)
@@ -25,8 +77,7 @@ local function open_in_browser(path)
 
 	if sysname == "Linux" then
 		-- Headless: no display server -> bail out cleanly
-		if (vim.env.DISPLAY == nil or vim.env.DISPLAY == "")
-			and (vim.env.WAYLAND_DISPLAY == nil or vim.env.WAYLAND_DISPLAY == "") then
+		if not has_desktop_session() then
 			return false
 		end
 		-- Same hierarchy: Comet first, then Chrome variants
@@ -43,6 +94,31 @@ local function open_in_browser(path)
 	return false
 end
 
+local function open_in_default_app(path)
+	local sysname = (vim.loop.os_uname() or {}).sysname or ""
+
+	if sysname == "Darwin" then
+		vim.fn.jobstart({ "open", path }, { detach = true })
+		return true
+	end
+
+	if sysname == "Linux" then
+		if not has_desktop_session() then
+			return false
+		end
+
+		for _, opener in ipairs({ "xdg-open", "gio" }) do
+			if vim.fn.executable(opener) == 1 then
+				local command = opener == "gio" and { "gio", "open", path } or { opener, path }
+				vim.fn.jobstart(command, { detach = true })
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
 return {
 	-------------------------------------------------------------------------------
 	--
@@ -54,6 +130,8 @@ return {
 		dependencies = { "echasnovski/mini.icons" },
 		lazy = false,
 		opts = {
+			-- Keep open Oil buffers synchronized with external filesystem changes.
+			watch_for_changes = true,
 			view_options = {
 				-- Show files and directories that start with "."
 				show_hidden = true,
@@ -62,17 +140,20 @@ return {
 			keymaps = {
 				["g?"] = "actions.show_help",
 				["<CR>"] = {
-					desc = "Open PNG/PDF in Comet (fallback Chrome), else default select",
+					desc = "Open configured external file types, else default select",
 					callback = function()
 						local oil = require("oil")
 						local entry = oil.get_cursor_entry()
-						if entry and entry.type == "file" then
-							local ext = (entry.name:match("^.+%.([^.]+)$") or ""):lower()
-							if ext == "png" or ext == "pdf" or ext == "jpg" or ext == "jpeg" then
-								local full_path = (oil.get_current_dir() or "") .. entry.name
-								if open_in_browser(full_path) then
-									return
-								end
+						if should_open_in_browser(entry) then
+							local full_path = oil_entry_path(entry)
+							if full_path and open_in_browser(full_path) then
+								return
+							end
+						end
+						if should_open_in_default_app(entry) then
+							local full_path = oil_entry_path(entry)
+							if full_path and open_in_default_app(full_path) then
+								return
 							end
 						end
 						oil.select()

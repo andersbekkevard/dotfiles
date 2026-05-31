@@ -63,6 +63,15 @@ vim.keymap.set('n', '<Esc>', '<cmd>noh<CR><Esc>', { silent = true })
 -- Normal escape functionality from insert mode
 vim.keymap.set('i', '<Esc>', '<Esc>', { silent = true })
 
+-- Ghostty maps Cmd+Enter to F13 so the shell sees an inert key while Neovim
+-- can repeat the previous Ex command from any mode.
+vim.keymap.set({ 'n', 'i', 'v', 'x', 's', 'o' }, '<F13>', '<Esc>:<Up><CR>',
+	{ silent = true, desc = 'Repeat previous Ex command' })
+vim.keymap.set('t', '<F13>', '<C-\\><C-n>:<Up><CR>',
+	{ silent = true, desc = 'Repeat previous Ex command' })
+vim.keymap.set('c', '<F13>', '<C-c>:<Up><CR>',
+	{ silent = true, desc = 'Repeat previous Ex command' })
+
 -- More granularity in undoblocks
 vim.keymap.set("i", "<Space>", "<Space><C-g>u")
 vim.keymap.set("i", ".", ".<C-g>u")
