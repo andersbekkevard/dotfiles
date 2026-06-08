@@ -27,3 +27,6 @@ fi
 [[ -r "$HOME/.zsh/tools.zsh" ]] && source "$HOME/.zsh/tools.zsh"
 [[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 [[ -r "$HOME/.zsh/theme.zsh" ]] && source "$HOME/.zsh/theme.zsh"
+
+# OpenClaw Completion
+[ -f "/home/anders/.openclaw/completions/openclaw.zsh" ] && source "/home/anders/.openclaw/completions/openclaw.zsh"
