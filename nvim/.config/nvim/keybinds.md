@@ -25,6 +25,7 @@
 |---------|------|--------|
 | `<leader>w` | Normal | Quick save `:w` |
 | `<leader>x` | Normal | Close current buffer (`:bd`) |
+| `<leader>xo` | Normal | Close all other visible buffer tabs |
 | `<leader>f` | Normal | Find existing buffers (Telescope) |
 | `<leader>?` | Normal | Find recently opened files (Telescope) |
 | `<leader><leader>` | Normal | Toggle between current and previous buffer |
@@ -140,6 +141,7 @@
 | `<C-h>` | Open in horizontal split |
 | `<C-t>` | Open in new tab |
 | `<C-p>` | Preview file |
+| `<Tab>` | Preview file on the right, using about two thirds of the editor |
 | `<C-c>` | Close Oil |
 | `<C-l>` | Refresh view |
 | `-` | Go to parent directory |

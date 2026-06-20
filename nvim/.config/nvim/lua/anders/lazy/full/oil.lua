@@ -119,6 +119,59 @@ local function open_in_default_app(path)
 	return false
 end
 
+local function resize_oil_preview_right()
+	local ok, util = pcall(require, "oil.util")
+	if not ok then
+		return
+	end
+
+	local preview_win = util.get_preview_win({ include_not_owned = true })
+	if not preview_win or not vim.api.nvim_win_is_valid(preview_win) then
+		return
+	end
+
+	local current_win = vim.api.nvim_get_current_win()
+	local preview_config = vim.api.nvim_win_get_config(preview_win)
+
+	if preview_config.relative ~= "" then
+		local current_config = vim.api.nvim_win_get_config(current_win)
+		if current_config.relative == "" then
+			return
+		end
+
+		local gap = math.max(0, preview_config.col - (current_config.col + current_config.width))
+		local total_width = current_config.width + gap + preview_config.width
+		local oil_width = math.max(20, math.floor(total_width / 3) - math.ceil(gap / 2))
+		local preview_width = math.max(20, total_width - oil_width - gap)
+
+		vim.api.nvim_win_set_config(current_win, {
+			relative = current_config.relative,
+			width = oil_width,
+			height = current_config.height,
+			row = current_config.row,
+			col = current_config.col,
+		})
+		vim.api.nvim_win_set_config(preview_win, {
+			relative = preview_config.relative,
+			width = preview_width,
+			height = preview_config.height,
+			row = preview_config.row,
+			col = current_config.col + oil_width + gap,
+		})
+		return
+	end
+
+	local total_width = vim.o.columns
+	local preview_width = math.max(20, math.floor(total_width * 2 / 3))
+	pcall(vim.api.nvim_win_set_width, preview_win, preview_width)
+end
+
+local function preview_oil_entry_right()
+	require("oil").open_preview({ vertical = true, split = "belowright" }, function()
+		vim.schedule(resize_oil_preview_right)
+	end)
+end
+
 return {
 	-------------------------------------------------------------------------------
 	--
@@ -132,6 +185,9 @@ return {
 		opts = {
 			-- Keep open Oil buffers synchronized with external filesystem changes.
 			watch_for_changes = true,
+			float = {
+				preview_split = "right",
+			},
 			view_options = {
 				-- Show files and directories that start with "."
 				show_hidden = true,
@@ -163,6 +219,10 @@ return {
 				["<C-h>"] = "actions.select_split",
 				["<C-t>"] = false, -- Disabled to use Ctrl-t for Telescope globally
 				["<C-p>"] = "actions.preview",
+				["<Tab>"] = {
+					desc = "Preview file on the right",
+					callback = preview_oil_entry_right,
+				},
 				["<C-c>"] = "actions.close",
 				["<C-l>"] = "actions.refresh",
 				["-"] = "actions.parent",

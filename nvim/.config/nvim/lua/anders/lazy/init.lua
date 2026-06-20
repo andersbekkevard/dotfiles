@@ -14,6 +14,7 @@ else
 		require("anders.lazy.full.completion"),
 		require("anders.lazy.full.copilot"),
 		require("anders.lazy.full.telescope"),
+		require("anders.lazy.full.obsidian"),
 		require("anders.lazy.shared.flash"),
 		require("anders.lazy.full.smear_cursor"),
 		require("anders.lazy.full.oil"),
