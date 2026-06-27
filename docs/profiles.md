@@ -2,7 +2,7 @@
 
 ## `minimal`
 
-Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `delta`, `sesh`, `gum`, `forward-to-me`, and `forward-from-me`).
+Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `delta`, `sesh`, `gum`, `forward-to-me`, `forward-from-me`, and `git-clone-subdir`).
 
 ## `full`
 
