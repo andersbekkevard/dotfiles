@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'EOF'
+usage: git-clone-subdir [--force] [--ref <ref>] <github-tree-url> [destination]
+
+Clone one subdirectory from a GitHub repo into a normal local folder.
+
+Examples:
+  git-clone-subdir https://github.com/jorgensandhaug/ainm/tree/main/tasks/tripletex
+  git-clone-subdir https://github.com/jorgensandhaug/ainm/tree/main/tasks/tripletex my-tripletex
+  git-clone-subdir --force https://github.com/jorgensandhaug/ainm/tree/main/tasks/tripletex
+
+Notes:
+  The input URL must look like:
+    https://github.com/<owner>/<repo>/tree/<branch>/<path>
+
+  Branch names containing slashes are ambiguous in GitHub tree URLs. Pass
+  --ref <branch-name> when you need one.
+EOF
+}
+
+die() {
+  printf 'git-clone-subdir: %s\n' "$*" >&2
+  exit 1
+}
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+strip_url_noise() {
+  local value="$1"
+  value="${value%%#*}"
+  value="${value%%\?*}"
+  printf '%s\n' "${value%/}"
+}
+
+default_destination_for_path() {
+  local subdir="${1%/}"
+  printf '%s\n' "${subdir##*/}"
+}
+
+parse_github_tree_url() {
+  local input_url="$1"
+  local explicit_ref="$2"
+  local rest owner repo tree_part ref subdir
+
+  input_url="$(strip_url_noise "$input_url")"
+  input_url="${input_url#git@github.com:}"
+  input_url="${input_url#https://github.com/}"
+  input_url="${input_url#http://github.com/}"
+  input_url="${input_url#github.com/}"
+
+  owner="${input_url%%/*}"
+  rest="${input_url#*/}"
+  repo="${rest%%/*}"
+  rest="${rest#*/}"
+
+  [[ -n "$owner" && "$owner" != "$input_url" ]] || die "could not parse GitHub owner from URL"
+  [[ -n "$repo" && "$repo" != "$rest" ]] || die "could not parse GitHub repo from URL"
+  [[ "${rest%%/*}" == "tree" ]] || die "expected a GitHub /tree/<ref>/<path> URL"
+
+  tree_part="${rest#tree/}"
+  [[ -n "$tree_part" && "$tree_part" != "$rest" ]] || die "missing tree ref and path"
+
+  if [[ -n "$explicit_ref" ]]; then
+    ref="$explicit_ref"
+    case "$tree_part" in
+      "$ref"/*)
+        subdir="${tree_part#"$ref"/}"
+        ;;
+      *)
+        die "URL path does not start with the explicit ref: $ref"
+        ;;
+    esac
+  else
+    ref="${tree_part%%/*}"
+    subdir="${tree_part#*/}"
+  fi
+
+  [[ -n "$ref" && "$subdir" != "$tree_part" && -n "$subdir" ]] || die "missing subdirectory path"
+  [[ "$subdir" != "." && "$subdir" != ".." && "$subdir" != /* && "$subdir" != "."/* && "$subdir" != *"/.." && "$subdir" != ../* && "$subdir" != *"/../"* ]] \
+    || die "unsafe subdirectory path: $subdir"
+
+  repo="${repo%.git}"
+  printf '%s\t%s\t%s\n' "https://github.com/$owner/$repo.git" "$ref" "$subdir"
+}
+
+force=0
+ref=""
+
+while (( $# > 0 )); do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -f|--force)
+      force=1
+      shift
+      ;;
+    --ref)
+      [[ $# -ge 2 ]] || die "--ref requires a value"
+      ref="$2"
+      shift 2
+      ;;
+    --ref=*)
+      ref="${1#--ref=}"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      die "unknown option: $1"
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if (( $# < 1 || $# > 2 )); then
+  usage
+  exit 2
+fi
+
+require_cmd git
+
+input_url="$1"
+parsed="$(parse_github_tree_url "$input_url" "$ref")"
+IFS=$'\t' read -r repo_url branch subdir <<< "$parsed"
+
+destination="${2:-$(default_destination_for_path "$subdir")}"
+[[ -n "$destination" ]] || die "empty destination"
+
+case "$destination" in
+  /|.|..|../*|*/..|*/../*)
+    die "refusing to use unsafe destination: $destination"
+    ;;
+esac
+
+if [[ -e "$destination" ]]; then
+  if (( force )); then
+    rm -rf -- "$destination"
+  elif [[ -n "$(find "$destination" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)" ]]; then
+    die "destination already exists and is not empty: $destination"
+  fi
+fi
+
+tmp_parent="${TMPDIR:-/tmp}"
+tmp_dir="$(mktemp -d "$tmp_parent/git-clone-subdir.XXXXXXXX")"
+trap 'rm -rf -- "$tmp_dir"' EXIT
+
+git clone --depth 1 --filter=blob:none --sparse --branch "$branch" -- "$repo_url" "$tmp_dir/repo" >&2
+git -C "$tmp_dir/repo" sparse-checkout set -- "$subdir" >&2
+
+source_dir="$tmp_dir/repo/$subdir"
+[[ -d "$source_dir" ]] || die "subdirectory not found after sparse checkout: $subdir"
+
+mkdir -p -- "$destination"
+cp -R "$source_dir"/. "$destination"/
+
+printf 'Copied %s:%s/%s -> %s\n' "$repo_url" "$branch" "$subdir" "$destination"

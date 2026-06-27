@@ -23,6 +23,41 @@ local function pop_obsidian_jump()
 	pcall(vim.api.nvim_win_set_cursor, 0, jump.cursor)
 end
 
+local function remove_checked_checkbox_marker()
+	local row = vim.api.nvim_win_get_cursor(0)[1]
+	local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1]
+	if not line then
+		return false
+	end
+
+	local indent, body = line:match("^(%s*)[-+*]%s+%[[xX]%]%s*(.*)$")
+	if not indent then
+		indent, body = line:match("^(%s*)%d+[.)]%s+%[[xX]%]%s*(.*)$")
+	end
+	if not indent then
+		return false
+	end
+
+	vim.api.nvim_buf_set_lines(0, row - 1, row, true, { indent .. body })
+	return true
+end
+
+local function feedkeys(keys)
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "n", true)
+end
+
+local function obsidian_smart_action()
+	local api = require("obsidian.api")
+	if api.cursor_link() or api.cursor_tag() or api.cursor_heading() then
+		feedkeys(api.smart_action())
+		return
+	end
+	if remove_checked_checkbox_marker() then
+		return
+	end
+	feedkeys(api.smart_action())
+end
+
 return {
 	{
 		"obsidian-nvim/obsidian.nvim",
@@ -52,6 +87,10 @@ return {
 			backlinks = {
 				parse_headers = false,
 			},
+			checkbox = {
+				create_new = true,
+				order = { " ", "x", "" },
+			},
 			callbacks = {
 				enter_note = function()
 					local api = require("obsidian.api")
@@ -72,6 +111,10 @@ return {
 					map("<leader>ol", "<cmd>Obsidian links<cr>", "Obsidian outgoing links")
 					map("<leader>on", "<cmd>Obsidian new<cr>", "New Obsidian note")
 					map("<leader>oo", "<cmd>Obsidian open<cr>", "Open note in Obsidian")
+					vim.keymap.set("n", "<CR>", obsidian_smart_action, {
+						buffer = true,
+						desc = "Obsidian Smart Action",
+					})
 				end,
 			},
 		},
