@@ -48,6 +48,9 @@ end
 
 local function obsidian_smart_action()
 	local api = require("obsidian.api")
+	if require("anders.markdown").toggle_heading_fold() then
+		return
+	end
 	if api.cursor_link() or api.cursor_tag() or api.cursor_heading() then
 		feedkeys(api.smart_action())
 		return
@@ -111,6 +114,7 @@ return {
 					map("<leader>ol", "<cmd>Obsidian links<cr>", "Obsidian outgoing links")
 					map("<leader>on", "<cmd>Obsidian new<cr>", "New Obsidian note")
 					map("<leader>oo", "<cmd>Obsidian open<cr>", "Open note in Obsidian")
+					map("<leader>op", "<cmd>Obsidian paste_img<cr>", "Paste clipboard image")
 					vim.keymap.set("n", "<CR>", obsidian_smart_action, {
 						buffer = true,
 						desc = "Obsidian Smart Action",

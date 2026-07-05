@@ -222,6 +222,9 @@ return {
 				callback = function(args)
 					pcall(vim.treesitter.start, args.buf)
 					vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					if vim.bo[args.buf].filetype == "markdown" then
+						require("anders.markdown").setup_buffer(args.buf)
+					end
 				end,
 			})
 		end,

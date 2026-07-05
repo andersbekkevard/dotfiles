@@ -8,8 +8,8 @@
 
 | Keybind | Mode | Action |
 |---------|------|--------|
-| `H` | All | Jump to start of line (instead of `^`) |
-| `L` | All | Jump to end of line (instead of `$`) |
+| `H` | All | Jump to start of current visual line |
+| `L` | All | Jump to end of current visual line |
 | `j` | Normal | Move down by visual line (soft-wrapped text) |
 | `k` | Normal | Move up by visual line (soft-wrapped text) |
 | `n` | Normal | Next search result (centered) |
@@ -67,8 +67,6 @@
 
 | Keybind | Mode | Action |
 |---------|------|--------|
-| `<leader>m` | Normal | Change text up to next `_` (variable names) |
-| `<leader>M` | Normal | Change text up to previous `_` (variable names) |
 | `<leader>r` | Normal | Replace word under cursor with substitution pattern |
 | `Cmd+Enter` | All Neovim modes in Ghostty | Repeat previous `:` command |
 | `<Esc>` | Normal | Clear search highlight without saving |
@@ -152,6 +150,31 @@
 | `gx` | Open file with external app |
 | `g.` | Toggle hidden files |
 | `g\` | Toggle trash |
+
+---
+
+## Markdown
+
+| Keybind | Mode | Action |
+|---------|------|--------|
+| `<CR>` on heading | Normal | Toggle the heading section fold |
+| `<leader>mf` | Normal | Fold all Markdown heading sections |
+| `<leader>mu` | Normal | Unfold all Markdown heading sections |
+
+---
+
+## Obsidian
+
+| Keybind | Mode | Action |
+|---------|------|--------|
+| `gf` | Normal | Follow Obsidian link |
+| `gb` | Normal | Go back from followed Obsidian link |
+| `<leader>os` | Normal | Search Obsidian notes |
+| `<leader>ob` | Normal | Show Obsidian backlinks |
+| `<leader>ol` | Normal | Show outgoing Obsidian links |
+| `<leader>on` | Normal | Create new Obsidian note |
+| `<leader>oo` | Normal | Open note in Obsidian app |
+| `<leader>op` | Normal | Paste clipboard image into the current note |
 
 ---
 
