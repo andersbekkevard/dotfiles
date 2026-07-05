@@ -8,9 +8,9 @@
 vim.keymap.set('n', '<leader>w', '<cmd>w<cr>')
 vim.keymap.set('n', '<leader>x', '<cmd>bd<cr>', { desc = 'Close buffer' })
 
--- Jump to start and end of line using the home row keys
-vim.keymap.set('', 'H', '^')
-vim.keymap.set('', 'L', '$')
+-- Jump to start and end of the current visual line using the home row keys
+vim.keymap.set('', 'H', 'g0')
+vim.keymap.set('', 'L', 'g$')
 
 -- greatest remap ever (modified)
 vim.keymap.set("x", "p", [["_dP]])
@@ -29,9 +29,9 @@ vim.keymap.set({ "n", "v" }, "<leader>p", [["+p]])
 vim.keymap.set({ "n", "v" }, "<leader>P", [["+P]])
 
 -- handy keymap for replacing up to next _ (like in variable names)
-vim.keymap.set('n', '<leader>m', 'ct_')
+-- vim.keymap.set('n', '<leader>m', 'ct_')
 -- handy keymap for replacing up to previous _ (like in variable names)
-vim.keymap.set('n', '<leader>M', 'cT_')
+-- vim.keymap.set('n', '<leader>M', 'cT_')
 
 -- always center search results
 vim.keymap.set('n', 'n', 'nzz', { silent = true })
