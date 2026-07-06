@@ -6,9 +6,8 @@ description: Dispatch, supervise, harvest, and recover detached background codex
 # Codex Lane — detached background codex lifecycle
 
 A lane is one detached `codex exec` run with a prompt file, a log, and a
-deliverable. This lifecycle was battle-tested across 624 dispatches in the
-2026-07 models-rewrite marathon; every rule below traces to a real failure
-(see `.agents/reflections/2026-07-06-prd-marathon-endgame/codex-lane-failures.md`).
+deliverable. This lifecycle is battle-tested; every rule below traces to a
+real detached-lane failure.
 
 ## Dispatch
 
@@ -28,15 +27,15 @@ deliverable. This lifecycle was battle-tested across 624 dispatches in the
 (setsid codex exec "$(cat /tmp/<lane>.md)" < /dev/null > /tmp/<lane>.log 2>&1 &)
 ```
 
-   Why each element: prompt file avoids inline-quoting stdin hangs (5KB
-   inline prompts died at exit 144); `< /dev/null` prevents blocking on
-   stdin; `setsid` survives session restarts (non-detached lanes died with
-   the parent on 2026-07-05); log redirect preserves evidence and quota
-   errors.
+   Why each element: prompt file avoids inline-quoting stdin hangs
+   (multi-KB inline prompts have died at exit 144); `< /dev/null` prevents
+   blocking on stdin; `setsid` survives session restarts (non-detached lanes
+   die with the parent); log redirect preserves evidence and quota errors.
 3. After 3–5s, confirm the log exists and has bytes (`wc -c`). A tiny dead
    log means the dispatch itself failed — read it before assuming the lane
    runs.
-4. Cap parallelism at ~8 lanes (29-wide got OOM-killed on the 15GB box).
+4. Cap parallelism at ~8 lanes — wide waves get OOM-killed (a 29-wide
+   wave died on a 15GB host).
    Respect quota as a budget; keep an overnight reserve.
 5. If the lane writes a new typed value (enum variant, schema field), the
    owner lands the type change FIRST — a lane writing data the code cannot
@@ -56,21 +55,19 @@ deliverable. This lifecycle was battle-tested across 624 dispatches in the
   lanes are invisible to the harness; persistent background pollers and
   sentinels get killed by the environment — the wakeup is the reliable
   path.
-- For marathon runs, arm the dead-session supervisor (see
-  `tools/agent-supervisor/README.md`), which revives the session inside tmux
-  (interactive) or via a print-mode pulse as fallback while lanes still run.
+- For long multi-lane waves, arm a dead-session supervisor if the repo
+  provides one (e.g. a `tools/agent-supervisor/`), reviving the session
+  inside tmux (interactive) or via a print-mode pulse while lanes still run.
 
 ## Harvest
 
 1. Read the tail of the log and the deliverable.
 2. Owner-verify before integrating: path-scoped diff review against the
    allowed edit paths, run the named gates/tests yourself, screen against
-   the product invariants (for models work: golden inventory, layered loss,
-   check rows intact). Lanes fail by optimizing the wrong objective, not by
-   failing to code.
+   the product invariants named in the lane prompt. Lanes fail by
+   optimizing the wrong objective, not by failing to code.
 3. Commit immediately and path-scoped (`git -C <absolute repo path> add <lane paths>`)
-   — uncommitted lane output in the shared checkout eventually gets wiped
-   (three finished lanes lost at 2026-07-05 14:32).
+   — uncommitted lane output in the shared checkout eventually gets wiped.
 4. Refill the freed lane slot in the same wake.
 
 ## Recover
@@ -78,11 +75,13 @@ deliverable. This lifecycle was battle-tested across 624 dispatches in the
 Classify a lane with no completion before acting:
 
 - **Quota text in the log** ("You've hit your usage limit"): keep the
-  prompt, redispatch after reset; write the next-day plan into the dossier
+  prompt, redispatch after reset; write the next-day plan into the working
+  plan artifact
   if quota is gone for hours.
 - **Live process, no log growth** across two checks: hung — inspect, then
-  kill; a resume once froze ~1h at a 3KB log while its edits were already
-  in the tree, so diff the working tree before assuming the work is lost.
+  kill; a resume can freeze for an hour at a tiny log while its edits are
+  already in the tree, so diff the working tree before assuming the work is
+  lost.
 - **No process, partial log**: find the rollout under
   `~/.codex/sessions/YYYY/MM/DD/` (grep for prompt text), then
   `codex exec resume <session-id> "<narrow follow-up>"`. Never

@@ -17,10 +17,10 @@ Your only output is a JSON file of atomic findings.
 
 - A list of transcript files (already extracted to pure user/assistant dialogue).
   Each file starts with a header giving `session_id` and `session_date`.
-- The finding schema at `.agents/skills/dream/lib/schema.md` — read it first.
+- The finding schema at `lib/schema.md` in this skill's folder — read it first.
 - For reference only, the CURRENT instruction surface so you can judge whether a
   gap already exists: `CLAUDE.md`, `AGENTS.md`, `docs/`, and the skill list under
-  `.agents/skills/`. Skim these once before scanning so you don't propose things
+  `.agents/skills/` (if the repo has that directory). Skim these once before scanning so you don't propose things
   that are already documented.
 
 ## How to read
@@ -46,8 +46,8 @@ Hunt both domains with equal care:
 - **meta** — how Anders wants work done: orchestration, parallelization, goal
   framing, verification rigor, when to ask vs act, speed vs thoroughness,
   reporting/altitude, pushback calibration, tooling conventions.
-- **project** — domain facts and conventions: the data plane, Excel/workbook
-  rules, fund/AUM specifics, app architecture, recurring gotchas.
+- **project** — domain facts and conventions: domain terms, product
+  invariants, app architecture, recurring gotchas of the repo being mined.
 
 Attribute quotes to Anders (the `user` turns). Capture the agent's turn only when
 the finding is about what the agent assumed or asked.

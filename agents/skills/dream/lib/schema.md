@@ -30,7 +30,7 @@ reducer handles frequency-weighting across sessions.
 
 - **domain** — the most important field. Both are first-class:
   - `meta` = *how we work*: orchestration, when to parallelize vs serialize, goal-setting, verification rigor, speed/altitude, how much to ask vs act, pushback calibration, reporting style, tool conventions. These usually target `CLAUDE.md` or `docs/`.
-  - `project` = *domain specifics*: the data-plane model, Excel/workbook conventions, fund/AUM facts, app architecture, tooling quirks. These usually target `AGENTS.md`, a specific `skill:`, or the owning `docs/` file.
+  - `project` = *domain specifics*: domain terms, product invariants, app architecture, tooling quirks of the repo being mined. These usually target `AGENTS.md`, a specific `skill:`, or the owning `docs/` file.
 - **type**:
   - `repeated_instruction` — Anders said the same thing he's likely said before / should not have to say.
   - `correction` — "no", "don't", "actually", "that's wrong", redirecting the agent.

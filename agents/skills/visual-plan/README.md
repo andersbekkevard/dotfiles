@@ -12,10 +12,6 @@ It solves for plans that are too important to bury in chat. The output is
 scannable, commentable, and intuitive enough for a human to approve before code
 changes start.
 
-<picture>
-  <img alt="Visual plan review surface" src="../../media/visual-plan.png">
-</picture>
-
 Visual plans are MDX, customizable with your own components, and viewed with the
 [Agent-Native plans app](https://www.agent-native.com/docs/template-plan).
 The hosted app is 100% free and open source; local-files mode writes

@@ -27,7 +27,7 @@ and `proposed-changes.json` for Anders to review.
   its `review_dir`. Write review artifacts to `.agents/dreams/proposals/<run_id>/`, not
   to the raw run directory.
 - The CURRENT instruction surface: `CLAUDE.md`, `AGENTS.md`, every file under
-  `docs/`, and each `SKILL.md` under `.agents/skills/`. Read what's relevant
+  `docs/`, and each `SKILL.md` under `.agents/skills/` if the repo has one. Read what's relevant
   before proposing — your job is to find the *delta*, not restate what exists.
 
 ## Method

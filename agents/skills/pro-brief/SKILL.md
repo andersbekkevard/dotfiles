@@ -25,8 +25,8 @@ problem.
    - Read local agent/repo instructions first.
    - Search semantically using `rg`, Maps, docs, symbols, headings, and filenames.
    - Prefer canonical/live docs and local source-of-truth files over stale notes.
-   - For project, include only generic project context needed for the topic;
-     do not dump the constitution unless it directly changes the answer.
+   - Include only the generic project context the topic needs; do not dump a
+     repo's constitution/boot docs unless they directly change the answer.
 3. Compile the prompt in a temp file:
    - write a short project brief;
    - write the current scenario and constraints;
@@ -132,21 +132,21 @@ Use `--files-report` whenever generating a final bundle so the chat reply can
 include the exact included file list and per-file token weights:
 
 ```sh
-uv run .agents/skills/pro-brief/scripts/bundle_files.py \
+uv run "<this skill dir>/scripts/bundle_files.py" \
   --files-report \
   --file "docs/README.md" \
-  --file "knowledge/notes/statistical-factor-models.md" \
+  --file "notes/<topic>.md" \
   --output /tmp/pro-brief-file-context.xml
 ```
 
 Use `--max-total-tokens` during pruning or when Anders gives a hard budget:
 
 ```sh
-uv run .agents/skills/pro-brief/scripts/bundle_files.py \
+uv run "<this skill dir>/scripts/bundle_files.py" \
   --files-report \
   --max-total-tokens 50000 \
   --file "docs/README.md" \
-  --file "knowledge/notes/statistical-factor-models.md" \
+  --file "notes/<topic>.md" \
   --output /tmp/pro-brief-file-context.xml
 ```
 
