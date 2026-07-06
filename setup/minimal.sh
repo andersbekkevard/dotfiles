@@ -19,6 +19,7 @@ run_minimal_layer() {
   ensure_oh_my_zsh
   ensure_zsh_plugins
   stow_packages shell git nvim tmux scripts fd btop
+  ensure_agent_surface
   ensure_tpm
   write_local_overrides_template "${ACTIVE_PROFILE:-minimal}"
   ensure_default_shell_zsh

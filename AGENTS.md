@@ -33,6 +33,7 @@ If the task touches secrets, also read:
 | `docs/architecture.md` | Structural model | Stow layout, layering, ownership boundaries |
 | `docs/secrets.md` | Secrets handling | `git-crypt` unlock/export flow |
 | `docs/design-principles.md` | General engineering philosophy | Cross-project standards (not bootstrap behavior) |
+| `agents/README.md` | Global agent surface (skills, skillctl, wiring) | Skill invocation-state system and harness symlink contract |
 
 ## Update rules
 
