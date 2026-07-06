@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pro Brief"
+  short_description: "Compile local context for GPT-5.5 Pro."
+  default_prompt: "Use $pro-brief to compile and copy a compact local-context bundle for GPT-5.5 Pro."

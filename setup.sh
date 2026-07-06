@@ -12,6 +12,8 @@ source "$DOTFILES_DIR/setup/full.sh"
 source "$DOTFILES_DIR/setup/linux-desktop.sh"
 # shellcheck source=setup/macos.sh
 source "$DOTFILES_DIR/setup/macos.sh"
+# shellcheck source=setup/agents.sh
+source "$DOTFILES_DIR/setup/agents.sh"
 
 init_runtime
 parse_args "$@"
