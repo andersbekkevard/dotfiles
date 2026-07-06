@@ -12,7 +12,8 @@ porting while preserving intentional local behavior.
 
 Durable local divergence decisions live in
 `references/skill-divergences.md`. Always read that file before classifying
-drift or reporting recommendations.
+drift or reporting recommendations, but only treat entries there as durable
+when Anders explicitly recorded them.
 
 ## Workflow
 
@@ -33,9 +34,10 @@ remote drift.
 sed -n '1,240p' agents/skills/skill-audit/references/skill-divergences.md
 ```
 
-Treat it as the durable source for accepted local behavior. The `preserve`
-entries in `agents/skill-sources.toml` are compact routing hints; the Markdown
-ledger is where Anders' settled decisions are documented.
+Treat it as the durable source for accepted local behavior only where it has an
+explicit entry. The `preserve` entries in `agents/skill-sources.toml` are
+compact routing hints; do not expand them into ledger entries unless Anders
+explicitly says to durably record that divergence.
 
 4. Run the tracked audit:
 
@@ -59,12 +61,12 @@ input artifact, not as the final answer.
   change is likely to affect the local skill.
 - For `local`, do not search for upstreams.
 
-6. Preserve local intent. Treat every documented decision in
-`references/skill-divergences.md` and every `preserve = [...]` entry in
-`agents/skill-sources.toml` as a hard constraint. Do not recommend replacing a
-local customization just because upstream lacks it. If a diff matches an
-accepted divergence exactly, suppress it from material findings unless Anders
-asked for a full inventory.
+6. Preserve local intent. Treat every explicit decision in
+`references/skill-divergences.md` as a hard constraint. Treat
+`preserve = [...]` entries in `agents/skill-sources.toml` as audit hints, not
+durable decisions. Do not recommend replacing a local customization just because
+upstream lacks it, but do not suppress drift as "documented local divergence"
+unless the Markdown ledger has an explicit entry for it.
 
 7. Report concise findings:
 
@@ -84,9 +86,9 @@ Noise ignored:
 If there are no material changes, say that directly and include the commands
 run. Do not paste the full JSON unless asked.
 
-Do not make Anders re-decide documented divergences. If a known divergence is
-the only reason a skill still differs from upstream, either omit it or list it
-briefly under "Noise ignored" as a documented local divergence.
+Do not make Anders re-decide documented divergences. If a divergence is not in
+the Markdown ledger, it is not documented, even if it appears in a prior audit
+or a TOML preserve hint.
 
 ## Rules
 
