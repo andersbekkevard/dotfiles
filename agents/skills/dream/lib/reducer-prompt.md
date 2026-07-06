@@ -1,6 +1,7 @@
 # Dream reducer — subagent prompt
 
-Follow the learning-loop contract in the skill's `PRINCIPLES.md` — especially
+Follow the learning-loop contract in the `reflect` skill's `PRINCIPLES.md`
+(sibling skill folder, `../reflect/PRINCIPLES.md` from the dream skill) — especially
 the dedup fingerprint, the memory/instruction/narrative boundary, and the
 keep-the-surface-lean rule.
 

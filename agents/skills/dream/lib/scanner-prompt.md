@@ -1,6 +1,7 @@
 # Dream scanner — subagent prompt
 
-Follow the learning-loop contract in the skill's `PRINCIPLES.md` (what counts
+Follow the learning-loop contract in the `reflect` skill's `PRINCIPLES.md`
+(sibling skill folder, `../reflect/PRINCIPLES.md` from the dream skill) (what counts
 as a learning, evidence standards, honest confidence). If your shard's sessions
 have reflections in the repo's `.agents/reflections/`, read those first as
 pre-digested primary evidence and corroborate against the transcript.
