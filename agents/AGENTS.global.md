@@ -22,8 +22,9 @@ and conventions.
 ## Observing Running Apps
 
 - Dev servers tee their output to a repo-local log so any agent can read live server output without owning the process. The repo's `AGENTS.md` names the path; the default convention is `.agents/logs/dev.log` (gitignored). Check for it before anything else when debugging a running app.
-- Read the log — tail it around the failing request — instead of restarting the server or spawning a second instance. Dev servers are usually singletons: a stray instance can take the port or the framework's dev lock and block the canonical one.
-- If a repo runs a dev server but has no tee + pointer, offer to wire it (`<dev command> 2>&1 | tee -a .agents/logs/dev.log`, or the repo's equivalent) rather than debugging blind.
+- The log is current-state, not history: the dev script truncates it on every server start and appends from there (`: > .agents/logs/dev.log; <dev command> 2>&1 | tee -a .agents/logs/dev.log`). Keep the `-a` — an appending writer survives truncation, so `truncate -s 0` is always safe mid-run if the log grows.
+- Read the log — tail it around the failing request — instead of restarting the server or spawning a second instance. Dev servers are usually singletons: a stray instance can take the port or the framework's dev lock and block the canonical one. "Is it up?" = process/port check + a recent log tail, not log archaeology.
+- If a repo runs a dev server but has no tee + pointer, offer to wire it rather than debugging blind.
 
 ## Delegation & Lanes
 
