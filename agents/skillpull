@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""skillpull - audit global skill drift against declared upstreams.
+
+This is a read-only helper. It does not merge, copy, or rewrite skills; it
+answers whether a tracked upstream differs from the local skill and prints the
+local intent that must be preserved during any manual port.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+import tomllib
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+REPO = ROOT.parent
+MANIFEST = ROOT / "skill-sources.toml"
+DEFAULT_IGNORES = ("agents", ".git", "__pycache__", ".DS_Store")
+
+
+def run(args: list[str], cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        args,
+        cwd=str(cwd) if cwd else None,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if check and result.returncode != 0:
+        cmd = " ".join(args)
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"{cmd} failed ({result.returncode}): {detail}")
+    return result
+
+
+def load_manifest() -> dict:
+    with MANIFEST.open("rb") as handle:
+        return tomllib.load(handle)
+
+
+def skills(manifest: dict) -> dict:
+    return manifest.get("skills", {})
+
+
+def rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO))
+    except ValueError:
+        return str(path)
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    data = skills(load_manifest())
+    width = max([len(name) for name in data] + [5])
+    print(f"{'SKILL':<{width}}  TRACKING  UPSTREAM")
+    for name, cfg in sorted(data.items()):
+        tracking = cfg.get("tracking", "?")
+        upstream = cfg.get("upstream") or {}
+        source = upstream.get("url", "-")
+        if upstream.get("path"):
+            source += f" :: {upstream['path']}"
+        print(f"{name:<{width}}  {tracking:<8}  {source}")
+    return 0
+
+
+def clone_upstream(upstream: dict, temp: Path) -> tuple[Path, str]:
+    url = upstream["url"]
+    ref = upstream.get("ref", "main")
+    path = upstream.get("path")
+    checkout = temp / "repo"
+    run(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse", "--branch", ref, url, str(checkout)])
+    if path:
+        run(["git", "-C", str(checkout), "sparse-checkout", "set", "--skip-checks", path])
+    commit = run(["git", "-C", str(checkout), "rev-parse", "HEAD"]).stdout.strip()
+    remote_path = checkout / path if path else checkout
+    return remote_path, commit
+
+
+def copy_for_compare(source: Path, dest: Path, ignores: tuple[str, ...]) -> Path:
+    if source.is_file():
+        dest.mkdir(parents=True, exist_ok=True)
+        target = dest / source.name
+        shutil.copy2(source, target)
+        return target
+    if source.is_dir():
+        shutil.copytree(source, dest, ignore=shutil.ignore_patterns(*ignores))
+        return dest
+    raise FileNotFoundError(source)
+
+
+def shortstat(local: Path, remote: Path) -> tuple[str, str, str]:
+    result = run(["git", "diff", "--no-index", "--shortstat", str(local), str(remote)], check=False)
+    if result.returncode == 0:
+        return "exact", "", ""
+    if result.returncode == 1:
+        return "drift", result.stdout.strip(), ""
+    return "error", "", (result.stderr or result.stdout).strip()
+
+
+def full_diff(local: Path, remote: Path) -> str:
+    result = run(["git", "diff", "--no-index", "--", str(local), str(remote)], check=False)
+    return result.stdout
+
+
+def check_one(name: str, cfg: dict, show_diff: bool = False) -> dict:
+    tracking = cfg.get("tracking", "tracked")
+    local_path = REPO / cfg["local_path"]
+    result = {
+        "skill": name,
+        "tracking": tracking,
+        "local_path": rel(local_path),
+        "status": "skipped",
+        "summary": "",
+        "commit": None,
+        "upstream": cfg.get("upstream"),
+        "preserve": cfg.get("preserve", []),
+        "notes": cfg.get("notes", []),
+        "diff": "",
+        "error": "",
+    }
+
+    if tracking == "local":
+        result["summary"] = "local skill; no upstream drift check"
+        return result
+    if tracking == "watch":
+        result["summary"] = "watch-only source; no stable compare path"
+        return result
+    if not local_path.exists():
+        result["status"] = "error"
+        result["error"] = f"local path does not exist: {rel(local_path)}"
+        return result
+
+    upstream = cfg.get("upstream")
+    if not upstream or upstream.get("type") != "git" or not upstream.get("url") or not upstream.get("path"):
+        result["status"] = "error"
+        result["error"] = "tracked skill requires git upstream url and path"
+        return result
+
+    ignores = tuple(cfg.get("ignore", DEFAULT_IGNORES))
+    try:
+        with tempfile.TemporaryDirectory(prefix=f"skillpull-{name}-") as raw_temp:
+            temp = Path(raw_temp)
+            remote_path, commit = clone_upstream(upstream, temp / "clone")
+            result["commit"] = commit
+            if not remote_path.exists():
+                result["status"] = "error"
+                result["error"] = f"remote path does not exist: {upstream['path']}"
+                return result
+            local_cmp = copy_for_compare(local_path, temp / "local", ignores)
+            remote_cmp = copy_for_compare(remote_path, temp / "remote", ignores)
+            status, summary, error = shortstat(local_cmp, remote_cmp)
+            result["status"] = status
+            result["summary"] = summary
+            result["error"] = error
+            if show_diff and status == "drift":
+                result["diff"] = full_diff(local_cmp, remote_cmp)
+    except Exception as exc:
+        result["status"] = "error"
+        result["error"] = str(exc)
+    return result
+
+
+def selected_skills(args: argparse.Namespace, data: dict) -> list[str]:
+    if args.all:
+        return [name for name, cfg in sorted(data.items()) if cfg.get("tracking") == "tracked"]
+    if not args.skill:
+        raise SystemExit("skillpull check requires a skill name or --all")
+    missing = [name for name in args.skill if name not in data]
+    if missing:
+        raise SystemExit(f"unknown skill(s): {', '.join(missing)}")
+    return args.skill
+
+
+def print_result(result: dict) -> None:
+    name = result["skill"]
+    status = result["status"]
+    upstream = result.get("upstream") or {}
+    print(f"{name}: {status}")
+    if upstream:
+        source = upstream.get("url", "")
+        if upstream.get("path"):
+            source += f" :: {upstream['path']}"
+        if result.get("commit"):
+            source += f" @ {result['commit'][:12]}"
+        print(f"  upstream: {source}")
+    if result.get("summary"):
+        print(f"  summary: {result['summary']}")
+    if result.get("preserve"):
+        print("  preserve:")
+        for item in result["preserve"]:
+            print(f"    - {item}")
+    if result.get("notes"):
+        print("  notes:")
+        for item in result["notes"]:
+            print(f"    - {item}")
+    if result.get("error"):
+        print(f"  error: {result['error']}")
+    if result.get("diff"):
+        print(result["diff"].rstrip())
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    data = skills(load_manifest())
+    names = selected_skills(args, data)
+    results = [check_one(name, data[name], show_diff=args.diff) for name in names]
+    if args.json:
+        print(json.dumps(results, indent=2, sort_keys=True))
+    else:
+        for index, result in enumerate(results):
+            if index:
+                print()
+            print_result(result)
+    return 1 if any(item["status"] in ("drift", "error") for item in results) else 0
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    data = skills(load_manifest())
+    actual = {p.name for p in (ROOT / "skills").iterdir() if p.is_dir() and not p.name.startswith(".")}
+    declared = set(data)
+    missing = sorted(actual - declared)
+    stale = sorted(declared - actual)
+    if missing:
+        print("skills missing from manifest:")
+        for name in missing:
+            print(f"  - {name}")
+    if stale:
+        print("manifest entries without local skill directory:")
+        for name in stale:
+            print(f"  - {name}")
+    if not missing and not stale:
+        print(f"validate: ok ({len(actual)} skills mapped)")
+        return 0
+    return 1
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description=__doc__)
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("list", help="list skills and declared sources").set_defaults(func=cmd_list)
+    check = sub.add_parser("check", help="check one skill or all tracked skills for upstream drift")
+    check.add_argument("skill", nargs="*", help="skill name(s) to check")
+    check.add_argument("--all", action="store_true", help="check every tracked skill")
+    check.add_argument("--json", action="store_true", help="emit machine-readable results")
+    check.add_argument("--diff", action="store_true", help="include full git diff for drifted skills")
+    check.set_defaults(func=cmd_check)
+    sub.add_parser("validate", help="confirm every local skill is represented in the manifest").set_defaults(func=cmd_validate)
+    return p
+
+
+def main() -> int:
+    args = parser().parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

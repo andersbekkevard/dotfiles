@@ -1,0 +1,157 @@
+version = 1
+
+# tracking values:
+# - tracked: check this upstream for byte-level drift and then review semantically.
+# - watch: upstream/product ecosystem to keep in mind, but no reliable file path to diff.
+# - local: intentionally local skill; no remote drift check.
+
+[skills.autoreview]
+local_path = "agents/skills/autoreview"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/openclaw/agent-skills.git", ref = "main", path = "skills/autoreview" }
+preserve = [
+  "Thermonuclear review integration and rubric wiring are intentional local behavior.",
+  "Codex remains the default review engine unless explicitly changed.",
+]
+
+[skills.create-cli]
+local_path = "agents/skills/create-cli"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/create-cli" }
+preserve = [
+  "Local references should stay relative to this repo's skill directory layout.",
+]
+
+[skills.define-goal]
+local_path = "agents/skills/define-goal/SKILL.md"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/openai/skills.git", ref = "main", path = "skills/.curated/define-goal/SKILL.md" }
+preserve = [
+  "Bead-backed work must respect durable tracker state before creating private goals.",
+  "Goal-fuzz handoff and false-pass hardening are intentional local additions.",
+]
+
+[skills.humanizer]
+local_path = "agents/skills/humanizer/SKILL.md"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/blader/humanizer.git", ref = "main", path = "SKILL.md" }
+preserve = [
+  "Keep Anders-specific trigger phrasing if it remains more useful than upstream metadata.",
+]
+
+[skills.obsidian-markdown]
+local_path = "agents/skills/obsidian-markdown"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/kepano/obsidian-skills.git", ref = "main", path = "skills/obsidian-markdown" }
+
+[skills.officecli]
+local_path = "agents/skills/officecli/SKILL.md"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/iOfficeAI/OfficeCLI.git", ref = "main", path = "SKILL.md" }
+
+[skills.thermo-nuclear-code-quality-review]
+local_path = "agents/skills/thermo-nuclear-code-quality-review/SKILL.md"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md" }
+preserve = [
+  "Local description may stay terser when the skill is user-invoked.",
+]
+
+[skills.codebase-design]
+local_path = "agents/skills/codebase-design"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/codebase-design" }
+
+[skills.domain-modeling]
+local_path = "agents/skills/domain-modeling"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/domain-modeling" }
+
+[skills.fix-merge-conflicts]
+local_path = "agents/skills/fix-merge-conflicts"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/resolving-merge-conflicts" }
+preserve = [
+  "Local name is fix-merge-conflicts; upstream name is resolving-merge-conflicts.",
+  "Local version is intentionally condensed.",
+]
+
+[skills.grilling]
+local_path = "agents/skills/grilling"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/grilling" }
+
+[skills.improve-codebase-architecture]
+local_path = "agents/skills/improve-codebase-architecture"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/improve-codebase-architecture" }
+
+[skills.prototype]
+local_path = "agents/skills/prototype"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/prototype" }
+
+[skills.wayfinder]
+local_path = "agents/skills/wayfinder"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/in-progress/wayfinder" }
+preserve = [
+  "Local wayfinder wording is meaningfully adapted; port upstream ideas semantically.",
+]
+
+[skills.writing-great-skills]
+local_path = "agents/skills/writing-great-skills"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/writing-great-skills" }
+
+[skills.visual-plan]
+local_path = "agents/skills/visual-plan"
+tracking = "watch"
+upstream = { type = "git", url = "https://github.com/BuilderIO/agent-native.git", ref = "main" }
+notes = [
+  "Agent-Native Plans ecosystem source; no stable file path is currently tracked for byte-level diffing.",
+]
+
+[skills.beads]
+local_path = "agents/skills/beads"
+tracking = "local"
+
+[skills.codex-lane]
+local_path = "agents/skills/codex-lane"
+tracking = "local"
+
+[skills.dream]
+local_path = "agents/skills/dream"
+tracking = "local"
+
+[skills.goal-fuzz]
+local_path = "agents/skills/goal-fuzz"
+tracking = "local"
+
+[skills.intent-review]
+local_path = "agents/skills/intent-review"
+tracking = "local"
+
+[skills.lint]
+local_path = "agents/skills/lint"
+tracking = "local"
+
+[skills.pro-brief]
+local_path = "agents/skills/pro-brief"
+tracking = "local"
+
+[skills.recap]
+local_path = "agents/skills/recap"
+tracking = "local"
+
+[skills.reflect]
+local_path = "agents/skills/reflect"
+tracking = "local"
+
+[skills.router]
+local_path = "agents/skills/router"
+tracking = "local"
+
+[skills.skill-audit]
+local_path = "agents/skills/skill-audit"
+tracking = "local"

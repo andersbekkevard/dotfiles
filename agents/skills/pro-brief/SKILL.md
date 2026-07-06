@@ -1,6 +1,7 @@
 ---
 name: pro-brief
-description: "Compile a one-shot, clipboard-ready GPT-5.5 Pro briefing bundling the local repo, vault, docs, or code context ChatGPT cannot access. Use when Anders wants to ask GPT-5.5 Pro / Pro / ChatGPT about a programming, architecture, research, or knowledge-base topic needing local context: select minimal relevant files, bundle with exact tiktoken counts, copy to clipboard, report file/char/token stats, and support pruning an existing briefing to a token or percentage budget."
+description: Compile a clipboard-ready GPT-5.5 Pro briefing from selected local context.
+disable-model-invocation: true
 ---
 
 # Pro Brief

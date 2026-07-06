@@ -10,6 +10,11 @@ and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
   Codex-managed `.system/` survives beside them).
 - `skillctl` — invocation-state tool. Wiring is done by `setup/agents.sh`
   (minimal profile).
+- `skilltokens` — exact tiktoken report for skill descriptions and `SKILL.md`
+  bodies, used to prune context load and sprawl.
+- `skill-sources.toml` + `skillpull` — source/provenance map and read-only
+  upstream drift audit for skills that are copied from or tracked against
+  public remotes.
 
 ## Invocation modes
 
@@ -30,3 +35,48 @@ agents/skillctl sync                  # regenerate yaml + Codex symlinks; idempo
 discoverable `SKILL.md`, while a missing `SKILL.md` is skipped by every
 harness. If Codex ever reads `disable-model-invocation` natively, delete the
 yaml generation in `skillctl` — nothing else changes.
+
+## Token Budget
+
+Use `skilltokens` when iterating on the skill surface:
+
+```bash
+agents/skilltokens
+agents/skilltokens --mode model
+agents/skilltokens --sort description
+agents/skilltokens --json
+```
+
+It reports exact `tiktoken:o200k_base` counts for:
+
+- model-invoked description tokens;
+- model-invoked name+description listing tokens;
+- model-invoked full `SKILL.md` tokens;
+- all full `SKILL.md` tokens.
+
+Rows are sorted by full `SKILL.md` size by default and include feedback flags
+for model-description context load and skill-body sprawl. The command
+self-runs through `uv` with `tiktoken` when needed.
+
+## Source Drift
+
+`skill-sources.toml` is the single place to record where a global skill came
+from. It distinguishes:
+
+- `tracked` — compare local content to an upstream Git path.
+- `watch` — related upstream/project to keep an eye on, but no stable diff path.
+- `local` — intentionally local skill; do not search for remote drift.
+
+Run:
+
+```bash
+agents/skillpull list
+agents/skillpull validate
+agents/skillpull check autoreview
+agents/skillpull check --all
+agents/skillpull check humanizer --diff
+```
+
+`skillpull` is read-only. A drift result means "review and port deliberately",
+not "replace the local skill". Preserve notes in `skill-sources.toml` identify
+intentional local behavior such as autoreview's thermonuclear review wiring.

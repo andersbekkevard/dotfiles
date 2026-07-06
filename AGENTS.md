@@ -35,6 +35,24 @@ If the task touches secrets, also read:
 | `docs/design-principles.md` | General engineering philosophy | Cross-project standards (not bootstrap behavior) |
 | `agents/README.md` | Global agent surface (skills, skillctl, wiring) | Skill invocation-state system and harness symlink contract |
 
+## Agent Skill Sync
+
+If the task is only to refresh global agent skill links or generated skill
+metadata after pulling changes under `agents/`, do **not** rerun
+`./setup.sh --layer minimal`. That layer is intentionally broader than skill
+sync: it can reinstall packages, restow dotfiles, and rerun shell bootstrap.
+
+Use the narrow command:
+
+```bash
+agents/skillctl sync
+```
+
+This regenerates Codex per-skill symlinks and generated `agents/openai.yaml`
+policy blocks from `SKILL.md` frontmatter. Only use the setup layer when the
+machine may be missing the top-level harness links documented in
+`agents/README.md`.
+
 ## Update rules
 
 When behavior changes, update docs in the same commit:
