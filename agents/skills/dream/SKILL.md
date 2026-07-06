@@ -28,7 +28,7 @@ Two domains, both first-class:
 
 - Code: this skill's folder (global) — `SKILL.md`, `extract.jq`, `scripts/dream.sh`, `lib/`; the shared learning-loop contract is `../reflect/PRINCIPLES.md`.
 - Runtime root: `.agents/dreams/` at the root of the repo being mined. Do not
-  create or use `.dream/` or the legacy `.agents/dreams/`.
+  create or use `.dream/` or the legacy `.dreams/` root.
 - Review artifacts: `.agents/dreams/proposals/<run_id>/` — `proposal.md`,
   `proposed-changes.json`, and `decisions.json` for human review.
 - Committed durable audit trail under `.agents/dreams/`: state, ledger, suppressions,
@@ -170,7 +170,7 @@ applied and where.
 ## Scheduling
 
 The skill is invocable as `/dream`. For a weekly cadence, wire a routine (via the
-`schedule` skill) that runs `prepare → scan → collect → reduce` and leaves
+harness's scheduling mechanism — e.g. the `schedule` skill where available) that runs `prepare → scan → collect → reduce` and leaves
 `proposal.md` waiting in `.agents/dreams/proposals/<run_id>/` for Monday review.
 Apply + finalize stay human-gated. The pipeline is incremental, so weekly runs
 are cheap.
