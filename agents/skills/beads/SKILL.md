@@ -1,6 +1,6 @@
 ---
 name: beads
-description: The operational protocol for beads (br) — states, lifecycle, epic anatomy, and the claim lock. Use whenever you create, claim, update, label, close, or reopen a bead, or need the exact lifecycle an epic owner follows. Repo-specific labels and views are repo-owned.
+description: Beads tracker protocol. Use when creating, claiming, updating, labeling, closing, reopening, or syncing beads, or when following epic-owner lifecycle.
 ---
 
 # Beads Protocol

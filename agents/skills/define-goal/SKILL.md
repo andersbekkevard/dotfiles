@@ -1,6 +1,6 @@
 ---
 name: define-goal
-description: Define a concrete, measurable objective for the goal tool before starting work. Use when Anders asks to create or set a goal, or to turn an intention into a verifiable outcome; to sharpen a goal's content against misreading or cheating, use goal-fuzz instead.
+description: Goal definition. Use when Anders asks to create/set a goal or turn an intention into a verifiable objective; use goal-fuzz for hardened success criteria.
 ---
 
 # Define Goal

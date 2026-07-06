@@ -11,6 +11,7 @@ allowed-tools:
   - AskUserQuestion
 compatibility: claude-code opencode
 description: "Humanize prose by removing AI-writing tells while preserving meaning and voice. Use when Anders asks to humanize/de-AI text, make writing sound natural, or review/edit prose for AI-generated patterns."
+disable-model-invocation: true
 license: MIT
 name: humanizer
 version: 2.8.0

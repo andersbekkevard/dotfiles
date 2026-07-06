@@ -1,7 +1,6 @@
 ---
 name: domain-modeling
 description: Build and sharpen a project's domain model: ubiquitous language, durable decision records, context docs.
-disable-model-invocation: true
 ---
 
 # Domain Modeling
