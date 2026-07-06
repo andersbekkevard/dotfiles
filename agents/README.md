@@ -8,13 +8,30 @@ and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
 - `skills/<name>/` — canonical global skills. `~/.claude/skills/<name>` and
   `~/.codex/skills/<name>` get per-skill symlinks so user, third-party, and
   Codex-managed `.system/` skills survive beside them.
-- `skillctl` — invocation-state tool. Wiring is done by `setup/agents.sh`
-  (minimal profile).
+- `skillctl` — invocation-state tool. Machine-level wiring is done by
+  `setup/agents.sh` (minimal profile); `skillctl sync` only handles the
+  Codex-generated projection.
 - `skilltokens` — exact tiktoken report for skill descriptions and `SKILL.md`
   bodies, used to prune context load and sprawl.
 - `skill-sources.toml` + `skillpull` — source/provenance map and read-only
   upstream drift audit for skills that are copied from or tracked against
   public remotes.
+
+## Setup and Repair
+
+Use setup for the machine-level agent surface:
+
+```bash
+./setup.sh --layer minimal --skip-install
+```
+
+That command skips package/runtime installers but still runs `setup/agents.sh`,
+which creates or repairs `~/.claude/skills/<name>`, `~/.claude/CLAUDE.md`,
+`~/.codex/AGENTS.md`, and the Codex-generated skill projection. On a fresh
+machine that still needs packages, run the normal explicit profile instead.
+
+Do not use direct `agents/skillctl sync` as full agent setup. It does not create
+Claude per-skill symlinks or the top-level harness instruction symlinks.
 
 ## Invocation modes
 
@@ -28,7 +45,7 @@ agents/skillctl list                  # every skill: mode, token cost, descripti
 agents/skillctl disable-model <s>     # model → user (adds frontmatter flag, syncs yaml)
 agents/skillctl enable-model <s>      # user → model
 agents/skillctl off <s> / on <s>      # renames SKILL.md ↔ SKILL.off.md (invisible everywhere)
-agents/skillctl sync                  # regenerate yaml + Codex symlinks; idempotent
+agents/skillctl sync                  # regenerate yaml + Codex symlinks only; idempotent
 ```
 
 `off` renames the file, not the directory: a dir rename can still leave a
