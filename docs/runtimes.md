@@ -1,6 +1,7 @@
 # Runtimes
 
 - Neovim: >= 0.11 required. Homebrew on macOS; GitHub release tarball on Linux (`~/.local/share/nvim-install`, symlinked from `~/.local/bin/nvim`). Distro packages are not used as most ship < 0.11. Supports x86_64 and arm64.
+- fzf: Homebrew on macOS; latest upstream GitHub release tarball on Linux, installed to `~/.local/bin/fzf` on every normal bootstrap run. Distro packages are not used on Linux because they can lag the key-binding surface used by tmux helpers.
 - Tree-sitter CLI: `tree-sitter` is required for full-profile Neovim parser updates. The bootstrap installs it with `cargo install tree-sitter-cli --locked` because current `nvim-treesitter` shells out to `tree-sitter build`, and older distro packages can lag that command surface.
 - Python: `uv`
 - Rust: `rustup`

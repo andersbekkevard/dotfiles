@@ -70,3 +70,5 @@ fi
 
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 [ -f "$HOME/.profile.local" ] && . "$HOME/.profile.local"
+
+. "$HOME/.local/share/../bin/env"

@@ -10,6 +10,7 @@ Start here:
 - Profile selection semantics: `profiles.md`
 - Runtime and installer policy: `runtimes.md`
 - Repo/package architecture: `architecture.md`
+- Git repository LOC helper: `git-loc.md`
 
 Documentation boundary:
 

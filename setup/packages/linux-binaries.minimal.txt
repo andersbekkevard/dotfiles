@@ -1,4 +1,5 @@
-# tool|repo|asset-name-regex|binary-name
-# Arch placeholders: __UNAME_ARCH__ (x86_64/aarch64), __SHORT_ARCH__ (x86_64/arm64)
+# tool|repo|asset-name-regex|binary-name|policy
+# Arch placeholders: __UNAME_ARCH__ (x86_64/aarch64), __SHORT_ARCH__ (x86_64/arm64), __GO_ARCH__ (amd64/arm64)
+fzf|junegunn/fzf|fzf-.*-linux___GO_ARCH__\.tar\.gz$|fzf|always
 sesh|joshmedeski/sesh|sesh_Linux___SHORT_ARCH__\.tar\.gz$|sesh
 gum|charmbracelet/gum|gum_.*_Linux___SHORT_ARCH__\.tar\.gz$|gum
