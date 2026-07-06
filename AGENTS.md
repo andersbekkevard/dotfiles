@@ -50,8 +50,8 @@ agents/skillctl sync
 
 This regenerates Codex per-skill symlinks and generated `agents/openai.yaml`
 policy blocks from `SKILL.md` frontmatter. Only use the setup layer when the
-machine may be missing the top-level harness links documented in
-`agents/README.md`.
+machine may be missing the top-level harness links or Claude per-skill links
+documented in `agents/README.md`.
 
 ## Update rules
 

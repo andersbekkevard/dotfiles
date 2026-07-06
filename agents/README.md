@@ -5,9 +5,9 @@ and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
 
 - `AGENTS.global.md` — global working rules. Symlinked to `~/.claude/CLAUDE.md`
   and `~/.codex/AGENTS.md` (one file, two harness names).
-- `skills/<name>/` — canonical global skills. `~/.claude/skills` is a whole-dir
-  symlink here; `~/.codex/skills/<name>` gets a per-skill symlink (so
-  Codex-managed `.system/` survives beside them).
+- `skills/<name>/` — canonical global skills. `~/.claude/skills/<name>` and
+  `~/.codex/skills/<name>` get per-skill symlinks so user, third-party, and
+  Codex-managed `.system/` skills survive beside them.
 - `skillctl` — invocation-state tool. Wiring is done by `setup/agents.sh`
   (minimal profile).
 - `skilltokens` — exact tiktoken report for skill descriptions and `SKILL.md`

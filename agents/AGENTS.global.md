@@ -14,6 +14,8 @@ and conventions.
 
 ## Shell & Checkout Hygiene
 
+- Prefer `rg` over `grep` and `fd` over `find` for repo searches unless a command's exact semantics call for the older tool.
+- Use `uv` for Python and `pnpm` for Node/TypeScript unless the repo's own instructions say otherwise.
 - Use `git -C <absolute repo path> ...` for all git operations. Never trust cwd across compound commands — the shell resets and drifts (zoxide) mid-`&&`.
 - Stage subagent prompt files with the Write tool or quoted heredocs (`<<'EOF'`); an unquoted heredoc executes `$(...)` inside the prompt text while writing it.
 - Treat the checkout as shared: other sessions and lanes may be writing right now. Re-read shared files immediately before editing, never revert or reformat changes you did not make, and commit verified work immediately and path-scoped — uncommitted output in a shared checkout eventually gets wiped.
