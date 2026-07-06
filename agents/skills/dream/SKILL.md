@@ -14,8 +14,9 @@ pipeline and is safe to schedule weekly.
 
 `dream` is the cold half of the learning loop; `reflect` is the hot half. The
 shared contract — what counts as a learning, evidence standards, dedup keys,
-the memory/instruction/narrative boundary — lives in
-[PRINCIPLES.md](PRINCIPLES.md); scanners and the reducer follow it.
+the memory/instruction/narrative boundary — lives with the atomic capture
+side, in [`reflect/PRINCIPLES.md`](../reflect/PRINCIPLES.md); scanners and the
+reducer follow it.
 
 Two domains, both first-class:
 - **meta** — how we work: orchestration, parallelization, goal framing, verification
@@ -25,7 +26,7 @@ Two domains, both first-class:
 
 ## Layout
 
-- Code: this skill's folder (global) — `SKILL.md`, `PRINCIPLES.md`, `extract.jq`, `scripts/dream.sh`, `lib/`.
+- Code: this skill's folder (global) — `SKILL.md`, `extract.jq`, `scripts/dream.sh`, `lib/`; the shared learning-loop contract is `../reflect/PRINCIPLES.md`.
 - Runtime root: `.agents/dreams/` at the root of the repo being mined. Do not
   create or use `.dream/` or the legacy `.agents/dreams/`.
 - Review artifacts: `.agents/dreams/proposals/<run_id>/` — `proposal.md`,
@@ -184,7 +185,7 @@ bash "$DREAM" status   # last_run, discovered / processed / pending sessions, op
 
 - The `reflect` skill is the single-session process retro that writes
   `.agents/reflections/`. `dream` is the multi-session miner; reflections are
-  its primary input (see PRINCIPLES.md).
+  its primary input (see `../reflect/PRINCIPLES.md`).
 - Findings that are not doc-fixable (model limits, one-offs, Anders changing his
   mind) are still logged but excluded from proposals — they remain useful signal.
 - Keep the docs lean. Every run should look for what to delete or merge, not just

@@ -12,7 +12,8 @@ was done, not what was built.
 Reflections are the hot half of the learning loop: the `dream` skill mines them
 first, ahead of raw transcripts, when proposing instruction-surface edits. The
 shared contract for what counts as a learning and its evidence standards lives
-in [`../dream/PRINCIPLES.md`](../dream/PRINCIPLES.md) — cite concrete moments
+in [`PRINCIPLES.md`](PRINCIPLES.md), owned by this skill because the contract
+binds at capture time — cite concrete moments
 (a quote or close paraphrase, with enough context to relocate it) so dream can
 promote a lesson without re-mining the transcript.
 
