@@ -351,13 +351,14 @@ install_linux_release_binaries() {
     return 0
   fi
 
-  while IFS='|' read -r tool repo pattern binary_name; do
+  while IFS='|' read -r tool repo pattern binary_name policy; do
     [[ -z "$tool" || "$tool" =~ ^# ]] && continue
-    command_exists "$tool" && continue
+    [[ "${policy:-missing}" != "always" ]] && command_exists "$tool" && continue
 
     # Substitute architecture placeholders in the asset pattern
     pattern="${pattern//__UNAME_ARCH__/$ARCH_UNAME}"
     pattern="${pattern//__SHORT_ARCH__/$ARCH_SHORT}"
+    pattern="${pattern//__GO_ARCH__/$ARCH_GO}"
 
     if [[ "$DRY_RUN" -eq 1 ]]; then
       log_info "[dry-run] Install $tool from GitHub release ($ARCH_UNAME)"

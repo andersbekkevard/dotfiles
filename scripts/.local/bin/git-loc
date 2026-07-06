@@ -1,0 +1,1375 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="0.4.0"
+DEFAULT_MAX_BLOB_BYTES=$((10 * 1024 * 1024))
+cleanup_paths=()
+
+cleanup() {
+  local path
+  for path in "${cleanup_paths[@]}"; do
+    [[ -n "$path" ]] && rm -rf "$path"
+  done
+}
+
+register_cleanup() {
+  cleanup_paths[${#cleanup_paths[@]}]="$1"
+}
+
+trap cleanup EXIT
+
+usage() {
+  cat <<'EOF'
+usage: git-loc [options] <repo-url>
+       git-loc --benchmark-exact [repo-or-url ...]
+
+Count lines of code in a Git repository without checking out the whole tree.
+
+Options:
+  --ref <ref>             Branch, tag, or commit-ish to inspect
+  --exact                 Count source contents exactly instead of estimating
+  --estimate              Use GitHub language byte metadata when possible
+  --benchmark-exact       Time exact counts for representative repos or the
+                           repos passed after the flag
+  --strategy <strategy>   Exact strategy: auto, archive, or partial
+                           (default: auto)
+  --json                  Print machine-readable JSON
+  --no-cache              Ignore cached results for this run
+  --include-vendor        Include vendored/generated/build paths
+  --include-docs          Include Markdown/reStructuredText/plain docs
+  --exclude-tests         Exclude common test/spec paths and filenames
+  --max-blob-bytes <n>    Skip individual blobs larger than n bytes
+                           (default: 10485760)
+  -h, --help              Show this help
+  --version               Show version
+
+By default, GitHub URLs use fast language metadata estimates. Use --exact when
+you need source-content counts. Exact mode uses a GitHub source archive when
+available, or a shallow, blobless partial clone for other Git remotes.
+
+Estimate mode currently supports GitHub URLs and reports a byte-based estimate
+from the GitHub languages API. Set GITHUB_TOKEN for private repos or higher API
+limits.
+EOF
+}
+
+die() {
+  printf 'git-loc: %s\n' "$*" >&2
+  exit 1
+}
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+is_integer() {
+  [[ "${1:-}" =~ ^[0-9]+$ ]]
+}
+
+format_int() {
+  local n="$1"
+  local out=""
+
+  while ((${#n} > 3)); do
+    out=",${n: -3}$out"
+    n="${n:0:${#n}-3}"
+  done
+
+  printf '%s%s\n' "$n" "$out"
+}
+
+now_millis() {
+  local value
+
+  value="$(date +%s%3N 2>/dev/null || true)"
+  if is_integer "$value"; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  printf '%s000\n' "$(date +%s)"
+}
+
+format_millis() {
+  awk -v ms="$1" 'BEGIN { printf "%.2fs", ms / 1000 }'
+}
+
+cache_root() {
+  printf '%s/git-loc\n' "${XDG_CACHE_HOME:-"$HOME/.cache"}"
+}
+
+cache_repo_key() {
+  printf '%s\n%s\nmode=%s\nstrategy=%s\ninclude_vendor=%s\ninclude_docs=%s\nexclude_tests=%s\nmax_blob_bytes=%s\n' \
+    "$repo_url" "${ref_name:-HEAD}" "$effective_mode" "$exact_strategy" "$include_vendor" "$include_docs" "$exclude_tests" "$max_blob_bytes" |
+    git hash-object --stdin
+}
+
+resolve_remote_commit() {
+  local output line
+  resolved_commit=""
+
+  if [[ -n "$ref_name" ]]; then
+    output="$(git ls-remote "$repo_url" "$ref_name" "refs/heads/$ref_name" "refs/tags/$ref_name" 2>/dev/null || true)"
+  else
+    output="$(git ls-remote --symref "$repo_url" HEAD 2>/dev/null || true)"
+  fi
+
+  [[ -n "$output" ]] || return 1
+
+  while IFS= read -r line; do
+    case "$line" in
+      ref:*)
+        default_ref="${line#ref: }"
+        default_ref="${default_ref%%	HEAD}"
+        default_ref="${default_ref#refs/heads/}"
+        ;;
+      *$'\t'*)
+        case "$line" in
+          *'^{}') continue ;;
+        esac
+        resolved_commit="${line%%	*}"
+        return 0
+        ;;
+    esac
+  done <<< "$output"
+
+  return 1
+}
+
+github_slug() {
+  local url="$1" slug owner repo rest
+
+  case "$url" in
+    https://github.com/*)
+      slug="${url#https://github.com/}"
+      ;;
+    http://github.com/*)
+      slug="${url#http://github.com/}"
+      ;;
+    git@github.com:*)
+      slug="${url#git@github.com:}"
+      ;;
+    ssh://git@github.com/*)
+      slug="${url#ssh://git@github.com/}"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  slug="${slug%%\?*}"
+  slug="${slug%%#*}"
+  slug="${slug%.git}"
+  IFS=/ read -r owner repo rest <<< "$slug"
+  [[ -n "$owner" && -n "$repo" ]] || return 1
+  printf '%s/%s\n' "$owner" "$repo"
+}
+
+language_for_path() {
+  local path="$1" base ext lower
+  base="${path##*/}"
+  lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
+
+  case "$base" in
+    Dockerfile|Containerfile) printf 'Dockerfile\n'; return 0 ;;
+    Makefile|makefile|GNUmakefile) printf 'Makefile\n'; return 0 ;;
+    CMakeLists.txt) printf 'CMake\n'; return 0 ;;
+    Jenkinsfile) printf 'Groovy\n'; return 0 ;;
+    Rakefile|Gemfile|Guardfile|Podfile|Fastfile) printf 'Ruby\n'; return 0 ;;
+  esac
+
+  case "$lower" in
+    *.min.js|*.min.css|*.map) return 1 ;;
+    package-lock.json|pnpm-lock.yaml|yarn.lock|cargo.lock|gemfile.lock|poetry.lock|uv.lock|go.sum|composer.lock)
+      return 1
+      ;;
+  esac
+
+  ext="${lower##*.}"
+  [[ "$lower" == "$ext" ]] && return 1
+
+  case "$ext" in
+    awk) printf 'Awk\n' ;;
+    bash|sh) printf 'Shell\n' ;;
+    bat|cmd|ps1) printf 'Shell\n' ;;
+    c|h) printf 'C\n' ;;
+    cc|cpp|cxx|hpp|hxx|hh) printf 'C++\n' ;;
+    clj|cljs|cljc|edn) printf 'Clojure\n' ;;
+    cmake) printf 'CMake\n' ;;
+    cs) printf 'C#\n' ;;
+    css) printf 'CSS\n' ;;
+    dart) printf 'Dart\n' ;;
+    dockerfile) printf 'Dockerfile\n' ;;
+    eex|ex|exs|heex) printf 'Elixir\n' ;;
+    elm) printf 'Elm\n' ;;
+    erl|hrl) printf 'Erlang\n' ;;
+    fs|fsi|fsx) printf 'F#\n' ;;
+    gleam) printf 'Gleam\n' ;;
+    go) printf 'Go\n' ;;
+    gql|graphql) printf 'GraphQL\n' ;;
+    groovy|gradle) printf 'Groovy\n' ;;
+    hcl|tf|tfvars) printf 'HCL\n' ;;
+    hs|lhs) printf 'Haskell\n' ;;
+    html|htm|xhtml) printf 'HTML\n' ;;
+    java) printf 'Java\n' ;;
+    js|jsx|cjs|mjs) printf 'JavaScript\n' ;;
+    json|jsonc) printf 'JSON\n' ;;
+    kt|kts) printf 'Kotlin\n' ;;
+    less) printf 'Less\n' ;;
+    lua) printf 'Lua\n' ;;
+    m|mm) printf 'Objective-C\n' ;;
+    md|markdown|rst|txt)
+      [[ "$include_docs" -eq 1 ]] || return 1
+      printf 'Docs\n'
+      ;;
+    ml|mli) printf 'OCaml\n' ;;
+    nim) printf 'Nim\n' ;;
+    php|phtml) printf 'PHP\n' ;;
+    pl|pm|t) printf 'Perl\n' ;;
+    proto) printf 'Protocol Buffers\n' ;;
+    py|pyw) printf 'Python\n' ;;
+    r) printf 'R\n' ;;
+    rb) printf 'Ruby\n' ;;
+    rs) printf 'Rust\n' ;;
+    sass|scss) printf 'Sass\n' ;;
+    scala|sc) printf 'Scala\n' ;;
+    sql) printf 'SQL\n' ;;
+    svelte) printf 'Svelte\n' ;;
+    swift) printf 'Swift\n' ;;
+    toml) printf 'TOML\n' ;;
+    ts|tsx|mts|cts) printf 'TypeScript\n' ;;
+    vim) printf 'Vim Script\n' ;;
+    vue) printf 'Vue\n' ;;
+    xml|xsd|xsl) printf 'XML\n' ;;
+    yaml|yml) printf 'YAML\n' ;;
+    zig) printf 'Zig\n' ;;
+    zsh) printf 'Shell\n' ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_vendor_path() {
+  local path="/$1"
+
+  case "$path" in
+    */.bundle/*|*/.cache/*|*/.gradle/*|*/.next/*|*/.nuxt/*|*/.parcel-cache/*|*/.pytest_cache/*|*/.ruff_cache/*|*/.terraform/*|*/.tox/*|*/.turbo/*|*/.venv/*)
+      return 0
+      ;;
+    */__pycache__/*|*/bower_components/*|*/build/*|*/coverage/*|*/deps/*|*/dist/*|*/external/*|*/node_modules/*|*/out/*|*/target/*|*/third_party/*|*/vendor/*)
+      return 0
+      ;;
+    */Carthage/*|*/DerivedData/*|*/Pods/*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+is_test_path() {
+  local path="/$1" base lower
+  base="${path##*/}"
+  lower="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
+
+  case "$path" in
+    */__tests__/*|*/e2e/*|*/spec/*|*/specs/*|*/test/*|*/tests/*)
+      return 0
+      ;;
+  esac
+
+  case "$lower" in
+    *.spec.*|*.test.*|*_spec.*|*_test.*|test_*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+print_progress() {
+  local current="$1" total="$2"
+  [[ -t 2 ]] || return 0
+  (( total > 0 )) || return 0
+  printf '\rCounting files: %d/%d' "$current" "$total" >&2
+}
+
+finish_progress() {
+  [[ -t 2 ]] || return 0
+  printf '\n' >&2
+}
+
+render_text() {
+  local json_file="$1"
+  local estimated
+  estimated="$(jq -r '.estimated' "$json_file")"
+
+  if [[ "$estimated" == "true" ]]; then
+    jq -r '
+      "repo: \(.repo)",
+      "ref: \(.ref)",
+      "commit: \(.commit)",
+      "mode: \(.mode)",
+      "",
+      "estimated lines: \(.estimated_lines)",
+      "language bytes: \(.total_bytes)",
+      "",
+      "Language\tEst. lines\tBytes",
+      "--------\t----------\t-----",
+      (.languages[] | [.language, .estimated_lines, .bytes] | @tsv)
+    ' "$json_file" | awk -F '\t' '
+      function commas(n, s, out) {
+        s = sprintf("%d", n)
+        out = ""
+        while (length(s) > 3) {
+          out = "," substr(s, length(s) - 2, 3) out
+          s = substr(s, 1, length(s) - 3)
+        }
+        return s out
+      }
+      NR == 6 {
+        split($0, parts, ": ")
+        print parts[1] ": " commas(parts[2])
+        next
+      }
+      NR == 7 {
+        split($0, parts, ": ")
+        print parts[1] ": " commas(parts[2])
+        next
+      }
+      NR <= 8 { print; next }
+      NR == 9 { printf "%-22s %12s %12s\n", $1, $2, $3; next }
+      NR == 10 { printf "%-22s %12s %12s\n", $1, $2, $3; next }
+      NR > 10 { printf "%-22s %12s %12s\n", $1, commas($2), commas($3) }
+    '
+    return 0
+  fi
+
+  jq -r '
+    "repo: \(.repo)",
+    "ref: \(.ref)",
+    "commit: \(.commit)",
+    "mode: \(.mode)",
+    "",
+    "total lines: \(.total_lines)",
+    "counted files: \(.counted_files)",
+    "skipped files: \(.skipped_files)",
+    "selected files: \(.selected_files)",
+    "",
+    "Language\tLines\tFiles",
+      "--------\t-----\t-----",
+      (.languages[] | [.language, .lines, .files] | @tsv)
+  ' "$json_file" | awk -F '\t' '
+    function commas(n, s, out) {
+      s = sprintf("%d", n)
+      out = ""
+      while (length(s) > 3) {
+        out = "," substr(s, length(s) - 2, 3) out
+        s = substr(s, 1, length(s) - 3)
+      }
+      return s out
+    }
+    NR >= 6 && NR <= 9 {
+      split($0, parts, ": ")
+      print parts[1] ": " commas(parts[2])
+      next
+    }
+    NR <= 10 { print; next }
+    NR == 11 { printf "%-22s %12s %8s\n", $1, $2, $3; next }
+    NR == 12 { printf "%-22s %12s %8s\n", $1, $2, $3; next }
+    NR > 12 { printf "%-22s %12s %8s\n", $1, commas($2), commas($3) }
+  '
+}
+
+write_exact_json() {
+  local aggregate_file="$1" output_file="$2"
+
+  jq -Rn \
+    --arg repo "$repo_url" \
+    --arg ref "$display_ref" \
+    --arg commit "$commit_sha" \
+    --arg mode "exact" \
+    --argjson total_lines "$total_lines" \
+    --argjson counted_files "$counted_files" \
+    --argjson selected_files "$selected_files" \
+    --argjson skipped_files "$skipped_files" \
+    --argjson skipped_binary "$skipped_binary" \
+    --argjson skipped_large "$skipped_large" \
+    --argjson skipped_filtered "$skipped_filtered" \
+    --argjson max_blob_bytes "$max_blob_bytes" \
+    '
+      [inputs | split("\t") | {
+        language: .[0],
+        lines: (.[1] | tonumber),
+        files: (.[2] | tonumber)
+      }] as $languages |
+      {
+        repo: $repo,
+        ref: $ref,
+        commit: $commit,
+        mode: $mode,
+        estimated: false,
+        total_lines: $total_lines,
+        counted_files: $counted_files,
+        selected_files: $selected_files,
+        skipped_files: $skipped_files,
+        skipped: {
+          binary: $skipped_binary,
+          large: $skipped_large,
+          filtered: $skipped_filtered
+        },
+        max_blob_bytes: $max_blob_bytes,
+        languages: $languages
+      }
+    ' < "$aggregate_file" > "$output_file"
+}
+
+run_estimate() {
+  require_cmd curl
+  require_cmd jq
+
+  local slug api tmp_body tmp_json
+  slug="$(github_slug "$repo_url")" || die "--estimate currently supports GitHub repository URLs only"
+  api="https://api.github.com/repos/$slug/languages"
+  tmp_body="$(mktemp)"
+  tmp_json="$(mktemp)"
+  register_cleanup "$tmp_body"
+  register_cleanup "$tmp_json"
+
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    curl -fsSL \
+      -H 'Accept: application/vnd.github+json' \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      "$api" > "$tmp_body" ||
+      die "failed to read GitHub language metadata for $slug"
+  else
+    curl -fsSL -H 'Accept: application/vnd.github+json' "$api" > "$tmp_body" ||
+      die "failed to read GitHub language metadata for $slug"
+  fi
+
+  jq -n \
+    --arg repo "$repo_url" \
+    --arg ref "$display_ref" \
+    --arg commit "$commit_sha" \
+    --arg mode "estimate" \
+    --slurpfile raw "$tmp_body" \
+    '
+      ($raw[0] | to_entries | map({
+        language: .key,
+        bytes: .value,
+        estimated_lines: (((.value + 29) / 30) | floor)
+      }) | sort_by(-.bytes)) as $languages |
+      {
+        repo: $repo,
+        ref: $ref,
+        commit: $commit,
+        mode: $mode,
+        estimated: true,
+        estimator: "github-languages-api bytes / 30",
+        total_bytes: (($languages | map(.bytes) | add) // 0),
+        estimated_lines: (($languages | map(.estimated_lines) | add) // 0),
+        languages: $languages
+      }
+    ' > "$tmp_json"
+
+  mkdir -p "$(dirname "$cache_file")"
+  cp "$tmp_json" "$cache_file"
+
+  if [[ "$json_output" -eq 1 ]]; then
+    cat "$tmp_json"
+  else
+    render_text "$tmp_json"
+  fi
+}
+
+count_materialized_file() {
+  local language="$1" file_path="$2"
+  local size lines
+
+  size="$(wc -c < "$file_path" | tr -d '[:space:]')"
+  if ! is_integer "$size"; then
+    skipped_filtered=$((skipped_filtered + 1))
+    return 0
+  fi
+
+  if (( size > max_blob_bytes )); then
+    skipped_large=$((skipped_large + 1))
+    return 0
+  fi
+
+  if (( size == 0 )); then
+    lines=0
+  elif ! LC_ALL=C grep -Iq '' "$file_path"; then
+    skipped_binary=$((skipped_binary + 1))
+    return 0
+  else
+    lines="$(awk 'END { print NR + 0 }' "$file_path")"
+  fi
+
+  printf '%s\t%s\t1\n' "$language" "$lines" >> "$counts_file"
+  total_lines=$((total_lines + lines))
+  counted_files=$((counted_files + 1))
+}
+
+aggregate_counts() {
+  local aggregate_file="$1"
+
+  skipped_files=$((skipped_filtered + skipped_binary + skipped_large))
+
+  if [[ -s "$counts_file" ]]; then
+    awk -F '\t' '
+      { lines[$1] += $2; files[$1] += $3 }
+      END {
+        for (language in lines) {
+          printf "%s\t%d\t%d\n", language, lines[language], files[language]
+        }
+      }
+    ' "$counts_file" | sort -t $'\t' -k2,2nr > "$aggregate_file"
+  else
+    : > "$aggregate_file"
+  fi
+}
+
+github_archive_url() {
+  local slug="$1" archive_ref="$2"
+  printf 'https://api.github.com/repos/%s/tarball/%s\n' "$slug" "$archive_ref"
+}
+
+run_archive_stream_exact() {
+  local slug="$1" archive_url="$2" result_file="$3"
+  local counter_script
+  local -a curl_args
+
+  has_cmd python3 || return 1
+
+  counter_script="$(mktemp)"
+  register_cleanup "$counter_script"
+  cat > "$counter_script" <<'PY'
+import json
+import os
+import sys
+import tarfile
+
+result_file = sys.argv[1]
+include_vendor = os.environ["INCLUDE_VENDOR"] == "1"
+include_docs = os.environ["INCLUDE_DOCS"] == "1"
+exclude_tests = os.environ["EXCLUDE_TESTS"] == "1"
+max_blob_bytes = int(os.environ["MAX_BLOB_BYTES"])
+
+
+def language_for_path(path):
+    base = path.rsplit("/", 1)[-1]
+    lower = base.lower()
+
+    exact = {
+        "Dockerfile": "Dockerfile",
+        "Containerfile": "Dockerfile",
+        "Makefile": "Makefile",
+        "makefile": "Makefile",
+        "GNUmakefile": "Makefile",
+        "CMakeLists.txt": "CMake",
+        "Jenkinsfile": "Groovy",
+        "Rakefile": "Ruby",
+        "Gemfile": "Ruby",
+        "Guardfile": "Ruby",
+        "Podfile": "Ruby",
+        "Fastfile": "Ruby",
+    }
+    if base in exact:
+        return exact[base]
+
+    if lower.endswith((".min.js", ".min.css", ".map")):
+        return None
+    if lower in {
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "cargo.lock",
+        "gemfile.lock",
+        "poetry.lock",
+        "uv.lock",
+        "go.sum",
+        "composer.lock",
+    }:
+        return None
+
+    if "." not in lower:
+        return None
+
+    ext = lower.rsplit(".", 1)[-1]
+    languages = {
+        "awk": "Awk",
+        "bash": "Shell",
+        "sh": "Shell",
+        "bat": "Shell",
+        "cmd": "Shell",
+        "ps1": "Shell",
+        "c": "C",
+        "h": "C",
+        "cc": "C++",
+        "cpp": "C++",
+        "cxx": "C++",
+        "hpp": "C++",
+        "hxx": "C++",
+        "hh": "C++",
+        "clj": "Clojure",
+        "cljs": "Clojure",
+        "cljc": "Clojure",
+        "edn": "Clojure",
+        "cmake": "CMake",
+        "cs": "C#",
+        "css": "CSS",
+        "dart": "Dart",
+        "dockerfile": "Dockerfile",
+        "eex": "Elixir",
+        "ex": "Elixir",
+        "exs": "Elixir",
+        "heex": "Elixir",
+        "elm": "Elm",
+        "erl": "Erlang",
+        "hrl": "Erlang",
+        "fs": "F#",
+        "fsi": "F#",
+        "fsx": "F#",
+        "gleam": "Gleam",
+        "go": "Go",
+        "gql": "GraphQL",
+        "graphql": "GraphQL",
+        "groovy": "Groovy",
+        "gradle": "Groovy",
+        "hcl": "HCL",
+        "tf": "HCL",
+        "tfvars": "HCL",
+        "hs": "Haskell",
+        "lhs": "Haskell",
+        "html": "HTML",
+        "htm": "HTML",
+        "xhtml": "HTML",
+        "java": "Java",
+        "js": "JavaScript",
+        "jsx": "JavaScript",
+        "cjs": "JavaScript",
+        "mjs": "JavaScript",
+        "json": "JSON",
+        "jsonc": "JSON",
+        "kt": "Kotlin",
+        "kts": "Kotlin",
+        "less": "Less",
+        "lua": "Lua",
+        "m": "Objective-C",
+        "mm": "Objective-C",
+        "ml": "OCaml",
+        "mli": "OCaml",
+        "nim": "Nim",
+        "php": "PHP",
+        "phtml": "PHP",
+        "pl": "Perl",
+        "pm": "Perl",
+        "t": "Perl",
+        "proto": "Protocol Buffers",
+        "py": "Python",
+        "pyw": "Python",
+        "r": "R",
+        "rb": "Ruby",
+        "rs": "Rust",
+        "sass": "Sass",
+        "scss": "Sass",
+        "scala": "Scala",
+        "sc": "Scala",
+        "sql": "SQL",
+        "svelte": "Svelte",
+        "swift": "Swift",
+        "toml": "TOML",
+        "ts": "TypeScript",
+        "tsx": "TypeScript",
+        "mts": "TypeScript",
+        "cts": "TypeScript",
+        "vim": "Vim Script",
+        "vue": "Vue",
+        "xml": "XML",
+        "xsd": "XML",
+        "xsl": "XML",
+        "yaml": "YAML",
+        "yml": "YAML",
+        "zig": "Zig",
+        "zsh": "Shell",
+    }
+    if ext in {"md", "markdown", "rst", "txt"}:
+        return "Docs" if include_docs else None
+    return languages.get(ext)
+
+
+def is_vendor_path(path):
+    wrapped = f"/{path}"
+    needles = (
+        "/.bundle/",
+        "/.cache/",
+        "/.gradle/",
+        "/.next/",
+        "/.nuxt/",
+        "/.parcel-cache/",
+        "/.pytest_cache/",
+        "/.ruff_cache/",
+        "/.terraform/",
+        "/.tox/",
+        "/.turbo/",
+        "/.venv/",
+        "/__pycache__/",
+        "/bower_components/",
+        "/build/",
+        "/coverage/",
+        "/deps/",
+        "/dist/",
+        "/external/",
+        "/node_modules/",
+        "/out/",
+        "/target/",
+        "/third_party/",
+        "/vendor/",
+        "/Carthage/",
+        "/DerivedData/",
+        "/Pods/",
+    )
+    return any(needle in wrapped for needle in needles)
+
+
+def is_test_path(path):
+    wrapped = f"/{path}"
+    base = path.rsplit("/", 1)[-1].lower()
+    if any(part in wrapped for part in ("/__tests__/", "/e2e/", "/spec/", "/specs/", "/test/", "/tests/")):
+        return True
+    return (
+        ".spec." in base
+        or ".test." in base
+        or "_spec." in base
+        or "_test." in base
+        or base.startswith("test_")
+    )
+
+
+def count_text_stream(stream):
+    lines = 0
+    last = b""
+    while True:
+        chunk = stream.read(1024 * 1024)
+        if not chunk:
+            break
+        if b"\0" in chunk:
+            return None
+        lines += chunk.count(b"\n")
+        last = chunk[-1:]
+    if last != b"\n":
+        lines += 1
+    return lines
+
+
+totals = {
+    "total_lines": 0,
+    "counted_files": 0,
+    "selected_files": 0,
+    "skipped_filtered": 0,
+    "skipped_binary": 0,
+    "skipped_large": 0,
+}
+languages = {}
+
+with tarfile.open(fileobj=sys.stdin.buffer, mode="r|gz") as archive:
+    for member in archive:
+        if not member.isfile():
+            continue
+
+        parts = member.name.split("/", 1)
+        if len(parts) != 2 or not parts[1]:
+            totals["skipped_filtered"] += 1
+            continue
+        rel_path = parts[1]
+
+        if not include_vendor and is_vendor_path(rel_path):
+            totals["skipped_filtered"] += 1
+            continue
+        if exclude_tests and is_test_path(rel_path):
+            totals["skipped_filtered"] += 1
+            continue
+
+        language = language_for_path(rel_path)
+        if language is None:
+            totals["skipped_filtered"] += 1
+            continue
+
+        totals["selected_files"] += 1
+        if member.size > max_blob_bytes:
+            totals["skipped_large"] += 1
+            continue
+
+        if member.size == 0:
+            lines = 0
+        else:
+            stream = archive.extractfile(member)
+            if stream is None:
+                totals["skipped_filtered"] += 1
+                continue
+            lines = count_text_stream(stream)
+            if lines is None:
+                totals["skipped_binary"] += 1
+                continue
+
+        entry = languages.setdefault(language, {"language": language, "lines": 0, "files": 0})
+        entry["lines"] += lines
+        entry["files"] += 1
+        totals["total_lines"] += lines
+        totals["counted_files"] += 1
+
+language_rows = sorted(languages.values(), key=lambda item: item["lines"], reverse=True)
+skipped_files = totals["skipped_filtered"] + totals["skipped_binary"] + totals["skipped_large"]
+
+result = {
+    "repo": os.environ["REPO_URL"],
+    "ref": os.environ["DISPLAY_REF"],
+    "commit": os.environ["COMMIT_SHA"],
+    "mode": "exact",
+    "estimated": False,
+    "total_lines": totals["total_lines"],
+    "counted_files": totals["counted_files"],
+    "selected_files": totals["selected_files"],
+    "skipped_files": skipped_files,
+    "skipped": {
+        "binary": totals["skipped_binary"],
+        "large": totals["skipped_large"],
+        "filtered": totals["skipped_filtered"],
+    },
+    "max_blob_bytes": max_blob_bytes,
+    "languages": language_rows,
+}
+
+with open(result_file, "w", encoding="utf-8") as output:
+    json.dump(result, output, separators=(",", ":"))
+    output.write("\n")
+PY
+
+  curl_args=(-fsSL -H 'Accept: application/vnd.github+json')
+  [[ -n "${GITHUB_TOKEN:-}" ]] && curl_args+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+  curl_args+=("$archive_url")
+
+  curl "${curl_args[@]}" |
+    REPO_URL="$repo_url" \
+    DISPLAY_REF="$display_ref" \
+    COMMIT_SHA="$commit_sha" \
+    INCLUDE_VENDOR="$include_vendor" \
+    INCLUDE_DOCS="$include_docs" \
+    EXCLUDE_TESTS="$exclude_tests" \
+    MAX_BLOB_BYTES="$max_blob_bytes" \
+    python3 "$counter_script" "$result_file"
+}
+
+run_archive_materialized_exact() {
+  local slug="$1" archive_url="$2" result_file="$3"
+  require_cmd curl
+  require_cmd jq
+  require_cmd tar
+
+  local tmp_dir archive_dir counts_file aggregate_file
+  local extracted_root file_path rel_path language current
+
+  tmp_dir="$(mktemp -d)"
+  archive_dir="$tmp_dir/archive"
+  counts_file="$tmp_dir/counts.tsv"
+  aggregate_file="$tmp_dir/aggregate.tsv"
+  register_cleanup "$tmp_dir"
+
+  mkdir -p "$archive_dir"
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    curl -fsSL \
+      -H 'Accept: application/vnd.github+json' \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      "$archive_url" | tar -xzf - -C "$archive_dir" ||
+      die "failed to read GitHub source archive for $slug"
+  else
+    curl -fsSL -H 'Accept: application/vnd.github+json' "$archive_url" | tar -xzf - -C "$archive_dir" ||
+      die "failed to read GitHub source archive for $slug"
+  fi
+
+  extracted_root="$(find "$archive_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+  [[ -n "$extracted_root" ]] || die "GitHub source archive was empty"
+
+  total_lines=0
+  counted_files=0
+  selected_files=0
+  skipped_filtered=0
+  skipped_binary=0
+  skipped_large=0
+  current=0
+  : > "$counts_file"
+
+  while IFS= read -r -d '' file_path; do
+    rel_path="${file_path#"$extracted_root"/}"
+
+    if [[ "$include_vendor" -eq 0 ]] && is_vendor_path "$rel_path"; then
+      skipped_filtered=$((skipped_filtered + 1))
+      continue
+    fi
+
+    if [[ "$exclude_tests" -eq 1 ]] && is_test_path "$rel_path"; then
+      skipped_filtered=$((skipped_filtered + 1))
+      continue
+    fi
+
+    if ! language="$(language_for_path "$rel_path")"; then
+      skipped_filtered=$((skipped_filtered + 1))
+      continue
+    fi
+
+    selected_files=$((selected_files + 1))
+    current=$((current + 1))
+    print_progress "$current" "$selected_files"
+    count_materialized_file "$language" "$file_path"
+  done < <(find "$extracted_root" -type f -print0)
+
+  finish_progress
+  aggregate_counts "$aggregate_file"
+  write_exact_json "$aggregate_file" "$result_file"
+}
+
+run_archive_exact() {
+  require_cmd curl
+  require_cmd jq
+
+  local slug archive_ref archive_url tmp_dir result_file
+
+  slug="$(github_slug "$repo_url")" || return 1
+  archive_ref="$commit_sha"
+  if [[ "$archive_ref" == "unknown" ]]; then
+    archive_ref="${ref_name:-${default_ref:-HEAD}}"
+  fi
+  archive_url="$(github_archive_url "$slug" "$archive_ref")"
+
+  tmp_dir="$(mktemp -d)"
+  result_file="$tmp_dir/result.json"
+  register_cleanup "$tmp_dir"
+
+  if ! run_archive_stream_exact "$slug" "$archive_url" "$result_file"; then
+    run_archive_materialized_exact "$slug" "$archive_url" "$result_file"
+  fi
+
+  mkdir -p "$(dirname "$cache_file")"
+  cp "$result_file" "$cache_file"
+
+  if [[ "$json_output" -eq 1 ]]; then
+    cat "$result_file"
+  else
+    render_text "$result_file"
+  fi
+}
+
+clone_repo() {
+  local repo_dir="$1"
+
+  if [[ -n "$ref_name" ]]; then
+    if git clone --quiet --depth=1 --filter=blob:none --no-checkout --branch "$ref_name" "$repo_url" "$repo_dir" 2>/dev/null; then
+      return 0
+    fi
+
+    rm -rf "$repo_dir"
+    git clone --quiet --filter=blob:none --no-checkout "$repo_url" "$repo_dir" ||
+      die "failed to clone repository"
+    git -C "$repo_dir" fetch --quiet --depth=1 --filter=blob:none origin "$ref_name" ||
+      die "failed to fetch ref: $ref_name"
+    git -C "$repo_dir" checkout --quiet --detach FETCH_HEAD ||
+      die "failed to inspect fetched ref: $ref_name"
+    return 0
+  fi
+
+  git clone --quiet --depth=1 --filter=blob:none --no-checkout "$repo_url" "$repo_dir" ||
+    die "failed to clone repository"
+}
+
+run_partial_exact() {
+  require_cmd git
+  require_cmd jq
+
+  local tmp_dir repo_dir tree_file selected_file pathspec_file counts_file aggregate_file result_file
+  local record meta path type language current file_path
+
+  tmp_dir="$(mktemp -d)"
+  repo_dir="$tmp_dir/repo"
+  tree_file="$tmp_dir/tree"
+  selected_file="$tmp_dir/selected.tsv"
+  pathspec_file="$tmp_dir/pathspecs"
+  counts_file="$tmp_dir/counts.tsv"
+  aggregate_file="$tmp_dir/aggregate.tsv"
+  result_file="$tmp_dir/result.json"
+  register_cleanup "$tmp_dir"
+
+  clone_repo "$repo_dir"
+
+  commit_sha="$(git -C "$repo_dir" rev-parse HEAD)"
+  if [[ "$display_ref" == "HEAD" ]]; then
+    display_ref="$(git -C "$repo_dir" symbolic-ref --quiet --short HEAD 2>/dev/null || printf 'HEAD')"
+  fi
+  cache_file="$(cache_root)/$repo_key/$commit_sha.json"
+
+  git -C "$repo_dir" ls-tree -r -z --full-tree HEAD > "$tree_file"
+
+  selected_files=0
+  skipped_filtered=0
+
+  while IFS= read -r -d '' record; do
+    meta="${record%%	*}"
+    path="${record#*	}"
+    meta="${meta#* }"
+    type="${meta%% *}"
+
+    [[ "$type" == "blob" ]] || continue
+
+    if [[ "$include_vendor" -eq 0 ]] && is_vendor_path "$path"; then
+      skipped_filtered=$((skipped_filtered + 1))
+      continue
+    fi
+
+    if [[ "$exclude_tests" -eq 1 ]] && is_test_path "$path"; then
+      skipped_filtered=$((skipped_filtered + 1))
+      continue
+    fi
+
+    if ! language="$(language_for_path "$path")"; then
+      skipped_filtered=$((skipped_filtered + 1))
+      continue
+    fi
+
+    printf '%s\t%s\n' "$language" "$path" >> "$selected_file"
+    printf ':(literal)%s\0' "$path" >> "$pathspec_file"
+    selected_files=$((selected_files + 1))
+  done < "$tree_file"
+
+  total_lines=0
+  counted_files=0
+  skipped_binary=0
+  skipped_large=0
+  current=0
+  : > "$counts_file"
+
+  if [[ -s "$pathspec_file" ]]; then
+    git -C "$repo_dir" checkout --quiet HEAD --pathspec-from-file="$pathspec_file" --pathspec-file-nul ||
+      die "failed to materialize selected repository files"
+  fi
+
+  if [[ -f "$selected_file" ]]; then
+    while IFS=$'\t' read -r language path; do
+      current=$((current + 1))
+      print_progress "$current" "$selected_files"
+
+      file_path="$repo_dir/$path"
+      if [[ ! -f "$file_path" ]]; then
+        skipped_filtered=$((skipped_filtered + 1))
+        continue
+      fi
+
+      count_materialized_file "$language" "$file_path"
+    done < "$selected_file"
+  fi
+
+  finish_progress
+  aggregate_counts "$aggregate_file"
+  write_exact_json "$aggregate_file" "$result_file"
+
+  mkdir -p "$(dirname "$cache_file")"
+  cp "$result_file" "$cache_file"
+
+  if [[ "$json_output" -eq 1 ]]; then
+    cat "$result_file"
+  else
+    render_text "$result_file"
+  fi
+}
+
+run_exact() {
+  case "$exact_strategy" in
+    auto)
+      if run_archive_exact; then
+        return 0
+      fi
+      run_partial_exact
+      ;;
+    archive)
+      run_archive_exact || die "--strategy archive currently supports GitHub repository URLs only"
+      ;;
+    partial)
+      run_partial_exact
+      ;;
+    *)
+      die "unknown exact strategy: $exact_strategy"
+      ;;
+  esac
+}
+
+normalize_benchmark_repo() {
+  case "$1" in
+    http://*|https://*|git@*|ssh://*)
+      printf '%s\n' "$1"
+      ;;
+    */*)
+      printf 'https://github.com/%s\n' "$1"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+benchmark_label() {
+  local input="$1" slug
+
+  if slug="$(github_slug "$input" 2>/dev/null)"; then
+    printf '%s\n' "$slug"
+  else
+    printf '%s\n' "$input"
+  fi
+}
+
+run_benchmark_exact() {
+  require_cmd jq
+
+  local repos=("$@")
+  local repo url label tmp_dir json_file err_file start_ms end_ms elapsed_ms
+  local lines files skipped total_ms=0 status args
+
+  if ((${#repos[@]} == 0)); then
+    repos=(
+      "BurntSushi/ripgrep"
+      "sharkdp/fd"
+      "pallets/flask"
+      "expressjs/express"
+      "tokio-rs/axum"
+      "rust-lang/rustlings"
+    )
+  fi
+
+  tmp_dir="$(mktemp -d)"
+  register_cleanup "$tmp_dir"
+
+  printf 'Exact LOC benchmark (no cache, strategy: %s)\n\n' "$exact_strategy"
+  printf '%-24s %12s %8s %8s %8s\n' "Repo" "Lines" "Files" "Skipped" "Time"
+  printf '%-24s %12s %8s %8s %8s\n' "----" "-----" "-----" "-------" "----"
+
+  for repo in "${repos[@]}"; do
+    if ! url="$(normalize_benchmark_repo "$repo")"; then
+      printf '%-24s %12s %8s %8s %8s\n' "$repo" "invalid" "-" "-" "-"
+      continue
+    fi
+
+    label="$(benchmark_label "$url")"
+    json_file="$tmp_dir/${label//\//_}.json"
+    err_file="$tmp_dir/${label//\//_}.err"
+    args=(--exact --no-cache --json --strategy "$exact_strategy")
+    [[ "$include_vendor" -eq 1 ]] && args+=(--include-vendor)
+    [[ "$include_docs" -eq 1 ]] && args+=(--include-docs)
+    [[ "$exclude_tests" -eq 1 ]] && args+=(--exclude-tests)
+    [[ "$max_blob_bytes" != "$DEFAULT_MAX_BLOB_BYTES" ]] && args+=(--max-blob-bytes "$max_blob_bytes")
+
+    start_ms="$(now_millis)"
+    if "${BASH_SOURCE[0]}" "${args[@]}" "$url" > "$json_file" 2> "$err_file"; then
+      status=0
+    else
+      status=$?
+    fi
+    end_ms="$(now_millis)"
+    elapsed_ms=$((end_ms - start_ms))
+    total_ms=$((total_ms + elapsed_ms))
+
+    if [[ "$status" -ne 0 ]]; then
+      printf '%-24s %12s %8s %8s %8s\n' "$label" "failed" "-" "-" "$(format_millis "$elapsed_ms")"
+      sed 's/^/  /' "$err_file" >&2
+      continue
+    fi
+
+    lines="$(jq -r '.total_lines // 0' "$json_file")"
+    files="$(jq -r '.counted_files // 0' "$json_file")"
+    skipped="$(jq -r '.skipped_files // 0' "$json_file")"
+
+    printf '%-24s %12s %8s %8s %8s\n' \
+      "$label" \
+      "$(format_int "$lines")" \
+      "$(format_int "$files")" \
+      "$(format_int "$skipped")" \
+      "$(format_millis "$elapsed_ms")"
+  done
+
+  printf '\nTotal elapsed: %s\n' "$(format_millis "$total_ms")"
+}
+
+ref_name=""
+estimate_requested=0
+exact_requested=0
+benchmark_exact=0
+effective_mode=""
+exact_strategy="auto"
+strategy_requested=0
+json_output=0
+no_cache=0
+include_vendor=0
+include_docs=0
+exclude_tests=0
+max_blob_bytes="$DEFAULT_MAX_BLOB_BYTES"
+repo_url=""
+default_ref=""
+commit_sha=""
+resolved_commit=""
+display_ref="HEAD"
+selected_files=0
+skipped_files=0
+skipped_filtered=0
+skipped_binary=0
+skipped_large=0
+total_lines=0
+counted_files=0
+benchmark_repos=()
+
+while (( $# > 0 )); do
+  case "$1" in
+    --ref)
+      shift
+      [[ $# -gt 0 ]] || die "--ref requires a value"
+      ref_name="$1"
+      display_ref="$ref_name"
+      ;;
+    --estimate)
+      estimate_requested=1
+      ;;
+    --exact)
+      exact_requested=1
+      ;;
+    --benchmark-exact)
+      benchmark_exact=1
+      ;;
+    --strategy)
+      shift
+      [[ $# -gt 0 ]] || die "--strategy requires a value"
+      case "$1" in
+        auto|archive|partial) exact_strategy="$1" ;;
+        *) die "--strategy must be auto, archive, or partial" ;;
+      esac
+      strategy_requested=1
+      ;;
+    --json)
+      json_output=1
+      ;;
+    --no-cache)
+      no_cache=1
+      ;;
+    --include-vendor)
+      include_vendor=1
+      ;;
+    --include-docs)
+      include_docs=1
+      ;;
+    --exclude-tests)
+      exclude_tests=1
+      ;;
+    --max-blob-bytes)
+      shift
+      [[ $# -gt 0 ]] || die "--max-blob-bytes requires a value"
+      is_integer "$1" || die "--max-blob-bytes must be an integer"
+      max_blob_bytes="$1"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --version)
+      printf 'git-loc %s\n' "$VERSION"
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      die "unknown option: $1"
+      ;;
+    *)
+      if [[ "$benchmark_exact" -eq 1 ]]; then
+        benchmark_repos+=("$1")
+      elif [[ -n "$repo_url" ]]; then
+        die "expected one repo URL, got extra argument: $1"
+      else
+        repo_url="$1"
+      fi
+      ;;
+  esac
+  shift
+done
+
+if (( $# > 0 )); then
+  while (( $# > 0 )); do
+    if [[ "$benchmark_exact" -eq 1 ]]; then
+      benchmark_repos+=("$1")
+    elif [[ -n "$repo_url" ]]; then
+      die "expected one repo URL, got extra argument: $1"
+    else
+      repo_url="$1"
+    fi
+    shift
+  done
+fi
+
+if [[ "$benchmark_exact" -eq 1 ]]; then
+  if [[ -n "$repo_url" ]]; then
+    benchmark_repos=("$repo_url" "${benchmark_repos[@]}")
+    repo_url=""
+  fi
+  if [[ "$estimate_requested" -eq 1 || "$exact_requested" -eq 1 ]]; then
+    die "--benchmark-exact cannot be combined with --estimate or --exact"
+  fi
+  run_benchmark_exact "${benchmark_repos[@]}"
+  exit 0
+fi
+
+[[ -n "$repo_url" ]] || {
+  usage >&2
+  exit 2
+}
+
+require_cmd git
+
+if [[ "$estimate_requested" -eq 1 && "$exact_requested" -eq 1 ]]; then
+  die "--estimate and --exact cannot be used together"
+fi
+
+if [[ "$estimate_requested" -eq 1 ]]; then
+  effective_mode="estimate"
+elif [[ "$exact_requested" -eq 1 || "$strategy_requested" -eq 1 || "$include_vendor" -eq 1 || "$include_docs" -eq 1 || "$exclude_tests" -eq 1 || "$max_blob_bytes" != "$DEFAULT_MAX_BLOB_BYTES" ]]; then
+  effective_mode="exact"
+elif github_slug "$repo_url" >/dev/null 2>&1; then
+  effective_mode="estimate"
+else
+  effective_mode="exact"
+fi
+
+if resolve_remote_commit; then
+  commit_sha="$resolved_commit"
+  [[ "$display_ref" == "HEAD" && -n "$default_ref" ]] && display_ref="$default_ref"
+else
+  commit_sha="unknown"
+fi
+
+repo_key="$(cache_repo_key)"
+cache_file="$(cache_root)/$repo_key/$commit_sha.json"
+
+if [[ "$no_cache" -eq 0 && "$commit_sha" != "unknown" && -f "$cache_file" ]]; then
+  if [[ "$json_output" -eq 1 ]]; then
+    cat "$cache_file"
+  else
+    render_text "$cache_file"
+  fi
+  exit 0
+fi
+
+if [[ "$effective_mode" == "estimate" ]]; then
+  run_estimate
+else
+  run_exact
+fi

@@ -2,7 +2,7 @@
 	name = Anders Bekkevard
 	email = anders.bekkevard@gmail.com
 [credential]
-	helper = !gh auth git-credential
+	helper = store
 [core]
 	pager = delta
 [interactive]
