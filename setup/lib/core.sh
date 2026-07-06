@@ -7,7 +7,7 @@ COLOR_BLUE='\033[0;34m'
 COLOR_RESET='\033[0m'
 
 RUN_ID=""
-DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 OS_FAMILY=""
 ARCH_UNAME=""   # raw uname -m: x86_64 or aarch64
 ARCH_SHORT=""   # normalized: x86_64 or arm64
