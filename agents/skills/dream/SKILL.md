@@ -1,6 +1,6 @@
 ---
 name: dream
-description: Cold learning loop — mine reflections and Codex session logs for recurring corrections; propose human-reviewed edits to the instruction surface.
+description: Mine session reflections and logs for recurring process lessons and proposed instruction edits.
 disable-model-invocation: true
 ---
 

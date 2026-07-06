@@ -1,6 +1,7 @@
 ---
-description: "Sharpen a goal until a cold implementer can't misread or cheat it, before any code is written. Use when writing or reviewing a bead's success criteria or a dossier, when Anders asks to sharpen / disambiguate / pressure-test a goal, or before dispatching an autonomous owner on a verifiable goal."
+description: Goal fuzzing. Use to sharpen success criteria, bead acceptance, dossiers, or autonomous-owner briefs until they cannot be misread or cheaply passed.
 name: goal-fuzz
+disable-model-invocation: true
 ---
 
 # Goal Fuzz

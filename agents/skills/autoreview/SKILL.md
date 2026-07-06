@@ -1,6 +1,7 @@
 ---
 name: autoreview
 description: "Autoreview closeout loop. Use when Anders asks for autoreview/auto-review or wants you to run the structured reviewer, verify findings, fix accepted issues, and repeat until clean before final/commit/ship."
+disable-model-invocation: true
 ---
 
 # Auto Review

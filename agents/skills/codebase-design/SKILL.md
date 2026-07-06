@@ -1,7 +1,6 @@
 ---
 name: codebase-design
 description: Shared vocabulary for designing deep modules: interfaces, seams, testability, AI-navigability.
-disable-model-invocation: true
 ---
 
 # Codebase Design

@@ -1,6 +1,6 @@
 ---
 name: lint
-description: Read-only repo hygiene check against the repo's own docs and ubiquitous language; findings reported in chat.
+description: Read-only repo hygiene lint against local docs, contracts, and ubiquitous language.
 disable-model-invocation: true
 ---
 
