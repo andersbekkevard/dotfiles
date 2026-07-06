@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+"""Report token counts for global agent skills."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+SKILLS = ROOT / "skills"
+DEFAULT_ENCODING = "o200k_base"
+
+
+def ensure_tiktoken():
+    try:
+        import tiktoken  # type: ignore
+
+        return tiktoken
+    except ModuleNotFoundError:
+        pass
+
+    uv = shutil.which("uv")
+    if uv and os.environ.get("SKILLTOKENS_UV_BOOTSTRAPPED") != "1":
+        env = os.environ.copy()
+        env["SKILLTOKENS_UV_BOOTSTRAPPED"] = "1"
+        os.execvpe(
+            uv,
+            [
+                uv,
+                "run",
+                "--quiet",
+                "--with",
+                "tiktoken>=0.7.0",
+                "python3",
+                __file__,
+                *sys.argv[1:],
+            ],
+            env,
+        )
+
+    sys.exit(
+        "skilltokens: tiktoken is required. Install it or run through uv: "
+        "uv run --with tiktoken python agents/skilltokens"
+    )
+
+
+def parse_frontmatter(text: str) -> dict[str, str]:
+    match = re.match(r"\A---\n(.*?)\n---\n", text, re.DOTALL)
+    if not match:
+        return {}
+    frontmatter: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        item = re.match(r"^([A-Za-z-]+):\s*(.*)$", line)
+        if item:
+            frontmatter[item.group(1)] = item.group(2).strip().strip('"')
+    return frontmatter
+
+
+def skill_file(skill_dir: Path) -> tuple[Path | None, bool]:
+    live = skill_dir / "SKILL.md"
+    off = skill_dir / "SKILL.off.md"
+    if live.exists():
+        return live, False
+    if off.exists():
+        return off, True
+    return None, False
+
+
+def mode_from(frontmatter: dict[str, str], is_off: bool) -> str:
+    if is_off:
+        return "off"
+    if frontmatter.get("disable-model-invocation") == "true":
+        return "user"
+    return "model"
+
+
+@dataclass
+class SkillStats:
+    name: str
+    mode: str
+    description_tokens: int
+    listing_tokens: int
+    skill_tokens: int
+    chars: int
+    lines: int
+    path: str
+    flags: list[str]
+
+
+def count_tokens(encoding, text: str) -> int:
+    return len(encoding.encode(text))
+
+
+def flags_for(mode: str, description_tokens: int, skill_tokens: int) -> list[str]:
+    flags: list[str] = []
+    if mode == "model" and description_tokens >= 100:
+        flags.append("model-desc-bad")
+    elif mode == "model" and description_tokens >= 70:
+        flags.append("model-desc-watch")
+    if mode == "user" and description_tokens >= 80:
+        flags.append("user-desc-long")
+    if skill_tokens >= 5000:
+        flags.append("sprawl-bad")
+    elif skill_tokens >= 2500:
+        flags.append("sprawl-watch")
+    return flags
+
+
+def collect(encoding) -> list[SkillStats]:
+    rows: list[SkillStats] = []
+    for skill_dir in sorted(d for d in SKILLS.iterdir() if d.is_dir() and not d.name.startswith(".")):
+        path, is_off = skill_file(skill_dir)
+        if path is None:
+            continue
+        text = path.read_text()
+        frontmatter = parse_frontmatter(text)
+        name = frontmatter.get("name") or skill_dir.name
+        description = frontmatter.get("description", "")
+        mode = mode_from(frontmatter, is_off)
+        description_tokens = count_tokens(encoding, description)
+        listing_tokens = count_tokens(encoding, f"{name}\n{description}") if description else count_tokens(encoding, name)
+        skill_tokens = count_tokens(encoding, text)
+        rows.append(
+            SkillStats(
+                name=name,
+                mode=mode,
+                description_tokens=description_tokens,
+                listing_tokens=listing_tokens,
+                skill_tokens=skill_tokens,
+                chars=len(text),
+                lines=text.count("\n") + (1 if text else 0),
+                path=str(path.relative_to(ROOT)),
+                flags=flags_for(mode, description_tokens, skill_tokens),
+            )
+        )
+    return rows
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Report tiktoken counts for agents/skills SKILL.md files."
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("all", "model", "user", "off"),
+        default="all",
+        help="Filter rows by invocation mode. Defaults to all.",
+    )
+    parser.add_argument(
+        "--sort",
+        choices=("skill", "description", "listing", "name", "mode"),
+        default="skill",
+        help="Sort rows. Defaults to full SKILL.md token count.",
+    )
+    parser.add_argument(
+        "--ascending",
+        action="store_true",
+        help="Sort ascending instead of descending.",
+    )
+    parser.add_argument(
+        "--top",
+        type=int,
+        help="Show only the first N rows after filtering and sorting.",
+    )
+    parser.add_argument(
+        "--encoding",
+        default=DEFAULT_ENCODING,
+        help=f"tiktoken encoding to use. Defaults to {DEFAULT_ENCODING}.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON.",
+    )
+    return parser.parse_args()
+
+
+def sort_rows(rows: list[SkillStats], sort_key: str, ascending: bool) -> list[SkillStats]:
+    key_map = {
+        "skill": lambda row: (row.skill_tokens, row.name),
+        "description": lambda row: (row.description_tokens, row.name),
+        "listing": lambda row: (row.listing_tokens, row.name),
+        "name": lambda row: row.name,
+        "mode": lambda row: (row.mode, row.skill_tokens, row.name),
+    }
+    return sorted(rows, key=key_map[sort_key], reverse=not ascending)
+
+
+def format_int(value: int) -> str:
+    return f"{value:,}"
+
+
+def totals(rows: list[SkillStats]) -> dict[str, int]:
+    model = [row for row in rows if row.mode == "model"]
+    return {
+        "skill_count": len(rows),
+        "model_skill_count": len(model),
+        "model_description_tokens": sum(row.description_tokens for row in model),
+        "model_listing_tokens": sum(row.listing_tokens for row in model),
+        "model_skill_tokens": sum(row.skill_tokens for row in model),
+        "all_skill_tokens": sum(row.skill_tokens for row in rows),
+    }
+
+
+def print_text(rows: list[SkillStats], all_rows: list[SkillStats], encoding_name: str) -> None:
+    total = totals(all_rows)
+    shown_total = sum(row.skill_tokens for row in rows)
+    print(f"skilltokens: tokenizer=tiktoken:{encoding_name}")
+    print(
+        "totals: "
+        f"model_desc={format_int(total['model_description_tokens'])} "
+        f"model_listing={format_int(total['model_listing_tokens'])} "
+        f"model_skill={format_int(total['model_skill_tokens'])} "
+        f"all_skill={format_int(total['all_skill_tokens'])} "
+        f"skills={total['skill_count']} model={total['model_skill_count']}"
+    )
+    if len(rows) != len(all_rows):
+        print(f"shown_skill_tokens={format_int(shown_total)} rows={len(rows)}")
+    print()
+    print(f"{'SKILL':<36} {'MODE':<6} {'DESC':>6} {'LIST':>6} {'SKILL':>7} {'LINES':>6}  FLAGS")
+    for row in rows:
+        flags = ",".join(row.flags) if row.flags else "-"
+        print(
+            f"{row.name:<36} {row.mode:<6} "
+            f"{row.description_tokens:>6} {row.listing_tokens:>6} "
+            f"{row.skill_tokens:>7} {row.lines:>6}  {flags}"
+        )
+    flagged = [row for row in rows if row.flags]
+    if flagged:
+        print()
+        print("feedback:")
+        for row in flagged:
+            print(f"- {row.name}: {', '.join(row.flags)}")
+
+
+def main() -> int:
+    args = parse_args()
+    tiktoken = ensure_tiktoken()
+    try:
+        encoding = tiktoken.get_encoding(args.encoding)
+    except Exception as exc:
+        sys.exit(f"skilltokens: unknown tiktoken encoding {args.encoding!r}: {exc}")
+    all_rows = collect(encoding)
+    rows = all_rows if args.mode == "all" else [row for row in all_rows if row.mode == args.mode]
+    rows = sort_rows(rows, args.sort, args.ascending)
+    if args.top is not None:
+        rows = rows[: args.top]
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "encoding": args.encoding,
+                    "totals": totals(all_rows),
+                    "rows": [row.__dict__ for row in rows],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+    else:
+        print_text(rows, all_rows, args.encoding)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

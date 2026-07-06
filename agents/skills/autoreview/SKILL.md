@@ -1,6 +1,6 @@
 ---
 name: autoreview
-description: "Auto Review closeout. Codex review is the default. Thermonuclear mode passes the maximum-strictness maintainability rubric when Anders asks for a thermonuclear review. Optional Claude, Pi, Droid, Copilot, Cursor, and OpenCode engines remain available when explicitly selected."
+description: "Autoreview closeout loop. Use when Anders asks for autoreview/auto-review or wants you to run the structured reviewer, verify findings, fix accepted issues, and repeat until clean before final/commit/ship."
 ---
 
 # Auto Review
