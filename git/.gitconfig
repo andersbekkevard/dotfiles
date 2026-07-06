@@ -17,7 +17,7 @@
 	rebase = true
 [credential "https://github.com"]
 	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper = "!f() { helper=\"${HOME:-}/.local/bin/git-credential-gh-safe\"; [ -n \"${HOME:-}\" ] && [ -x \"$helper\" ] || exit 0; \"$helper\" \"$@\"; }; f"
 [credential "https://gist.github.com"]
 	helper = 
-	helper = !/usr/bin/gh auth git-credential
+	helper = "!f() { helper=\"${HOME:-}/.local/bin/git-credential-gh-safe\"; [ -n \"${HOME:-}\" ] && [ -x \"$helper\" ] || exit 0; \"$helper\" \"$@\"; }; f"
