@@ -36,6 +36,7 @@ Full lane lifecycle mechanics (dispatch, liveness, harvest, recovery) live in th
 - Size wakeups to the lane, not to habit: single 5–12 minute lanes get a ~270s first poll; multi-lane waves get 25–30 minutes. After dispatching detached lanes, always end the turn with a scheduled wakeup — detached lanes are invisible to the harness and will not wake you.
 - Every lane prompt names its allowed edit paths, forbidden paths, verification commands, forbidden satisfactions, and exact report format. Lanes never `git checkout/restore/stash`, never commit; the owner verifies and commits.
 - Keep one lead owner responsible for the goal, integration, final verification, and closeout. Subagents get bounded questions or work packages and return concrete evidence: files touched, commands run, findings, risks, remaining uncertainty. Do not parallelize a surface so tangled that coordination costs exceed the speedup — simplify it first.
+- Actively look for parallelizable work: reading or comparing several independent files, auditing multiple modules for the same invariant, splitting implementation across clearly separate ownership areas, running independent verification while the main thread integrates, or scouting a bounded question before an architectural change.
 - To Claude: do not use the Fable 5 model for subagents unless Anders explicitly instructs it; flag a request if you think it would be valuable.
 
 ## Orchestration & Model Economics
@@ -81,6 +82,8 @@ Mechanics:
 - gpt-5.5 inside workflows/subagents (the model parameter only takes Claude models): spawn a thin wrapper agent with model: 'sonnet', effort: 'low' whose prompt instructs it to run a given self-contained codex exec command via Bash and return codex's output verbatim.
 
 ## Working with Anders
+
+Answer in prose, not bullet points, unless a list is genuinely clearer. When summarizing state or an analysis, lead with the decision Anders needs to make, then the supporting facts — no fluff.
 
 For large architectural, product, language, data-model, or workflow decisions, act as an intellectual partner, not an agreement engine: Anders often proposes an intuition to explore, not a conclusion to rubber-stamp. Stress-test consequential ideas before endorsing them, think independently about what would better serve the product, and keep that judgment woven into normal prose — never a visible objections checklist or performed contrarianism. Calibrate pushback to decision size: small, cheap, preference-heavy choices go Anders' way because debate costs more than rework; hard-to-reverse or foundation-setting choices deserve truth-seeking friction.
 

@@ -87,6 +87,12 @@ to catch drift from the current docs, not to enforce old memory or generic
 preferences. The whole point is to catch misconceptions hiding in the docs, so
 do not skip the meta-docs just because the repo looks small.
 
+**Docs-lint runs first**: audit the spec itself — ambiguity, contradiction,
+completeness, spec⇄tooling coherence — before checking reality against it. A
+broken rule invalidates every content finding that cites it, so `tool drift`
+and `ambiguous rule` findings belong to docs-lint, and the report presents
+docs-lint before content findings.
+
 ### 3. Read Domain Language
 
 Read the domain-language surface before gathering drift evidence: the root
@@ -100,7 +106,15 @@ glossary entry, classify it as a **glossary gap**.
 
 ### 4. Gather Evidence
 
-Use fast, read-only checks:
+Run the repo's deterministic checkers first and treat their output as the
+authoritative record for everything they cover; the semantic pass consumes
+that envelope and does **not** re-derive what a checker already decided —
+re-deriving wastes tokens and invites disagreement with the authoritative
+record. Discover checkers from project docs and tool READMEs, `package.json`
+scripts, `tools/**` validators, CI/pipeline definitions, and package-local
+`check`/`test`/`validate` commands.
+
+Then use fast, read-only checks for what no checker covers:
 
 - `rg` / `rg --files` for search and inventories.
 - Documented check commands and validators only when they are read-only and
@@ -121,8 +135,14 @@ references, is a staleness finding under the repo's planning conventions; a
 planning doc missing its required status metadata is a smaller finding of the
 same kind.
 
-Keep the pass proportionate to repo size: inspect directly by default, and
-parallelize only when the surface is genuinely large.
+Keep the pass proportionate to repo size: inspect directly by default. When
+the surface is genuinely large, parallelize inspection and centralize
+judgment: workers gather semantic evidence — claim-vs-source faithfulness,
+contradictions, duplicates, stale live state, undefined terms, convention
+drift, boundary violations — while the parent merges, dedupes, classifies,
+ranks, and numbers findings. Workers never re-run structural checks; the
+deterministic envelope is authoritative. Up to six workers per batch; merge
+findings before launching another batch.
 
 ### 5. Audit Ubiquitous Language
 
@@ -186,6 +206,11 @@ Scope included: ...
 Scope excluded: ...
 Governance read: ...
 
+## Docs-Lint
+1. [warning][ambiguous rule] Title
+   Evidence: path:line ...
+   Proposed fix: ...
+
 ## Findings
 1. [warning][doc drift] Title
    Evidence: path:line ...
@@ -207,6 +232,12 @@ If there are no findings, say so clearly and mention any areas not inspected.
 ## Optional Fix Phase
 
 Only enter this phase after Anders explicitly selects numbered findings to fix.
+
+Two fix classes with different latitude: **mechanical** fixes (repair a broken
+link, backfill missing status metadata) are safe to apply directly once
+selected; **semantic** fixes (rewriting a claim to match its source,
+reconciling a contradiction, re-homing content) are always proposed with the
+exact edit and confirmed before applying, even when selected by number.
 
 Rules:
 

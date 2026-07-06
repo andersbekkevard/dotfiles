@@ -1,6 +1,6 @@
 ---
 name: pro-brief
-description: "Compile a one-shot, clipboard-ready GPT-5.5 Pro briefing bundling the local repo, vault, or code context ChatGPT cannot access. Use when Anders wants to ask GPT-5.5 Pro / Pro / ChatGPT about something that needs local context, or wants an existing briefing pruned to a token budget."
+description: "Compile a one-shot, clipboard-ready GPT-5.5 Pro briefing bundling the local repo, vault, docs, or code context ChatGPT cannot access. Use when Anders wants to ask GPT-5.5 Pro / Pro / ChatGPT about a programming, architecture, research, or knowledge-base topic needing local context: select minimal relevant files, bundle with exact tiktoken counts, copy to clipboard, report file/char/token stats, and support pruning an existing briefing to a token or percentage budget."
 ---
 
 # Pro Brief
@@ -96,7 +96,9 @@ Use this shape when Anders already supplied the question:
 </how_to_use_this_context>
 
 <file_context files="..." chars="..." tokens="..." tokenizer="tiktoken:o200k_base">
-  ...
+  <file path="..." bytes="..." sha256="..." content_encoding="xml-escaped">
+    ...
+  </file>
 </file_context>
 ```
 
