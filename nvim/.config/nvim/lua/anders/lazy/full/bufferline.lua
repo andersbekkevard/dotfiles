@@ -18,26 +18,26 @@ return {
 			local active_tab_accent = "#0078D4"
 			local active_tab_bg = "#1f1f1f"
 			local active_tab_text = { fg = "#ffffff" }
-			local active_tab_line = { sp = active_tab_accent, overline = true }
+			local active_tab_line = { sp = active_tab_accent, underline = true }
 			local function active_tab_highlight(opts)
 				return vim.tbl_extend("force", active_tab_line, active_tab_text, opts)
 			end
-			local overline_excluded_groups = {
+			local underline_excluded_groups = {
 				BufferLineSeparatorSelected = true,
 			}
-			local function set_selected_group_overlines()
+			local function set_selected_group_underlines()
 				for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
-					if name:match("^BufferLine.*Selected$") and not hl.link and not overline_excluded_groups[name] then
+					if name:match("^BufferLine.*Selected$") and not hl.link and not underline_excluded_groups[name] then
 						hl.sp = active_tab_accent
-						hl.overline = true
+						hl.underline = true
 						vim.api.nvim_set_hl(0, name, hl)
 					end
 				end
 			end
-			local function apply_active_tab_overline()
-				set_selected_group_overlines()
+			local function apply_active_tab_underline()
+				set_selected_group_underlines()
 				vim.cmd.redrawtabline()
-				set_selected_group_overlines()
+				set_selected_group_underlines()
 				vim.cmd.redrawtabline()
 			end
 
@@ -103,11 +103,11 @@ return {
 					pick_selected = active_tab_highlight({ bg = active_tab_bg, bold = true, italic = false }),
 				},
 			})
-			apply_active_tab_overline()
+			apply_active_tab_underline()
 			vim.api.nvim_create_autocmd({ "BufEnter", "ColorScheme", "VimEnter", "WinEnter" }, {
 				group = vim.api.nvim_create_augroup("AndersBufferlineCursorTabs", { clear = true }),
 				callback = function()
-					vim.schedule(apply_active_tab_overline)
+					vim.schedule(apply_active_tab_underline)
 				end,
 			})
 			vim.keymap.set("n", "<leader>xo", "<cmd>BufferLineCloseOthers<cr>", { desc = "Close other buffers" })

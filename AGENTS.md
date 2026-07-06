@@ -35,23 +35,35 @@ If the task touches secrets, also read:
 | `docs/design-principles.md` | General engineering philosophy | Cross-project standards (not bootstrap behavior) |
 | `agents/README.md` | Global agent surface (skills, skillctl, wiring) | Skill invocation-state system and harness symlink contract |
 
-## Agent Skill Sync
+## Agent Surface Setup
 
-If the task is only to refresh global agent skill links or generated skill
-metadata after pulling changes under `agents/`, do **not** rerun
-`./setup.sh --layer minimal`. That layer is intentionally broader than skill
-sync: it can reinstall packages, restow dotfiles, and rerun shell bootstrap.
+If a task asks to set up, repair, or refresh global agent skills or global
+agent instructions on the current machine, use setup, not direct `skillctl`:
 
-Use the narrow command:
+```bash
+./setup.sh --layer minimal --skip-install
+```
+
+This is the narrow machine-repair path for the agent surface. It avoids package
+and runtime installers, but still runs the repo-managed setup work that matters:
+restow minimal dotfiles, refresh local templates, run `setup/agents.sh`, create
+or repair `~/.claude/skills/<name>`, `~/.claude/CLAUDE.md`,
+`~/.codex/AGENTS.md`, and invoke `agents/skillctl sync` for Codex-generated
+state.
+
+Use the normal first-run profile command (`./setup.sh macos`,
+`./setup.sh linux-desktop`, `./setup.sh full`, or `./setup.sh minimal`) on a new
+machine that still needs packages/runtimes.
+
+Use direct `skillctl` only when the harness links already exist and the task is
+specifically to regenerate Codex dialect metadata from `SKILL.md` frontmatter:
 
 ```bash
 agents/skillctl sync
 ```
 
-This regenerates Codex per-skill symlinks and generated `agents/openai.yaml`
-policy blocks from `SKILL.md` frontmatter. Only use the setup layer when the
-machine may be missing the top-level harness links or Claude per-skill links
-documented in `agents/README.md`.
+Direct `skillctl sync` does not create Claude per-skill links or top-level
+harness instruction links; treating it as full agent setup is a bug.
 
 ## Update rules
 
