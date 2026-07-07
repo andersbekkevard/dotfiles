@@ -139,3 +139,5 @@ User invokes with a map. A ticket is **optional** — without one, you pick the 
 5. Add newly surfaced tickets, graduate specifiable fog out of **Not yet specified**, and move out-of-destination work to **Out of scope**.
 
 The user may run unblocked tickets in parallel, so expect other sessions to be editing the tracker concurrently.
+
+When the frontier is empty and no fog remains, the map is complete: hand the effort to `/to-prd`, which synthesizes the resolved decisions into `prd.md` beside `map.md`.
