@@ -30,12 +30,12 @@ and conventions.
 
 ## Delegation & Lanes
 
-Full lane lifecycle mechanics (dispatch, liveness, harvest, recovery) live in the `codex-lane` skill — read it before dispatching background codex work. The policy rules:
+The `codex-lane` skill is the codex counterpart of the Agent tool: read it before **any** `codex exec` dispatch, foreground or background — its dispatch hygiene (prompt file, `< /dev/null`, early log check) binds every invocation, and it owns the full lane lifecycle (dispatch, liveness, harvest, recovery). The policy rules:
 
 - Long-running lanes use the hardened detached pattern: self-contained prompt file, `(setsid codex exec "$(cat /tmp/<lane>.md)" < /dev/null > /tmp/<lane>.log 2>&1 &)`. Completion means the process is gone AND the lane's deliverable exists; log markers like `tokens used` are advisory only — lanes that read transcripts or logs can quote them.
 - Schema before data: if delegated work introduces a new typed value (enum variant, schema field), land and push the type change before dispatching lanes that write the new data. The reverse order poisons fixtures incrementally.
 - Quota is a budget: cap parallel codex lanes at ~8, keep an overnight reserve, and on quota exhaustion immediately write the next-day plan into the working plan artifact before going idle.
-- Size wakeups to the lane, not to habit: single 5–12 minute lanes get a ~270s first poll; multi-lane waves get 25–30 minutes. After dispatching detached lanes, always end the turn with a scheduled wakeup — detached lanes are invisible to the harness and will not wake you.
+- Size wakeups to the expected duration of the **slowest single lane**, never to lane count — parallelism doesn't lengthen the critical path. Err toward polling too often, not too rarely: a premature poll costs one context reload, a late one costs idle wall-clock. Set the poll interval to roughly the slowest lane's expected runtime divided by 5, with a floor of ~270s (the prompt-cache window); keep the full lifecycle under ~10 polls. After dispatching detached lanes, always end the turn with a scheduled wakeup — detached lanes are invisible to the harness and will not wake you.
 - Every lane prompt names its allowed edit paths, forbidden paths, verification commands, forbidden satisfactions, and exact report format. Lanes never `git checkout/restore/stash`, never commit; the owner verifies and commits.
 - Keep one lead owner responsible for the goal, integration, final verification, and closeout. Subagents get bounded questions or work packages and return concrete evidence: files touched, commands run, findings, risks, remaining uncertainty. Do not parallelize a surface so tangled that coordination costs exceed the speedup — simplify it first.
 - Actively look for parallelizable work: reading or comparing several independent files, auditing multiple modules for the same invariant, splitting implementation across clearly separate ownership areas, running independent verification while the main thread integrates, or scouting a bounded question before an architectural change.
@@ -50,8 +50,8 @@ Fable tokens are scarce: spend them on planning, decomposing, and judging result
 *You own the architecture.* You have the most taste and intelligence in the fleet, so all architectural and high-level decisions are yours — never delegate them, and don't let a worker's framing steer them. Treat subagent output as evidence to judge, not direction to follow: workers report, you decide. When a worker's result implies an architectural choice (a boundary, a dependency direction, a security posture), stop and make that call yourself before building on it.
 
 *Default to Codex.* gpt-5.5 runs on a separate subscription that doesn't drain the Claude/Fable pool, so treat it as cheaper than every Claude model regardless of list price:
-- Quick read-only tasks — exploration, "what does this file/repo do", state checks, log digging, runbook extraction: codex with medium reasoning (`codex exec -c model_reasoning_effort="medium" "<prompt>"`).
-- Scoped, well-specified implementation: codex at the xhigh default — it works very well when the spec is detailed.
+- Quick read-only tasks — exploration, "what does this file/repo do", state checks, log digging, runbook extraction: codex with medium reasoning (`codex exec -c model_reasoning_effort="medium" "$(cat /tmp/<name>.md)" < /dev/null`, dispatched per the `codex-lane` skill).
+- Scoped, well-specified implementation: codex with high reasoning (`codex exec -c model_reasoning_effort="high" "$(cat /tmp/<name>.md)" < /dev/null`, dispatched per the `codex-lane` skill).
 - If computer use is helpful for completing or verifying work, shell out to gpt-5.5 with Codex for it.
 
 Reach for Claude subagents only when codex is a poor fit (needs taste ≥ 7, needs Claude-specific tools/MCP, or orchestration-internal glue) — opus and sonnet drain the same Claude pool Fable orchestration runs on, so they are never "cheap".
@@ -75,8 +75,8 @@ How to apply:
 - Never use Haiku.
 
 Mechanics:
-- gpt-5.5 is only reachable through the Codex CLI (~/.codex/config.toml defaults to gpt-5.5 @ xhigh, full access, approvals off — intentional, never pass sandbox flags):
-  - `codex exec "<prompt>"` for investigation, analysis, or implementation (cd to the target repo first); for anything long-running, use the detached lane pattern from the `codex-lane` skill instead of a foreground call.
+- gpt-5.5 is only reachable through the Codex CLI (~/.codex/config.toml defaults to gpt-5.5 @ high, full access, approvals off — intentional, never pass sandbox flags):
+  - `codex exec` for investigation, analysis, or implementation (cd to the target repo first); every dispatch follows the `codex-lane` skill, and long-running work uses its detached lane pattern instead of a foreground call.
   - `codex review` for reviewing the current repo's diff.
   - Follow-ups: `codex exec resume <session-id> "<prompt>"` — resume by explicit session id from `~/.codex/sessions/YYYY/MM/DD/`. Never use `resume --last` when more than one lane may have run: it races.
 - Codex prompts must be fully self-contained — paths, context, constraints, acceptance criteria, and exactly what to return. Codex cannot ask follow-up questions.
