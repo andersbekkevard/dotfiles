@@ -14,7 +14,7 @@ Work items live in beads (`br`) — follow the `beads` skill for tracker convent
 
 ### 1. Gather context
 
-Work from whatever is already in the conversation context. If the user passes a bead id or a path as an argument, fetch it (`br show <id>`) and read its full description and comments.
+Work from whatever is already in the conversation context. If the user passes a bead id or a path as an argument, fetch it (`br show <id>`) and read its full description and comments, plus the PRD file the description points to when there is one.
 
 ### 2. Explore the codebase (optional)
 
