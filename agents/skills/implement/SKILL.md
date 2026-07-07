@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Implement the work described by the user in the PRD or issues.
 
-If the work is a bead, read it and its parent umbrella epic (the PRD) with `br show <id>`, and claim it before starting: `br update <id> --claim`. Follow the `beads` skill for lifecycle conventions.
+If the work is a bead, read it and its parent umbrella epic with `br show <id>`, plus the PRD file the umbrella points to, and claim it before starting: `br update <id> --claim`. Follow the `beads` skill for lifecycle conventions.
 
 Use /tdd where possible, at pre-agreed seams.
 
