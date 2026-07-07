@@ -159,7 +159,7 @@ local_path = "agents/skills/to-prd"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-prd" }
 preserve = [
-  "Publishing is adapted to beads: the PRD is saved as a repo markdown file (default docs/prd/<slug>/prd.md, one folder per effort shared with wayfinder, bead slug = folder slug) and the umbrella epic description carries a summary + pointer; no triage labels.",
+  "Publishing is adapted to beads: the PRD is saved as a repo markdown file (default docs/prd/<slug>/<slug>-prd.md, one folder per effort shared with wayfinder, vault-unique basename, bead slug = folder slug) and the umbrella epic description carries a summary + pointer; no triage labels.",
 ]
 
 [skills.visual-plan]
