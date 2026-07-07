@@ -917,6 +917,22 @@ prompt_new_session() {
   new_session_ui
 }
 
+session_name_from_dir() {
+  local dir="${1:-}"
+  local session_name
+
+  session_name="${dir##*/}"
+
+  if [[ -z "$session_name" ]] || [[ "$session_name" == "/" ]]; then
+    session_name="root"
+  fi
+
+  session_name="${session_name//:/_}"
+  session_name="${session_name// /_}"
+
+  printf '%s' "$session_name"
+}
+
 new_session_ui() {
   local dir name
   local fzf_color="--color=fg:${fg_hex},bg:-1,fg+:${bright_hex},bg+:${row_hex},hl:${accent_hex},hl+:${warm_hex},info:${dim_hex},prompt:${accent_hex},pointer:${accent_hex},marker:${warm_hex},header:${dim_hex},border:${border_hex},label:${accent_hex}"
@@ -930,7 +946,7 @@ new_session_ui() {
     --border=rounded \
     --border-label=' new session ' \
     --prompt='name> ' \
-    --header='enter → create at ~/  ·  tab → pick path' \
+    --header='enter → create at ~/  ·  tab → pick path  ·  empty tab → folder name' \
     --header-first \
     --info=hidden \
     --print-query \
@@ -946,15 +962,9 @@ new_session_ui() {
   key_line="$(sed -n '2p' <<< "$output")"
   name="$query_line"
 
-  # ESC exits with empty query, or fzf returns 130
-  if [[ -z "$name" ]] || (( fzf_rc == 130 )); then
+  # ESC exits with empty query, but empty-name Tab means "pick a folder".
+  if (( fzf_rc == 130 )) || [[ -z "$name" && "$key_line" != "tab" ]]; then
     return 0
-  fi
-
-  if tmux has-session -t "$name" 2>/dev/null; then
-    printf '\n  %bSession already exists: %s%b\n' "$color_cmd_system" "$name" "$color_reset"
-    sleep 1
-    return 1
   fi
 
   # Step 2: If tab was pressed, pick path via zoxide
@@ -974,8 +984,17 @@ new_session_ui() {
     [[ -z "$dir" ]] && return 0
     # Expand ~ back to full path
     dir="${dir/#\~/$HOME}"
+    [[ -z "$name" ]] && name="$(session_name_from_dir "$dir")"
   else
     dir="$HOME"
+  fi
+
+  [[ -z "$name" ]] && return 0
+
+  if tmux has-session -t "$name" 2>/dev/null; then
+    printf '\n  %bSession already exists: %s%b\n' "$color_cmd_system" "$name" "$color_reset"
+    sleep 1
+    return 1
   fi
 
   tmux new-session -d -s "$name" -c "$dir"
