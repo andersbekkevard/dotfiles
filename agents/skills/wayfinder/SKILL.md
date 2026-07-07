@@ -140,4 +140,4 @@ User invokes with a map. A ticket is **optional** — without one, you pick the 
 
 The user may run unblocked tickets in parallel, so expect other sessions to be editing the tracker concurrently.
 
-When the frontier is empty and no fog remains, the map is complete: hand the effort to `/to-prd`, which synthesizes the resolved decisions into `prd.md` beside `map.md`.
+When the frontier is empty and no fog remains, the map is complete: hand the effort to `/to-prd`, which synthesizes the resolved decisions into the effort's `<slug>-prd.md` beside `map.md`.
