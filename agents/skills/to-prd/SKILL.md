@@ -16,7 +16,7 @@ Work items live in beads (`br`) — follow the `beads` skill for tracker convent
 
 Check with the user that these seams match their expectations.
 
-3. Write the PRD using the template below and save it as a markdown file in the repo — match the repo's existing convention for such docs, defaulting to `docs/prds/<feature-slug>.md`. Then publish a beads **umbrella epic** for it: `br create "<feature title>" --type epic --silent`, then `br update <id> --description` with a short problem/solution summary, the agreed test seams, and the PRD file's path. The file is the source of truth; the epic is the tracker handle. An umbrella epic is organizational and never launched directly — `/to-issues` breaks it into grabbable slices. No triage label is needed.
+3. Write the PRD and save it as a markdown file in the repo. If the repo has its own planning-material conventions (a `docs/prd.md` or equivalent naming the home, template, frontmatter, and status fields), follow those over the defaults here; otherwise use the template below and save to `docs/prds/<feature-slug>.md`. Then publish a beads **umbrella epic** for it: `br create "<feature title>" --type epic --silent`, then `br update <id> --description` with a short problem/solution summary, the agreed test seams, and the PRD file's path. The file is the source of truth; the epic is the tracker handle. An umbrella epic is organizational and never launched directly — `/to-issues` breaks it into grabbable slices. No triage label is needed. Exception: if the repo's conventions gate tracker creation behind an explicit execution order (e.g. "parse to beads only when the user says execute"), stop after saving the PRD and leave epic creation to that gate.
 
 <prd-template>
 
