@@ -1,6 +1,6 @@
 ---
 name: to-prd
-description: Turn the current conversation into a PRD and publish it as a beads umbrella epic — no interview, just synthesis of what you've already discussed.
+description: Turn the current conversation into a PRD saved in the repo and tracked by a beads umbrella epic — no interview, just synthesis of what you've already discussed.
 disable-model-invocation: true
 ---
 
@@ -16,7 +16,7 @@ Work items live in beads (`br`) — follow the `beads` skill for tracker convent
 
 Check with the user that these seams match their expectations.
 
-3. Write the PRD using the template below, then publish it as a beads **umbrella epic**: `br create "<feature title>" --type epic --silent`, then `br update <id> --description` with the PRD body. An umbrella epic is organizational and never launched directly — `/to-issues` breaks it into grabbable slices. No triage label is needed.
+3. Write the PRD using the template below and save it as a markdown file in the repo — match the repo's existing convention for such docs, defaulting to `docs/prds/<feature-slug>.md`. Then publish a beads **umbrella epic** for it: `br create "<feature title>" --type epic --silent`, then `br update <id> --description` with a short problem/solution summary, the agreed test seams, and the PRD file's path. The file is the source of truth; the epic is the tracker handle. An umbrella epic is organizational and never launched directly — `/to-issues` breaks it into grabbable slices. No triage label is needed.
 
 <prd-template>
 
