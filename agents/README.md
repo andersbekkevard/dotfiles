@@ -43,9 +43,10 @@ effort produces lives in **one home**: `docs/prd/<effort-slug>/`.
    ticket per session until the way is clear. A feature you can already state
    sharply skips this and starts at **`/grill-with-docs`** (grilling +
    domain-modeling, leaving `CONTEXT.md`/ADRs behind).
-2. **`/to-prd`** — synthesizes the decisions into `docs/prd/<slug>/prd.md`
-   (test seams agreed with the user) and publishes a beads umbrella epic
-   whose slug matches the folder.
+2. **`/to-prd`** — synthesizes the decisions into
+   `docs/prd/<slug>/<slug>-prd.md` (test seams agreed with the user; slugged
+   basename, vault-safe) and publishes a beads umbrella epic whose slug
+   matches the folder.
 3. **`/to-issues`** — slices the PRD into tracer-bullet child epics with
    native dependency edges; `br ready` surfaces unblocked slices.
 4. **`/implement`** — one fresh session per slice: claim (the lock), `/tdd`
