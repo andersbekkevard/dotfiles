@@ -25,4 +25,6 @@ ignore, keep, or prefer a divergence.
 
 ## Accepted Divergences
 
-No accepted divergences have been recorded yet.
+### wayfinder
+
+Accepted 2026-07-06: keep the remote tracker-backed wayfinding concepts, but preserve the local/project rule that trackers hold coordination and short indexes, not fleshed-out ideas. For project/beads specifically, do not use upstream `wayfinder:*` labels; keep project's workstream label policy and store wayfinder type/mode as body fields. Long answers should live in linked repo artifacts, with concise bead comments and close reasons.
