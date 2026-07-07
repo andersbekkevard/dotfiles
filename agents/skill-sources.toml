@@ -104,6 +104,65 @@ local_path = "agents/skills/writing-great-skills"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/writing-great-skills" }
 
+[skills.diagnosing-bugs]
+local_path = "agents/skills/diagnosing-bugs"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/diagnosing-bugs" }
+
+[skills.grill-with-docs]
+local_path = "agents/skills/grill-with-docs"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/grill-with-docs" }
+
+[skills.handoff]
+local_path = "agents/skills/handoff"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/handoff" }
+
+[skills.implement]
+local_path = "agents/skills/implement"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/implement" }
+preserve = [
+  "Bead claim/close lifecycle steps are intentional local additions (tracker is beads).",
+  "Review step points at local review-changes instead of upstream code-review.",
+]
+
+[skills.review-changes]
+local_path = "agents/skills/review-changes"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/code-review" }
+preserve = [
+  "Local name is review-changes; upstream name is code-review (renamed to avoid colliding with the Claude Code builtin /code-review).",
+  "User-invoked locally (disable-model-invocation added) so it does not double-trigger with the harness builtin review skill.",
+  "Spec-source resolution is adapted to beads (br show) instead of the upstream issue-tracker config.",
+]
+
+[skills.tdd]
+local_path = "agents/skills/tdd"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/tdd" }
+preserve = [
+  "Review-stage pointer renamed from code-review to review-changes to match the local skill name.",
+]
+
+[skills.to-issues]
+local_path = "agents/skills/to-issues"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-issues" }
+preserve = [
+  "Publishing is adapted to beads: child epics via br create --parent, blockers via br dep add, no triage labels.",
+  "Issue template drops ## Parent / ## Blocked by (native beads edges) and renames ## Acceptance criteria to ## Success Criteria with an added ## Scope section, matching beads epic conventions.",
+]
+
+[skills.to-prd]
+local_path = "agents/skills/to-prd"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-prd" }
+preserve = [
+  "Publishing is adapted to beads: the PRD becomes an umbrella epic description; no triage labels.",
+]
+
 [skills.visual-plan]
 local_path = "agents/skills/visual-plan"
 tracking = "watch"

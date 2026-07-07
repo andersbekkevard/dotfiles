@@ -28,3 +28,38 @@ ignore, keep, or prefer a divergence.
 ### wayfinder
 
 Accepted 2026-07-06: keep the remote tracker-backed wayfinding concepts, but preserve the local/project rule that trackers hold coordination and short indexes, not fleshed-out ideas. For project/beads specifically, do not use upstream `wayfinder:*` labels; keep project's workstream label policy and store wayfinder type/mode as body fields. Long answers should live in linked repo artifacts, with concise bead comments and close reasons.
+
+### mattpocock/skills — beads-port family (2026-07-07)
+
+Anders explicitly decided to port the upstream engineering flow onto beads as
+the tracker substrate. For `to-prd`, `to-issues`, `implement`, and
+`review-changes` (upstream `code-review`), every issue-tracker touchpoint
+(GitHub/`docs/agents/issue-tracker.md`/triage labels) is intentionally replaced
+with beads (`br`) mechanics, and `setup-matt-pocock-skills` references are
+removed. Upstream changes to those tracker touchpoints are accepted local
+divergence; port upstream changes to the surrounding method (seam sketching,
+slicing rules, review axes) normally.
+
+`review-changes` is deliberately renamed from upstream `code-review` (collides
+with the Claude Code builtin) and deliberately user-invoked.
+
+### mattpocock/skills — deliberate non-adoptions (2026-07-07)
+
+Anders explicitly decided NOT to adopt the following upstream skills. Do not
+report them as gaps in future audits; revisit only if Anders asks.
+
+- `engineering/triage`, `engineering/ask-matt`,
+  `engineering/setup-matt-pocock-skills` — built for external
+  reporters/PRs and Matt's tracker scaffolding; solo repos + beads make them
+  moot.
+- `engineering/research` — overlaps deep-research and codex-lane delegation.
+- `productivity/grill-me` — local `grilling` is already directly invocable.
+- `productivity/teach`, `misc/*` (git-guardrails, setup-pre-commit,
+  migrate-to-shoehorn, scaffold-exercises), `in-progress/claude-handoff`,
+  `in-progress/loop-me`, `in-progress/wizard`, `personal/*`, `deprecated/*` —
+  reviewed 2026-07-07 and declined (wrong fit, environment plumbing we do
+  differently, or superseded by local skills).
+
+Watch (no local copy): `in-progress/writing-beats`, `writing-fragments`,
+`writing-shape` — a tasteful explore/exploit prose trio, still in-progress
+upstream. Revisit if Anders starts writing articles with agents.
