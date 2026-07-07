@@ -134,7 +134,6 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/code-review" }
 preserve = [
   "Local name is review-changes; upstream name is code-review (renamed to avoid colliding with the Claude Code builtin /code-review).",
-  "User-invoked locally (disable-model-invocation added) so it does not double-trigger with the harness builtin review skill.",
   "Spec-source resolution is adapted to beads (br show) instead of the upstream issue-tracker config.",
 ]
 

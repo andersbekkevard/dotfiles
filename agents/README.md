@@ -33,6 +33,30 @@ machine that still needs packages, run the normal explicit profile instead.
 Do not use direct `agents/skillctl sync` as full agent setup. It does not create
 Claude per-skill symlinks or the top-level harness instruction symlinks.
 
+## Main flow
+
+The engineering skills compose into one idea → ship pipeline. Everything an
+effort produces lives in **one home**: `docs/prd/<effort-slug>/`.
+
+1. **`/wayfinder`** — entry point for big, foggy efforts. Charts
+   `docs/prd/<effort-slug>/` (`map.md` + investigation tickets), worked one
+   ticket per session until the way is clear. A feature you can already state
+   sharply skips this and starts at **`/grill-with-docs`** (grilling +
+   domain-modeling, leaving `CONTEXT.md`/ADRs behind).
+2. **`/to-prd`** — synthesizes the decisions into `docs/prd/<slug>/prd.md`
+   (test seams agreed with the user) and publishes a beads umbrella epic
+   whose slug matches the folder.
+3. **`/to-issues`** — slices the PRD into tracer-bullet child epics with
+   native dependency edges; `br ready` surfaces unblocked slices.
+4. **`/implement`** — one fresh session per slice: claim (the lock), `/tdd`
+   at the pre-agreed seams, `review-changes` on completion (its Spec axis
+   reads the same PRD), commit, close with evidence.
+
+`/handoff` bridges sessions anywhere in the flow. The `beads` skill is the
+substrate reference (CLI + concurrency invariants) the flow skills point at;
+label taxonomy and sync rules stay repo-owned. Standalone craft skills
+(`/tdd`, `/diagnosing-bugs`, `/prototype`) also run outside the pipeline.
+
 ## Invocation modes
 
 Frontmatter in `SKILL.md` is the source of truth; the Codex dialect
