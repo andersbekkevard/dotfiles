@@ -57,7 +57,7 @@ br update <id> --claim         # atomic: assignee=me + in_progress (the lock)
 br close <id> --reason "..."   # record verified completion
 br reopen <id>                 # reopen if a defect is found later
 br update <id> --add-label verification-failed
-br comments add <id> -m "..."  # evidence pointer / findings
+br comments add <id> "..."     # evidence pointer / findings (positional text, no -m)
 br q "title" -l triage         # quick capture
 br lint                        # flag epics missing ## Success Criteria
 ```
