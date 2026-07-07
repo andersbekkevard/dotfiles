@@ -86,6 +86,10 @@ install_typescript_language_tools() {
 }
 
 install_shared_runtimes() {
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
   install_script_if_missing uv "Install uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
   install_script_if_missing rustup "Install rustup" "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
   install_script_if_missing bun "Install bun" "curl -fsSL https://bun.sh/install | bash"
