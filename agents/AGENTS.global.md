@@ -1,9 +1,6 @@
 # Global Agent Instructions
 
-How to work for Anders, in any repo, on any machine. Repo-specific rules live
-in each repo's own `AGENTS.md` and override nothing here — the two layers are
-disjoint: this file owns working method; the repo file owns its domain, tools,
-and conventions.
+How to work for Anders, in any repo, on any machine. 
 
 ## Verification & Honest Closeout
 
@@ -17,71 +14,19 @@ and conventions.
 - Prefer `rg` over `grep` and `fd` over `find` for repo searches unless a command's exact semantics call for the older tool.
 - Use `uv` for Python and `pnpm` for Node/TypeScript unless the repo's own instructions say otherwise.
 - Use `git -C <absolute repo path> ...` for all git operations. Never trust cwd across compound commands — the shell resets and drifts (zoxide) mid-`&&`.
-- Stage subagent prompt files with the Write tool or quoted heredocs (`<<'EOF'`); an unquoted heredoc executes `$(...)` inside the prompt text while writing it.
 - Treat the checkout as shared: other sessions and lanes may be writing right now. Re-read shared files immediately before editing, never revert or reformat changes you did not make, and commit verified work immediately and path-scoped — uncommitted output in a shared checkout eventually gets wiped.
 - Mid-write collisions are real: a fixture failing `json.load` or a serde parse while lanes are writing is usually a read-during-write or schema lag, not a code regression. Check lane activity before debugging.
 
 ## Observing Running Apps
 
-- Dev servers tee their output to a repo-local log so any agent can read live server output without owning the process. The repo's `AGENTS.md` names the path; the default convention is `.agents/logs/dev.log` (gitignored). Check for it before anything else when debugging a running app.
-- The log is current-state, not history: the dev script truncates it on every server start and appends from there (`: > .agents/logs/dev.log; <dev command> 2>&1 | tee -a .agents/logs/dev.log`). Keep the `-a` — an appending writer survives truncation, so `truncate -s 0` is always safe mid-run if the log grows.
-- Read the log — tail it around the failing request — instead of restarting the server or spawning a second instance. Dev servers are usually singletons: a stray instance can take the port or the framework's dev lock and block the canonical one. "Is it up?" = process/port check + a recent log tail, not log archaeology.
-- If a repo runs a dev server but has no tee + pointer, offer to wire it rather than debugging blind.
+- Debugging a running app: read the repo dev log first (default `.agents/logs/dev.log`, gitignored; the repo's `AGENTS.md` names the path) instead of restarting the server or spawning a second instance — dev servers are singletons, and a stray instance can take the port or the dev lock. "Is it up?" = process/port check + a recent log tail.
+- If a repo runs a dev server without the log, offer to wire it: `: > .agents/logs/dev.log; <dev command> 2>&1 | tee -a .agents/logs/dev.log` — truncate on every start, and keep the `-a` so the writer survives a mid-run `truncate -s 0`.
 
-## Delegation & Lanes
+## Delegation & Model Routing
 
-The `codex-lane` skill is the codex counterpart of the Agent tool: read it before **any** `codex exec` dispatch, foreground or background — its dispatch hygiene (prompt file, `< /dev/null`, early log check) binds every invocation, and it owns the full lane lifecycle (dispatch, liveness, harvest, recovery). The policy rules:
+The `codex-lane` skill is the codex counterpart of the Agent tool and the single source of truth for all `codex exec` mechanics — invocation hygiene, the detached lane pattern, supervision and wakeup cadence, harvest, and recovery. Read it before **any** `codex exec` dispatch, foreground or background.
 
-- Long-running lanes use the hardened detached pattern: self-contained prompt file, `(setsid codex exec "$(cat /tmp/<lane>.md)" < /dev/null > /tmp/<lane>.log 2>&1 &)`. Completion means the process is gone AND the lane's deliverable exists; log markers like `tokens used` are advisory only — lanes that read transcripts or logs can quote them.
-- Schema before data: if delegated work introduces a new typed value (enum variant, schema field), land and push the type change before dispatching lanes that write the new data. The reverse order poisons fixtures incrementally.
-- Quota is a budget: cap parallel codex lanes at ~8, keep an overnight reserve, and on quota exhaustion immediately write the next-day plan into the working plan artifact before going idle.
-- Size wakeups to the expected duration of the **slowest single lane**, never to lane count — parallelism doesn't lengthen the critical path. Err toward polling too often, not too rarely: a premature poll costs one context reload, a late one costs idle wall-clock. Set the poll interval to roughly the slowest lane's expected runtime divided by 5, with a floor of ~270s (the prompt-cache window); keep the full lifecycle under ~10 polls. After dispatching detached lanes, always end the turn with a scheduled wakeup — detached lanes are invisible to the harness and will not wake you.
-- Every lane prompt names its allowed edit paths, forbidden paths, verification commands, forbidden satisfactions, and exact report format. Lanes never `git checkout/restore/stash`, never commit; the owner verifies and commits.
-- Keep one lead owner responsible for the goal, integration, final verification, and closeout. Subagents get bounded questions or work packages and return concrete evidence: files touched, commands run, findings, risks, remaining uncertainty. Do not parallelize a surface so tangled that coordination costs exceed the speedup — simplify it first.
-- Actively look for parallelizable work: reading or comparing several independent files, auditing multiple modules for the same invariant, splitting implementation across clearly separate ownership areas, running independent verification while the main thread integrates, or scouting a bounded question before an architectural change.
-- To Claude: do not use the Fable 5 model for subagents unless Anders explicitly instructs it; flag a request if you think it would be valuable.
-
-## Orchestration & Model Economics
-
-Only applies when running as Fable 5 (or another Mythos-class orchestrator model). If you are a cheaper model, skip this section and do the work directly.
-
-Fable tokens are scarce: spend them on planning, decomposing, and judging results. Do small edits and quick answers yourself; delegate bulk work — clear-spec implementation, broad searches/investigation, data analysis, migrations, and anything parallelizable.
-
-*You own the architecture.* You have the most taste and intelligence in the fleet, so all architectural and high-level decisions are yours — never delegate them, and don't let a worker's framing steer them. Treat subagent output as evidence to judge, not direction to follow: workers report, you decide. When a worker's result implies an architectural choice (a boundary, a dependency direction, a security posture), stop and make that call yourself before building on it.
-
-*Default to Codex.* gpt-5.5 runs on a separate subscription that doesn't drain the Claude/Fable pool, so treat it as cheaper than every Claude model regardless of list price:
-- Quick read-only tasks — exploration, "what does this file/repo do", state checks, log digging, runbook extraction: codex with medium reasoning (`codex exec -c model_reasoning_effort="medium" "$(cat /tmp/<name>.md)" < /dev/null`, dispatched per the `codex-lane` skill).
-- Scoped, well-specified implementation: codex with high reasoning (`codex exec -c model_reasoning_effort="high" "$(cat /tmp/<name>.md)" < /dev/null`, dispatched per the `codex-lane` skill).
-- If computer use is helpful for completing or verifying work, shell out to gpt-5.5 with Codex for it.
-
-Reach for Claude subagents only when codex is a poor fit (needs taste ≥ 7, needs Claude-specific tools/MCP, or orchestration-internal glue) — opus and sonnet drain the same Claude pool Fable orchestration runs on, so they are never "cheap".
-
-Rankings, higher = better. Cost reflects what Anders actually pays (OpenAI limits are very generous; the Claude pool is prioritized for Fable orchestration), not list price. Intelligence is how hard a problem you can hand the model unsupervised. Taste is judgment quality: domain and semantic modeling, analytical prose, API/schema design, code quality, UI/UX.
-
-| model    | cost | intelligence | taste |
-|----------|------|--------------|-------|
-| gpt-5.5  | 9    | 8            | 5     |
-| sonnet-5 | 5    | 5            | 7     |
-| opus-4.8 | 4    | 7            | 8     |
-| fable-5  | 2    | 9            | 9     |
-
-How to apply:
-- These are defaults, not limits. Standing permission to override: if a cheaper model's output doesn't meet the bar, rerun or redo the work with a smarter model without asking. Judge the output, not the price tag. Escalating costs less than shipping mediocre work.
-- Cost is a tie-breaker only; when axes conflict for anything that ships, intelligence > taste > cost.
-- Bulk/mechanical work (clear-spec implementation, data analysis, migrations): gpt-5.5 — it's effectively free.
-- The taste that matters for user-facing artifacts — domain judgment, semantics, prose — lives with you (fable-5). Spec tightly, delegate the mechanics to gpt-5.5, and author or final-pass the judgment-heavy semantics and prose yourself.
-- opus-4.8 is not part of the default delegation stack: codex is quicker and at least as strong for most implementation work, and opus spends Fable-pool tokens. Its remaining niche is true UI work, where it implements the presentational layer (iterating with screenshots).
-- Reviews of plans/implementations: fable-5 judges; codex review is the default independent second perspective.
-- Never use Haiku.
-
-Mechanics:
-- gpt-5.5 is only reachable through the Codex CLI (~/.codex/config.toml defaults to gpt-5.5 @ high, full access, approvals off — intentional, never pass sandbox flags):
-  - `codex exec` for investigation, analysis, or implementation (cd to the target repo first); every dispatch follows the `codex-lane` skill, and long-running work uses its detached lane pattern instead of a foreground call.
-  - `codex review` for reviewing the current repo's diff.
-  - Follow-ups: `codex exec resume <session-id> "<prompt>"` — resume by explicit session id from `~/.codex/sessions/YYYY/MM/DD/`. Never use `resume --last` when more than one lane may have run: it races.
-- Codex prompts must be fully self-contained — paths, context, constraints, acceptance criteria, and exactly what to return. Codex cannot ask follow-up questions.
-- Claude models (sonnet-5, opus-4.8, fable-5) run via the Agent/Workflow model parameter.
-- gpt-5.5 inside workflows/subagents (the model parameter only takes Claude models): spawn a thin wrapper agent with model: 'sonnet', effort: 'low' whose prompt instructs it to run a given self-contained codex exec command via Bash and return codex's output verbatim.
+If running as Fable 5 (or another Mythos-class orchestrator model): your tokens are scarce and gpt-5.5 via codex is effectively free — default to delegating bulk, clear-spec, or parallelizable work, and actively look for it. You own the architecture; never delegate architectural decisions. Never use Haiku; never use Fable for subagents unless Anders explicitly instructs it. Before any non-obvious model choice or delegation, invoke the `model-routing` skill for the full fleet economics.
 
 ## Working with Anders
 

@@ -176,7 +176,11 @@ tracking = "local"
 
 [skills.codex-lane]
 local_path = "agents/skills/codex-lane"
-tracking = "local"
+tracking = "watch"
+upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/codex-first" }
+notes = [
+  "Different skill shape (lane lifecycle vs routing); ported stdin prompt passing, -o sentinel, and the two-failed-resumes stop-loss from codex-first in 2026-07. Review upstream for new invocation mechanics, not for structure.",
+]
 
 [skills.dream]
 local_path = "agents/skills/dream"
@@ -192,6 +196,10 @@ tracking = "local"
 
 [skills.lint]
 local_path = "agents/skills/lint"
+tracking = "local"
+
+[skills.model-routing]
+local_path = "agents/skills/model-routing"
 tracking = "local"
 
 [skills.pro-brief]
