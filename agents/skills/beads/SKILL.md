@@ -1,6 +1,7 @@
 ---
 name: beads
 description: Beads (`br`) CLI reference and concurrency invariants. Use when creating, claiming, updating, closing, or querying beads, or when another skill defers to beads tracker conventions.
+disable-model-invocation: true
 ---
 
 # Beads
