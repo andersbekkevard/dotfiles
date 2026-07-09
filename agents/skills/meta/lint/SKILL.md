@@ -66,6 +66,10 @@ structural rot mode of a shared-memory repo:
   so — superseded docs that still read as current, registry rows pointing at
   archived plans, and two docs both claiming to be the current approach to the
   same surface are all findings.
+- **Unreconciled close.** Intent-vs-state divergence (map says future, docs
+  say present) is licensed while an effort is open and forbidden after it
+  closes: a *closed* effort whose decision lines still contradict the live
+  docs they invalidated is a finding.
 - **Paraphrase.** Boot files and constitutions may carry a one-line gist plus
   pointer for a convention; text that restates a skill's or rule-owner's
   protocol in place is doc drift (two homes for one meaning).
