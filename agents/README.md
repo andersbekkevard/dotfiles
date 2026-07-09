@@ -8,6 +8,9 @@ and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
 - `skills/<name>/` — canonical global skills. `~/.claude/skills/<name>` and
   `~/.codex/skills/<name>` get per-skill symlinks so user, third-party, and
   Codex-managed `.system/` skills survive beside them.
+- `archive/<name>/` — retired skills, kept whole but unlinked from every
+  harness and excluded from all skill tooling. `archive/README.md` owns the
+  archive/restore procedure.
 - `skillctl` — invocation-state tool. Machine-level wiring is done by
   `setup/agents.sh` (minimal profile); `skillctl sync` only handles the
   Codex-generated projection.

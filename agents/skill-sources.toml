@@ -186,14 +186,6 @@ notes = [
 local_path = "agents/skills/dream"
 tracking = "local"
 
-[skills.goal-fuzz]
-local_path = "agents/skills/goal-fuzz"
-tracking = "local"
-
-[skills.intent-review]
-local_path = "agents/skills/intent-review"
-tracking = "local"
-
 [skills.lint]
 local_path = "agents/skills/lint"
 tracking = "local"
