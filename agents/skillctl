@@ -29,9 +29,23 @@ POLICY_BLOCK = POLICY_HEADER + "\npolicy:\n  allow_implicit_invocation: false\n"
 
 
 def skill_dirs():
-    return sorted(
-        d for d in SKILLS.iterdir() if d.is_dir() and not d.name.startswith(".")
-    )
+    # Skills live one level below category folders (skills/<category>/<name>).
+    # A dir is a skill iff it holds SKILL.md or SKILL.off.md; names are
+    # globally unique across categories (the harness link namespace is flat).
+    dirs = [
+        d
+        for cat in SKILLS.iterdir()
+        if cat.is_dir() and not cat.name.startswith(".")
+        for d in cat.iterdir()
+        if d.is_dir()
+        and not d.name.startswith(".")
+        and ((d / "SKILL.md").exists() or (d / "SKILL.off.md").exists())
+    ]
+    names = [d.name for d in dirs]
+    dupes = {n for n in names if names.count(n) > 1}
+    if dupes:
+        sys.exit(f"skillctl: duplicate skill names across categories: {sorted(dupes)}")
+    return sorted(dirs, key=lambda d: d.name)
 
 
 def skill_file(d):
@@ -82,10 +96,10 @@ def cmd_list():
 
 
 def find(name):
-    d = SKILLS / name
-    if not d.is_dir():
+    matches = [d for d in skill_dirs() if d.name == name]
+    if not matches:
         sys.exit(f"skillctl: no skill '{name}' in {SKILLS}")
-    return d
+    return matches[0]
 
 
 def set_flag(name, disabled):

@@ -115,7 +115,17 @@ def flags_for(mode: str, description_tokens: int, skill_tokens: int) -> list[str
 
 def collect(encoding) -> list[SkillStats]:
     rows: list[SkillStats] = []
-    for skill_dir in sorted(d for d in SKILLS.iterdir() if d.is_dir() and not d.name.startswith(".")):
+    skill_dirs = sorted(
+        (
+            d
+            for cat in SKILLS.iterdir()
+            if cat.is_dir() and not cat.name.startswith(".")
+            for d in cat.iterdir()
+            if d.is_dir() and not d.name.startswith(".")
+        ),
+        key=lambda d: d.name,
+    )
+    for skill_dir in skill_dirs:
         path, is_off = skill_file(skill_dir)
         if path is None:
             continue
