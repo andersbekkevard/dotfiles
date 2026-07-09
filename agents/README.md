@@ -53,8 +53,8 @@ effort produces lives in **one home**: `docs/prd/<effort-slug>/`.
 3. **`/to-issues`** — slices the PRD into tracer-bullet child epics with
    native dependency edges; `br ready` surfaces unblocked slices.
 4. **`/implement`** — one fresh session per slice: claim (the lock), `/tdd`
-   at the pre-agreed seams, `review-changes` on completion (its Spec axis
-   reads the same PRD), commit, close with evidence.
+   at the pre-agreed seams, a review against the same PRD on completion
+   (builtin /code-review or codex review), commit, close with evidence.
 
 `/handoff` bridges sessions anywhere in the flow. The `beads` skill is the
 substrate reference (CLI + concurrency invariants) the flow skills point at;

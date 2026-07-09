@@ -125,16 +125,7 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/implement" }
 preserve = [
   "Bead claim/close lifecycle steps are intentional local additions (tracker is beads).",
-  "Review step points at local review-changes instead of upstream code-review.",
-]
-
-[skills.review-changes]
-local_path = "agents/skills/review-changes"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/code-review" }
-preserve = [
-  "Local name is review-changes; upstream name is code-review (renamed to avoid colliding with the Claude Code builtin /code-review).",
-  "Spec-source resolution is adapted to beads (br show) instead of the upstream issue-tracker config.",
+  "Review step points at general review tooling (builtin /code-review, codex review) instead of upstream code-review; the local review-changes port is archived.",
 ]
 
 [skills.tdd]
@@ -142,7 +133,7 @@ local_path = "agents/skills/tdd"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/tdd" }
 preserve = [
-  "Review-stage pointer renamed from code-review to review-changes to match the local skill name.",
+  "Review-stage pointer to upstream code-review is dropped (that port is archived); review routes to general review tooling.",
 ]
 
 [skills.to-issues]

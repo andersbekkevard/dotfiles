@@ -43,6 +43,11 @@ slicing rules, review axes) normally.
 `review-changes` is deliberately renamed from upstream `code-review` (collides
 with the Claude Code builtin) and deliberately user-invoked.
 
+Update 2026-07-09: `review-changes` is archived to `agents/archive/` and no
+longer tracked — builtin /code-review, codex review, and autoreview cover
+review; the port over-encoded it. Do not report upstream `code-review` as a
+gap in future audits.
+
 ### mattpocock/skills — deliberate non-adoptions (2026-07-07)
 
 Anders explicitly decided NOT to adopt the following upstream skills. Do not
