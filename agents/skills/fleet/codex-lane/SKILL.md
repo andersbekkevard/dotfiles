@@ -102,6 +102,10 @@ fi
 4. If the lane writes a new typed value (enum variant, schema field), the
    owner lands the type change FIRST — a lane writing data the code cannot
    parse poisons fixtures incrementally.
+5. Lanes never write the tracker: a read-only fan-out lane never claims,
+   closes, or touches beads — its self-contained prompt is the steering
+   artifact, and the owning session advances bead status at each verified
+   checkpoint.
 
 ## Supervise
 
