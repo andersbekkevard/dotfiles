@@ -3,7 +3,7 @@
 Turn ordinary implementation plans into rich interactive visual review surfaces.
 
 `/visual-plan` turns the plan an agent would normally write in chat into a
-human-optimized MDX document. Instead of a long wall of prose, reviewers get
+human-optimized MDX document. In local-files mode, it writes and serves the MDX locally rather than publishing to the hosted Plan database. Instead of a long wall of prose, reviewers get
 custom components built for understanding: architecture diagrams, wireframes,
 interactive prototypes, file maps, annotated code, OpenAPI-style API specs,
 visual schema maps, open questions, and comments.
@@ -12,10 +12,15 @@ It solves for plans that are too important to bury in chat. The output is
 scannable, commentable, and intuitive enough for a human to approve before code
 changes start.
 
+<picture>
+  <img alt="Visual plan review surface" src="../../media/visual-plan.png">
+</picture>
+
 Visual plans are MDX, customizable with your own components, and viewed with the
-[Agent-Native plans app](https://www.agent-native.com/docs/template-plan).
-The hosted app is 100% free and open source; local-files mode writes
-`plans/<name>/plan.mdx` in your repo and opens a local preview with no sharing.
+[Agent-Native plans app](https://www.agent-native.com/docs/template-plan). The
+hosted app is 100% free and open source; local-files mode writes
+MDX locally, starts a localhost bridge, and opens the hosted Plan UI with no
+sharing.
 [Source here](https://github.com/BuilderIO/agent-native/).
 
 ## What It Does
@@ -50,6 +55,26 @@ explains how the review surface is rendered and shared.
 The point is not just prettier planning. It is a better medium for human review:
 visual where visuals help, structured where structure helps, and grounded in the
 actual codebase.
+
+## Modes
+
+`/visual-plan` can run in three modes:
+
+- **Hosted Plans, shareable links (recommended):** uses the free, open-source
+  Agent-Native plans app at plan.agent-native.com for shareable links, comments,
+  and the browser editor.
+- **Local files only:** writes a local MDX folder, starts a localhost bridge,
+  and opens the hosted Plan UI against that local source. No sharing, all local,
+  and no plan content is written to the hosted database. The skill must not
+  create a hosted Plan first and export it back to local files.
+- **Self-hosted/custom URL:** connects the skill to your own Plan app or local
+  development tunnel.
+
+Use hosted mode when you want comments and shareable links. Use local files mode
+when the plan itself should live in source control or stay on your machine. Use
+`plans/<slug>/` when you want to check the files in, or a temp/ignored folder
+when you do not. The bridge URL works on the machine running it and is not a
+share link.
 
 ## Install
 
