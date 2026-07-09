@@ -5,9 +5,13 @@ and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
 
 - `AGENTS.global.md` — global working rules. Symlinked to `~/.claude/CLAUDE.md`
   and `~/.codex/AGENTS.md` (one file, two harness names).
-- `skills/<name>/` — canonical global skills. `~/.claude/skills/<name>` and
-  `~/.codex/skills/<name>` get per-skill symlinks so user, third-party, and
-  Codex-managed `.system/` skills survive beside them.
+- `skills/<category>/<name>/` — canonical global skills, grouped for overview:
+  `flow/` (planning surface + beads substrate), `engineering/` (craft +
+  review), `fleet/` (orchestration/delegation), `meta/` (the system that
+  maintains the system), `desk/` (personal utilities + format references).
+  Skill names are globally unique; `~/.claude/skills/<name>` and
+  `~/.codex/skills/<name>` get flat per-skill symlinks so user, third-party,
+  and Codex-managed `.system/` skills survive beside them.
 - `archive/<name>/` — retired skills, kept whole but unlinked from every
   harness and excluded from all skill tooling. `archive/README.md` owns the
   archive/restore procedure.
@@ -38,29 +42,31 @@ Claude per-skill symlinks or the top-level harness instruction symlinks.
 
 ## Main flow
 
-The engineering skills compose into one idea → ship pipeline. Everything an
-effort produces lives in **one home**: `docs/prd/<effort-slug>/`.
+Planning is conversation-first; artifacts exist for readers, not for stages.
+Everything an effort produces lives in **one home**: `docs/prd/<effort-slug>/`
+(or the repo constitution's named planning home).
 
-1. **`/wayfinder`** — entry point for big, foggy efforts. Charts
-   `docs/prd/<effort-slug>/` (`map.md` + investigation tickets), worked one
-   ticket per session until the way is clear. A feature you can already state
-   sharply skips this and starts at **`/grill-with-docs`** (grilling +
-   domain-modeling, leaving `CONTEXT.md`/ADRs behind).
-2. **`/to-prd`** — synthesizes the decisions into
-   `docs/prd/<slug>/<slug>-prd.md` (test seams agreed with the user; slugged
-   basename, vault-safe) and publishes a beads umbrella epic whose slug
-   matches the folder.
-3. **`/to-issues`** — slices the PRD into tracer-bullet child epics with
-   native dependency edges; `br ready` surfaces unblocked slices.
-4. **Execute** — one session (or lane) per slice: claim (the lock, per the
-   `beads` skill), work at the pre-agreed seams, a review against the same
-   PRD on completion (builtin /code-review or codex review), commit, close
-   with evidence.
+1. **Talk** — a plain conversation (or `/grilling` / `/grill-with-docs`)
+   builds the shared understanding. No skill required to plan.
+2. **Land** — `wayfinder` makes it durable: the effort's `map.md` is the
+   current-intent register (append-only decision log, fog, supersessions).
+   Tickets only for questions that must outlive the session; big foggy
+   efforts get charted and worked as a map across sessions.
+3. **Compile, reader-gated** — `/to-prd` only when ownership will cross a
+   context boundary (big-ownership handoff, blind verification); `/to-issues`
+   only when execution fans out or spans sessions. Neither reader coming →
+   the map's decisions are the spec.
+4. **Execute** — claim (the lock, per the `beads` skill), work at the
+   pre-agreed seams, review against the same spec on completion (builtin
+   /code-review or codex review), commit, close with evidence. The
+   implementer never self-certifies big-ownership work — a fresh context
+   grades it against the spec.
 
-`/handoff` bridges sessions anywhere in the flow. The `beads` skill is the
-substrate reference (CLI + concurrency invariants) the flow skills point at;
-label taxonomy and sync rules stay repo-owned. Standalone craft skills
-(`/tdd`, `/diagnosing-bugs`, `/prototype`) also run outside the pipeline.
+`/handoff` bridges sessions anywhere. The `beads` skill is the substrate
+reference (CLI + concurrency invariants) the flow skills point at; label
+taxonomy and sync rules stay repo-owned. `/lint` is the scheduled garbage
+collector of the repo's shared memory; `/reflect` + `/dream` are the learning
+loop that proposes instruction-surface edits from observed behavior.
 
 ## Invocation modes
 
