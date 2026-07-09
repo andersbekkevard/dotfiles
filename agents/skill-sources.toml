@@ -6,7 +6,7 @@ version = 1
 # - local: intentionally local skill; no remote drift check.
 
 [skills.autoreview]
-local_path = "agents/skills/autoreview"
+local_path = "agents/skills/engineering/autoreview"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/openclaw/agent-skills.git", ref = "main", path = "skills/autoreview" }
 preserve = [
@@ -15,7 +15,7 @@ preserve = [
 ]
 
 [skills.create-cli]
-local_path = "agents/skills/create-cli"
+local_path = "agents/skills/engineering/create-cli"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/create-cli" }
 preserve = [
@@ -23,7 +23,7 @@ preserve = [
 ]
 
 [skills.define-goal]
-local_path = "agents/skills/define-goal/SKILL.md"
+local_path = "agents/skills/fleet/define-goal/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/openai/skills.git", ref = "main", path = "skills/.curated/define-goal/SKILL.md" }
 preserve = [
@@ -32,7 +32,7 @@ preserve = [
 ]
 
 [skills.humanizer]
-local_path = "agents/skills/humanizer/SKILL.md"
+local_path = "agents/skills/desk/humanizer/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/blader/humanizer.git", ref = "main", path = "SKILL.md" }
 preserve = [
@@ -40,17 +40,17 @@ preserve = [
 ]
 
 [skills.obsidian-markdown]
-local_path = "agents/skills/obsidian-markdown"
+local_path = "agents/skills/desk/obsidian-markdown"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/kepano/obsidian-skills.git", ref = "main", path = "skills/obsidian-markdown" }
 
 [skills.officecli]
-local_path = "agents/skills/officecli/SKILL.md"
+local_path = "agents/skills/desk/officecli/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/iOfficeAI/OfficeCLI.git", ref = "main", path = "SKILL.md" }
 
 [skills.thermo-nuclear-code-quality-review]
-local_path = "agents/skills/thermo-nuclear-code-quality-review/SKILL.md"
+local_path = "agents/skills/engineering/thermo-nuclear-code-quality-review/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md" }
 preserve = [
@@ -58,17 +58,17 @@ preserve = [
 ]
 
 [skills.codebase-design]
-local_path = "agents/skills/codebase-design"
+local_path = "agents/skills/engineering/codebase-design"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/codebase-design" }
 
 [skills.domain-modeling]
-local_path = "agents/skills/domain-modeling"
+local_path = "agents/skills/flow/domain-modeling"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/domain-modeling" }
 
 [skills.fix-merge-conflicts]
-local_path = "agents/skills/fix-merge-conflicts"
+local_path = "agents/skills/engineering/fix-merge-conflicts"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/resolving-merge-conflicts" }
 preserve = [
@@ -77,22 +77,22 @@ preserve = [
 ]
 
 [skills.grilling]
-local_path = "agents/skills/grilling"
+local_path = "agents/skills/flow/grilling"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/grilling" }
 
 [skills.improve-codebase-architecture]
-local_path = "agents/skills/improve-codebase-architecture"
+local_path = "agents/skills/engineering/improve-codebase-architecture"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/improve-codebase-architecture" }
 
 [skills.prototype]
-local_path = "agents/skills/prototype"
+local_path = "agents/skills/flow/prototype"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/prototype" }
 
 [skills.wayfinder]
-local_path = "agents/skills/wayfinder"
+local_path = "agents/skills/flow/wayfinder"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
 preserve = [
@@ -100,27 +100,27 @@ preserve = [
 ]
 
 [skills.writing-great-skills]
-local_path = "agents/skills/writing-great-skills"
+local_path = "agents/skills/meta/writing-great-skills"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/writing-great-skills" }
 
 [skills.diagnosing-bugs]
-local_path = "agents/skills/diagnosing-bugs"
+local_path = "agents/skills/engineering/diagnosing-bugs"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/diagnosing-bugs" }
 
 [skills.grill-with-docs]
-local_path = "agents/skills/grill-with-docs"
+local_path = "agents/skills/flow/grill-with-docs"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/grill-with-docs" }
 
 [skills.handoff]
-local_path = "agents/skills/handoff"
+local_path = "agents/skills/flow/handoff"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/handoff" }
 
 [skills.tdd]
-local_path = "agents/skills/tdd"
+local_path = "agents/skills/engineering/tdd"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/tdd" }
 preserve = [
@@ -128,7 +128,7 @@ preserve = [
 ]
 
 [skills.to-issues]
-local_path = "agents/skills/to-issues"
+local_path = "agents/skills/flow/to-issues"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-tickets" }
 preserve = [
@@ -138,7 +138,7 @@ preserve = [
 ]
 
 [skills.to-prd]
-local_path = "agents/skills/to-prd"
+local_path = "agents/skills/flow/to-prd"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-spec" }
 preserve = [
@@ -147,7 +147,7 @@ preserve = [
 ]
 
 [skills.visual-plan]
-local_path = "agents/skills/visual-plan"
+local_path = "agents/skills/flow/visual-plan"
 tracking = "watch"
 upstream = { type = "git", url = "https://github.com/BuilderIO/agent-native.git", ref = "main" }
 notes = [
@@ -155,11 +155,11 @@ notes = [
 ]
 
 [skills.beads]
-local_path = "agents/skills/beads"
+local_path = "agents/skills/flow/beads"
 tracking = "local"
 
 [skills.codex-lane]
-local_path = "agents/skills/codex-lane"
+local_path = "agents/skills/fleet/codex-lane"
 tracking = "watch"
 upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/codex-first" }
 notes = [
@@ -167,33 +167,33 @@ notes = [
 ]
 
 [skills.dream]
-local_path = "agents/skills/dream"
+local_path = "agents/skills/meta/dream"
 tracking = "local"
 
 [skills.lint]
-local_path = "agents/skills/lint"
+local_path = "agents/skills/meta/lint"
 tracking = "local"
 
 [skills.model-routing]
-local_path = "agents/skills/model-routing"
+local_path = "agents/skills/fleet/model-routing"
 tracking = "local"
 
 [skills.pro-brief]
-local_path = "agents/skills/pro-brief"
+local_path = "agents/skills/fleet/pro-brief"
 tracking = "local"
 
 [skills.recap]
-local_path = "agents/skills/recap"
+local_path = "agents/skills/desk/recap"
 tracking = "local"
 
 [skills.reflect]
-local_path = "agents/skills/reflect"
+local_path = "agents/skills/meta/reflect"
 tracking = "local"
 
 [skills.router]
-local_path = "agents/skills/router"
+local_path = "agents/skills/meta/router"
 tracking = "local"
 
 [skills.skill-audit]
-local_path = "agents/skills/skill-audit"
+local_path = "agents/skills/meta/skill-audit"
 tracking = "local"

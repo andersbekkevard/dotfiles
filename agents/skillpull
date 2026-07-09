@@ -221,7 +221,13 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_validate(args: argparse.Namespace) -> int:
     data = skills(load_manifest())
-    actual = {p.name for p in (ROOT / "skills").iterdir() if p.is_dir() and not p.name.startswith(".")}
+    actual = {
+        p.name
+        for cat in (ROOT / "skills").iterdir()
+        if cat.is_dir() and not cat.name.startswith(".")
+        for p in cat.iterdir()
+        if p.is_dir() and not p.name.startswith(".")
+    }
     declared = set(data)
     missing = sorted(actual - declared)
     stale = sorted(declared - actual)

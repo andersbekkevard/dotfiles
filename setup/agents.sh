@@ -121,7 +121,9 @@ sync_claude_skill_links() {
   ensure_claude_skill_dir "$claude_skills_dir" "$managed_skills_dir"
   prune_stale_claude_skill_links "$claude_skills_dir" "$managed_skills_dir"
 
-  for skill_dir in "$managed_skills_dir"/*; do
+  # Skills live one level below category folders (skills/<category>/<name>);
+  # the harness link namespace stays flat, keyed by the skill dir's basename.
+  for skill_dir in "$managed_skills_dir"/*/*; do
     [[ -d "$skill_dir" ]] || continue
     [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
     link_claude_skill "$skill_dir" "$claude_skills_dir"
