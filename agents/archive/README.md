@@ -30,3 +30,5 @@ commit message that moves it.
   2026-07-09 on two-corpus dream evidence: silently absent for a week at zero
   cost, routed around even on textbook triggers; its one load-bearing line
   (claim/close lifecycle) lives in the `beads` skill.
+- `prototype` — throwaway-prototype conventions (logic/UI branches). Moved to
+  the archive by Anders 2026-07-09 during the skill-surface cleanup.

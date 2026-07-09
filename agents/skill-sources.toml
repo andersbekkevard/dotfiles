@@ -86,17 +86,11 @@ local_path = "agents/skills/engineering/improve-codebase-architecture"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/improve-codebase-architecture" }
 
-[skills.prototype]
-local_path = "agents/skills/flow/prototype"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/prototype" }
-
 [skills.wayfinder]
 local_path = "agents/skills/flow/wayfinder"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
-preserve = [
-  "Local wayfinder wording is meaningfully adapted; port upstream ideas semantically.",
+tracking = "local"
+notes = [
+  "Rewritten 2026-07-09 around Anders' native loop: model-invoked with a land-a-conversation branch, map as current-intent register (append-only decision log, fog, supersession), reader-gated downstream artifacts. Upstream (mattpocock engineering/wayfinder) is idea-source only.",
 ]
 
 [skills.writing-great-skills]
