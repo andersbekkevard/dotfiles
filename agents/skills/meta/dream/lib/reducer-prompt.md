@@ -120,5 +120,14 @@ where `finding_ids` contains stable `finding_id` values from the ledger and
 `"last seen 2026-04, possibly stale"`.
 The apply step uses this once Anders records his decisions.
 
+**`finding_ids` are copied byte-for-byte from the ledger's `finding_id`
+field — open `ledger.jsonl` and paste the exact values. Never compose,
+abbreviate, or re-slug them: finalize matches ledger rows by exact id, and an
+invented human-readable slug (e.g. `…|status-question-triggered-action`)
+matches zero rows, silently orphaning the whole run's closeout. Before
+writing the file, spot-check that every id you emitted greps to a ledger
+line.** (This exact failure happened on 2026-07-09; both runs' decisions had
+to be reconstructed by tuple-match.)
+
 Keep the whole proposal tight. If there are 40 raw findings, a good proposal is
 maybe 6–12 high-confidence items, not 40. Compression is the value.
