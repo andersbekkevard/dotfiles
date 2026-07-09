@@ -26,3 +26,7 @@ commit message that moves it.
 - `review-changes` — beads-adapted port of mattpocock code-review. Archived
   2026-07-09: builtin /code-review, codex review, and autoreview cover review
   well; a bespoke two-axis protocol over-encoded it.
+- `implement` — orchestration pointer (claim → tdd → review → close). Archived
+  2026-07-09 on two-corpus dream evidence: silently absent for a week at zero
+  cost, routed around even on textbook triggers; its one load-bearing line
+  (claim/close lifecycle) lives in the `beads` skill.

@@ -12,8 +12,9 @@ same truth. Beads is the one shared file that is safe to co-write concurrently
 — SQLite + JSONL handle the locking.
 
 Authoring work items — PRDs, slices, `## Success Criteria`, `## Scope` — is
-owned by `/to-prd` and `/to-issues`; the execution lifecycle by `/implement`.
-This skill is the substrate they run on: the CLI and the invariants below.
+owned by `/to-prd` and `/to-issues`. The execution lifecycle (claim → work →
+close with evidence) is this skill's own contract: the CLI and the invariants
+below.
 
 ## Invariants
 
