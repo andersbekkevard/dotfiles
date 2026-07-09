@@ -23,3 +23,6 @@ commit message that moves it.
 - `goal-fuzz`, `intent-review` — front-gate/back-gate goal-contract hardening.
   Built for the gpt-5.6-era failure mode of cheating and overfitting to narrow
   readings of a goal; Mythos-class models don't need the scaffolding.
+- `review-changes` — beads-adapted port of mattpocock code-review. Archived
+  2026-07-09: builtin /code-review, codex review, and autoreview cover review
+  well; a bespoke two-axis protocol over-encoded it.
