@@ -8,6 +8,24 @@ This skill takes the current conversation context and codebase understanding and
 
 Work items live in beads (`br`) — follow the `beads` skill for tracker conventions.
 
+## When not to run this
+
+The PRD's readers are a **fresh-context implementer taking big ownership** and
+a **blind verifier grading against it**. If neither reader is coming — the
+effort is small, or the planning conversation will steer implementation live —
+skip the PRD: the effort's map (see the `wayfinder` skill) already carries the
+decisions, and a charter would be transcription. Compile when the decision
+trail is too long for a fresh reader to cheaply replay, or when a frozen
+measuring instrument is needed for handoff. When in doubt, ask Anders.
+
+## Ownership
+
+The PRD describes; the tracker verifies. Status lives **only** in beads — the
+PRD's frontmatter carries a `bead: <epic-id>` pointer and no status field.
+Slice-level `## Success Criteria` live **only** in the slices' beads
+(`/to-issues`), never restated in the PRD. Decisions cite the map's decision
+log for reasoning rather than restating it — gist here, link to the log.
+
 ## Process
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
@@ -56,13 +74,16 @@ Do NOT include specific file paths or code snippets. They may end up being outda
 
 Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
 
-## Testing Decisions
+## Verification Seams
 
-A list of testing decisions that were made. Include:
-
-- A description of what makes a good test (only test external behavior, not implementation details)
-- Which modules will be tested
-- Prior art for the tests (i.e. similar types of tests in the codebase)
+A seam is a boundary where the work can be checked without re-doing the work —
+an agreed observation point with a stateable pass condition. This section is
+what the blind verifier grades at. For each seam: where semantics stop, the
+pass condition (mechanical or spot-checkable — "N reporters → N sections",
+never "looks right"), and who checks it. For code efforts this includes the
+test seams (test external behavior through public interfaces, not
+implementation details — see the `tdd` skill) and prior art for the tests;
+for non-code pipelines, the same contract without the test harness.
 
 ## Out of Scope
 

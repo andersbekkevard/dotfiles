@@ -49,6 +49,30 @@ has precedence.
 
 `/lint` means a read-only hygiene pass over the current checkout.
 
+Lint is the garbage collector of the repo's shared memory: filesystem
+persistence without scheduled invalidation always rots, so lint runs
+recurringly (a scheduled routine per repo where wired), not only on request.
+
+## Standing Mandates
+
+Beyond rules the repo documents, these checks always apply — each is a
+structural rot mode of a shared-memory repo:
+
+- **Register exhaustiveness.** Where the repo has a work register, every PRD,
+  effort map, and open epic must be reachable from it (register + tracker
+  query answers "what are we working on?" exhaustively). Unreachable planning
+  material is drift.
+- **Supersession.** A planning doc whose intent has been pivoted past must say
+  so — superseded docs that still read as current, registry rows pointing at
+  archived plans, and two docs both claiming to be the current approach to the
+  same surface are all findings.
+- **Paraphrase.** Boot files and constitutions may carry a one-line gist plus
+  pointer for a convention; text that restates a skill's or rule-owner's
+  protocol in place is doc drift (two homes for one meaning).
+- **Posture staleness.** Hand-authored posture/priority blocks carry a date;
+  a posture older than its stated horizon (or visibly overtaken by events) is
+  a finding.
+
 ## Non-Negotiables
 
 - **Read-only by default.** Do not edit, move, rename, delete, or generate files

@@ -10,6 +10,20 @@ Break a plan into independently-grabbable issues using vertical slices (tracer b
 
 Work items live in beads (`br`) — follow the `beads` skill for tracker conventions.
 
+## When not to run this
+
+Slices exist for the claim/ready machinery: **run this only when execution
+will fan out to parallel workers or span multiple sessions.** When one agent
+takes the whole effort in one context with Anders steering, slicing is
+ceremony — the umbrella epic alone is the tracker handle; skip this skill.
+
+## Ownership
+
+Each slice's `## Success Criteria` live **only** in its bead — they are the
+close-contract the claimant verifies against. Never mirror slice bodies into
+markdown ticket files; the bead is the ticket. Durable reasoning stays in the
+effort's map and PRD, cited by link.
+
 ## Process
 
 ### 1. Gather context
@@ -66,7 +80,7 @@ Publish issues in dependency order (blockers first) so you can reference real be
 
 A concise description of this vertical slice. Describe the end-to-end behavior, not layer-by-layer implementation.
 
-Avoid specific file paths or code snippets — they go stale fast. Exception: if the `/prototype` skill produced code that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), add a context pointer to where that prototype code lives rather than inlining it.
+Avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced code that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), add a context pointer to where that prototype code lives rather than inlining it.
 
 ## Success Criteria
 

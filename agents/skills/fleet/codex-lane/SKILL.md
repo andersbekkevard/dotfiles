@@ -36,6 +36,13 @@ These rules bind every `codex exec`, not only detached lanes:
 - Foreground runs may add `2>/dev/null` — codex's thinking stream bloats
   context, and the result lives in the `-o` file. Drop the suppression only
   to debug a failing dispatch.
+- When a prompt references a skill, verify the path resolves before dispatch
+  (`test -f <path>/SKILL.md`) or inline the skill text. A missing skill
+  reference is a dispatch defect — surface it loudly; never let the lane
+  silently downgrade to "normal engineering discipline". (A one-character
+  path typo once disabled a skill for a whole adoption week.)
+- Prompts that stage shell snippets: never use `status` as a variable name —
+  it is read-only in zsh and the assignment kills the script.
 - Follow-ups reuse the session instead of paying for a fresh run:
   `codex exec resume <session-id> -o /tmp/<name>.out.md - < /tmp/<name>-resume.md`,
   session id from `~/.codex/sessions/YYYY/MM/DD/` (grep for the prompt
@@ -88,7 +95,10 @@ fi
    leader, which `&` makes it under interactive job control. `nohup` is the
    floor for a future macOS without `perl`: it survives parent exit but stays
    in the original process group, so a group-targeted kill still reaches it.
-3. Respect quota as a budget: keep an overnight reserve.
+3. Respect quota as a budget: keep an overnight reserve. Size in-flight
+   parallelism by lane *weight* (expected tokens/runtime and repo contention),
+   not a flat lane count — many light read-only lanes can run wide; a few
+   heavy implementation lanes saturate earlier.
 4. If the lane writes a new typed value (enum variant, schema field), the
    owner lands the type change FIRST — a lane writing data the code cannot
    parse poisons fixtures incrementally.
@@ -100,11 +110,14 @@ fi
   substrings false-positive: lanes that read transcripts or codex logs
   quote `tokens used`.
 - Poll cadence: size to the expected runtime of the slowest single lane,
-  never to lane count. Interval ≈ that estimate ÷ 5, floored at ~270s; err
+  never to lane count — parallelism does not lengthen the critical path.
+  Interval ≈ that estimate ÷ 5, floored at ~270s; err
   toward too often — a wasted poll costs one context reload, a missed
   completion costs wall-clock — but keep the whole supervision lifecycle
   under ~10 polls. On every poll verify liveness, not just completion: log
-  growth since last check AND a live process.
+  growth since last check AND a live process. When a *single* deliverable
+  gates the next action, watch that exact artifact rather than a blanket
+  fixed interval.
 - After dispatching, always end the turn with a scheduled wakeup. Detached
   lanes are invisible to the harness, and persistent background pollers get
   killed by the environment — the wakeup is the reliable path.
@@ -132,9 +145,11 @@ Classify a lane with no completion before acting:
   prompt, redispatch after reset; write the next-day plan into the working
   plan artifact if quota is gone for hours.
 - **Live process, no log growth** across two checks: hung — inspect, then
-  kill; a resume can freeze for an hour at a tiny log while its edits are
-  already in the tree, so diff the working tree before assuming the work is
-  lost.
+  kill *by PID or the lane's own PGID only; never a box-wide
+  `pkill -f "codex exec"`* — on a shared machine that murders every other
+  owner's lanes. A resume can freeze for an hour at a tiny log while its
+  edits are already in the tree, so diff the working tree before assuming
+  the work is lost.
 - **No process, no sentinel, partial log**: resume the session with a
   narrow follow-up prompt (resume form in **Every dispatch**).
 - **Patch-mismatch chatter in the log**: the checkout moved under the lane;

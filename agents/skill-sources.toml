@@ -123,21 +123,16 @@ preserve = [
 
 [skills.to-issues]
 local_path = "agents/skills/flow/to-issues"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-tickets" }
-preserve = [
-  "Local name stays to-issues; upstream renamed to to-tickets in v1.1.0 (2026-07-08).",
-  "Publishing is adapted to beads: child epics via br create --parent, blockers via br dep add, no triage labels.",
-  "Issue template drops ## Parent / ## Blocked by (native beads edges) and renames ## Acceptance criteria to ## Success Criteria with an added ## Scope section, matching beads epic conventions.",
+tracking = "local"
+notes = [
+  "Diverged 2026-07-09: reader-gated (fan-out/multi-session only) with bead-owned success criteria; pending the compile-to-beads pilot it may merge with to-prd into a single to-epic skill. Upstream (mattpocock engineering/to-tickets) is idea-source only.",
 ]
 
 [skills.to-prd]
 local_path = "agents/skills/flow/to-prd"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-spec" }
-preserve = [
-  "Local name stays to-prd; upstream renamed to to-spec in v1.1.0 (2026-07-08).",
-  "Publishing is adapted to beads: the PRD is saved as a repo markdown file (default docs/prd/<slug>/<slug>-prd.md, one folder per effort shared with wayfinder, vault-unique basename, bead slug = folder slug) and the umbrella epic description carries a summary + pointer; no triage labels.",
+tracking = "local"
+notes = [
+  "Diverged 2026-07-09: reader-gated (big-ownership handoff / blind verification only), ownership matrix (status in beads via frontmatter bead pointer, criteria in slices' beads, decisions cite the map), Verification Seams template section; pending the compile-to-beads pilot it may merge with to-issues into a single to-epic skill. Upstream (mattpocock engineering/to-spec) is idea-source only.",
 ]
 
 [skills.visual-plan]
