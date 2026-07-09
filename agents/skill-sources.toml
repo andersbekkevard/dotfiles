@@ -94,7 +94,7 @@ upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref
 [skills.wayfinder]
 local_path = "agents/skills/wayfinder"
 tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/in-progress/wayfinder" }
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
 preserve = [
   "Local wayfinder wording is meaningfully adapted; port upstream ideas semantically.",
 ]
@@ -139,8 +139,9 @@ preserve = [
 [skills.to-issues]
 local_path = "agents/skills/to-issues"
 tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-issues" }
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-tickets" }
 preserve = [
+  "Local name stays to-issues; upstream renamed to to-tickets in v1.1.0 (2026-07-08).",
   "Publishing is adapted to beads: child epics via br create --parent, blockers via br dep add, no triage labels.",
   "Issue template drops ## Parent / ## Blocked by (native beads edges) and renames ## Acceptance criteria to ## Success Criteria with an added ## Scope section, matching beads epic conventions.",
 ]
@@ -148,8 +149,9 @@ preserve = [
 [skills.to-prd]
 local_path = "agents/skills/to-prd"
 tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-prd" }
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-spec" }
 preserve = [
+  "Local name stays to-prd; upstream renamed to to-spec in v1.1.0 (2026-07-08).",
   "Publishing is adapted to beads: the PRD is saved as a repo markdown file (default docs/prd/<slug>/<slug>-prd.md, one folder per effort shared with wayfinder, vault-unique basename, bead slug = folder slug) and the umbrella epic description carries a summary + pointer; no triage labels.",
 ]
 
