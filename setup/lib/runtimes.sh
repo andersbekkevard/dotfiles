@@ -117,16 +117,34 @@ install_codex_cli() {
     return 0
   fi
 
-  if command_exists pnpm; then
-    run_cmd_allow_failure \
-      "Install Codex CLI with pnpm" \
-      pnpm add -g @openai/codex
-  elif command_exists npm; then
-    run_cmd_allow_failure \
-      "Install Codex CLI with npm (pnpm unavailable)" \
-      npm install -g @openai/codex
-  elif [[ "$DRY_RUN" -eq 0 ]]; then
-    record_error "Neither pnpm nor npm available; Codex CLI not installed"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install Codex CLI with the official standalone installer"
+    return 0
+  fi
+
+  if ! command_exists curl; then
+    record_error "curl not available; Codex CLI not installed"
+    return 0
+  fi
+
+  local tmp_dir installer status
+  tmp_dir="$(mktemp -d)"
+  installer="$tmp_dir/install.sh"
+
+  curl -fsSL https://chatgpt.com/codex/install.sh -o "$installer"
+  status=$?
+  if [[ $status -ne 0 || ! -s "$installer" ]]; then
+    rm -rf "$tmp_dir"
+    record_error "Download Codex CLI installer failed (exit $status)"
+    return 0
+  fi
+
+  log_info "Install Codex CLI with the official standalone installer"
+  PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh "$installer"
+  status=$?
+  rm -rf "$tmp_dir"
+  if [[ $status -ne 0 ]]; then
+    record_error "Install Codex CLI failed (exit $status)"
   fi
 }
 
