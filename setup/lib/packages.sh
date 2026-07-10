@@ -6,16 +6,74 @@ github_latest_asset_url() {
   curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" | jq -r --arg pattern "$pattern" '.assets[] | select(.name | test($pattern)) | .browser_download_url' | head -n1
 }
 
+homebrew_executable() {
+  if command_exists brew; then
+    command -v brew
+    return 0
+  fi
+
+  case "$(uname -m)" in
+    arm64|aarch64)
+      [[ -x /opt/homebrew/bin/brew ]] && {
+        printf '%s\n' /opt/homebrew/bin/brew
+        return 0
+      }
+      [[ -x /usr/local/bin/brew ]] && {
+        printf '%s\n' /usr/local/bin/brew
+        return 0
+      }
+      ;;
+    *)
+      [[ -x /usr/local/bin/brew ]] && {
+        printf '%s\n' /usr/local/bin/brew
+        return 0
+      }
+      [[ -x /opt/homebrew/bin/brew ]] && {
+        printf '%s\n' /opt/homebrew/bin/brew
+        return 0
+      }
+      ;;
+  esac
+
+  return 1
+}
+
 ensure_homebrew() {
   if [[ "$OS_FAMILY" != "darwin" ]]; then
     return 0
   fi
 
-  if command_exists brew; then
-    return 0
+  local brew_bin=""
+  brew_bin="$(homebrew_executable 2>/dev/null || true)"
+
+  if [[ -z "$brew_bin" ]]; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      log_info "[dry-run] Install Homebrew"
+      log_info "[dry-run] Activate Homebrew in the setup process"
+      return 0
+    fi
+
+    run_cmd_allow_failure "Install Homebrew" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    brew_bin="$(homebrew_executable 2>/dev/null || true)"
   fi
 
-  run_cmd_allow_failure "Install Homebrew" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  if [[ -z "$brew_bin" || ! -x "$brew_bin" ]]; then
+    record_error "Homebrew is unavailable after installation"
+    return 1
+  fi
+
+  local brew_env
+  brew_env="$("$brew_bin" shellenv 2>/dev/null)" || {
+    record_error "Homebrew shell environment could not be loaded from $brew_bin"
+    return 1
+  }
+  eval "$brew_env"
+  hash -r
+
+  if ! command_exists brew; then
+    record_error "Homebrew is not on PATH after loading $brew_bin shellenv"
+    return 1
+  fi
 }
 
 ensure_linux_command_aliases() {
@@ -143,6 +201,16 @@ brew_bundle() {
   local brewfile="$1"
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     log_info "Skipping Brewfile $brewfile"
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Apply Brewfile $(basename "$brewfile")"
+    return 0
+  fi
+
+  if ! command_exists brew; then
+    record_error "Cannot apply $(basename "$brewfile"): Homebrew is not on PATH"
     return 0
   fi
 

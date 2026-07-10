@@ -86,6 +86,8 @@ env -i HOME="$HOME" USER="$USER" PATH="$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:
 
 Use the login-shell check to confirm shared bootstrap does not depend on interactive `~/.zshrc` state. Use the non-login check to confirm agents and scripts can resolve the same commands through the stable `~/.local/bin` contract.
 
+On macOS, setup loads Homebrew's `shellenv` into its own process immediately after a first install, so the same run can apply Brewfiles on either Apple Silicon (`/opt/homebrew`) or Intel (`/usr/local`). Login shells retain that behavior through `~/.zprofile`.
+
 ## Agent skills and instructions
 
 Global agent skills and instructions live under `agents/` and are linked into `~/.claude` and `~/.codex` by the minimal layer (`setup/agents.sh`).
