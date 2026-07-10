@@ -174,6 +174,6 @@ theme_apply_tmux() {
   tmux set-option -gq message-style "fg=colour15,bg=${DOTFILES_THEME_TMUX_ACCENT_BG},bold"
   tmux set-option -gq message-command-style "fg=colour15,bg=${DOTFILES_THEME_TMUX_ACCENT_BG},bold"
   tmux set-option -gq mode-style "fg=colour0,bg=${DOTFILES_THEME_TMUX_MODE_BG},bold"
-  tmux set-option -gq status-right "#[fg=colour15,bg=${DOTFILES_THEME_TMUX_ACCENT_BG}] #h #(\$HOME/.scripts/tmux-system-status)"
+  tmux set-option -gq status-right "#[fg=colour15,bg=${DOTFILES_THEME_TMUX_ACCENT_BG}] #h #($HOME/.scripts/tmux-system-status)"
   tmux set-window-option -gq clock-mode-colour "$DOTFILES_THEME_TMUX_CLOCK"
 }
