@@ -27,7 +27,9 @@ schedulers stay in their owning projects.
 3. Prove the chosen lane end to end:
    - publish: connected tunnel, intended DNS and ingress, valid HTTPS, expected
      local application response;
-   - cleanup: requested DNS and ingress absent, unrelated routes intact;
+   - cleanup: owned exact DNS record and requested ingress absent, public
+     hostname no longer reaches the local origin, wildcard fallback inspected
+     and reported, unrelated routes intact;
    - receive: catch-all Worker invoked and exact RFC822 object stored under the
      encoded recipient prefix;
    - send: Resend accepted the message and reports `last_event: delivered`.

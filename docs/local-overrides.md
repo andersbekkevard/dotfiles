@@ -68,8 +68,8 @@ Why:
 - it keeps service/runtime behavior aligned with human shell behavior
 
 Current pattern:
-- `~/.local/bin/env` can be a shared PATH-normalization snippet when you need one
-- `shell/.profile` sources it to reassert `~/.local/bin` after shared runtime bootstrap mutates PATH
+- `shell/.profile` unconditionally puts `~/.local/bin` first after shared runtime bootstrap and machine-local overrides
+- `~/.local/bin/env` can optionally contribute installer-managed environment before that final normalization
 - services that need deterministic command resolution should also put `~/.local/bin` first in their explicit PATH
 
 `~/.local/bin/env` is **not** a shell primitive and is not repo-managed by default. It only applies where startup files explicitly source it.

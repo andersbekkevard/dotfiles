@@ -42,6 +42,7 @@ When changing layer scripts or package manifests, trace the full sequence on a b
 Shell startup is split by responsibility:
 
 - `shell/.profile` owns runtime-critical, POSIX-safe PATH/bootstrap and is the single shared owner of baseline PATH assembly.
+- `shell/.local/lib/dotfiles/runtime-paths.sh` owns the OS-aware pnpm global-bin default consumed by setup and `~/.profile`.
 - `shell/.zprofile` handles zsh login-shell setup and sources `~/.profile`.
 - `shell/.zshrc` owns interactive zsh behavior, backfills `~/.profile` for interactive non-login zsh when needed, and delegates to focused files under `shell/.zsh/`.
 - `shell/.zshenv` is kept minimal for zsh-wide XDG defaults only.

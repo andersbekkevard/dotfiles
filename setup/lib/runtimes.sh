@@ -1,3 +1,8 @@
+_DOTFILES_RUNTIME_PATHS="$DOTFILES_DIR/shell/.local/lib/dotfiles/runtime-paths.sh"
+# shellcheck disable=SC1090
+source "$_DOTFILES_RUNTIME_PATHS"
+unset _DOTFILES_RUNTIME_PATHS
+
 ensure_fnm_available_now() {
   if command_exists fnm; then
     return 0
@@ -30,18 +35,19 @@ ensure_cargo_available_now() {
 ensure_pnpm_global_bin_available_now() {
   command_exists pnpm || return 0
 
-  local pnpm_home
-  pnpm_home="$(pnpm config get global-bin-dir 2>/dev/null || true)"
-  case "$pnpm_home" in
-    ""|null|undefined)
-      pnpm_home="$HOME/.local/share/pnpm"
-      run_cmd_allow_failure \
-        "Configure pnpm global bin directory" \
-        pnpm config set global-bin-dir "$pnpm_home"
-      ;;
-  esac
+  local configured_pnpm_home pnpm_home
+  pnpm_home="${PNPM_HOME:-$(dotfiles_default_pnpm_home)}"
+  configured_pnpm_home="$(pnpm config get global-bin-dir 2>/dev/null || true)"
 
-  mkdir -p "$pnpm_home"
+  if [[ "$configured_pnpm_home" != "$pnpm_home" ]]; then
+    run_cmd_allow_failure \
+      "Configure pnpm global bin directory at $pnpm_home" \
+      pnpm config set global-bin-dir "$pnpm_home"
+  fi
+
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    mkdir -p "$pnpm_home"
+  fi
   export PNPM_HOME="$pnpm_home"
   export PATH="$PNPM_HOME:$PATH"
 }
