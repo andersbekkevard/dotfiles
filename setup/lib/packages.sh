@@ -261,6 +261,46 @@ ensure_ngrok_apt_repo() {
   run_cmd_allow_failure "Install ngrok" as_root apt-get install -y ngrok
 }
 
+ensure_cloudflared_apt_repo() {
+  if [[ "$OS_FAMILY" != "linux" || "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if command_exists cloudflared; then
+    return 0
+  fi
+
+  if ! as_root true >/dev/null 2>&1; then
+    log_warn "Skipping Cloudflare package repository setup; sudo/root unavailable."
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Configure Cloudflare package repository and install cloudflared"
+    return 0
+  fi
+
+  local keyring="/usr/share/keyrings/cloudflare-main.gpg"
+  local source_file="/etc/apt/sources.list.d/cloudflared.list"
+
+  as_root mkdir -p --mode=0755 /usr/share/keyrings
+  curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | as_root tee "$keyring" >/dev/null
+  if [[ ! -s "$keyring" ]]; then
+    record_error "Configure Cloudflare package repository failed (empty or missing keyring)"
+    return 0
+  fi
+
+  printf 'deb [signed-by=%s] https://pkg.cloudflare.com/cloudflared any main\n' "$keyring" | as_root tee "$source_file" >/dev/null
+  local status=$?
+  if [[ $status -ne 0 || ! -s "$source_file" ]]; then
+    record_error "Write Cloudflare apt source failed (exit $status)"
+    return 0
+  fi
+
+  run_cmd_allow_failure "Update apt for Cloudflare repository" as_root apt-get update
+  run_cmd_allow_failure "Install cloudflared" as_root apt-get install -y cloudflared
+}
+
 install_git_delta_linux() {
   if [[ "$OS_FAMILY" != "linux" || "$SKIP_INSTALL" -eq 1 ]]; then
     return 0

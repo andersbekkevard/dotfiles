@@ -1,0 +1,8 @@
+{
+  "name": "personal-edge-mail-intake",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
