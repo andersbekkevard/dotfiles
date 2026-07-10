@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fable Counsel"
+  short_description: "Get a cold read or plan counsel"
+  default_prompt: "Use $fable-counsel for a cold read before choosing direction or plan counsel after forming one."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal Edge"
+  short_description: "Publish apps and operate personal domain mail"
+  default_prompt: "Use $personal-edge to expose this app or configure inbound or outbound mail on bekkevard.me."

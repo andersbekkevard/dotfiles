@@ -86,6 +86,16 @@ local_path = "agents/skills/engineering/improve-codebase-architecture"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/improve-codebase-architecture" }
 
+[skills.extreme-software-optimization]
+local_path = "agents/skills/engineering/extreme-software-optimization"
+tracking = "local"
+notes = [
+  "Imported from the paid Jeffrey's Skills.md catalog on 2026-07-10; no public git path is available for drift checks.",
+]
+preserve = [
+  "Keep this skill user-invoked in both Claude and Codex.",
+]
+
 [skills.wayfinder]
 local_path = "agents/skills/flow/wayfinder"
 tracking = "tracked"
@@ -158,6 +168,10 @@ upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git"
 notes = [
   "Different skill shape (lane lifecycle vs routing); ported stdin prompt passing, -o sentinel, and the two-failed-resumes stop-loss from codex-first in 2026-07. Review upstream for new invocation mechanics, not for structure.",
 ]
+
+[skills.fable-counsel]
+local_path = "agents/skills/fleet/fable-counsel"
+tracking = "local"
 
 [skills.dream]
 local_path = "agents/skills/meta/dream"
