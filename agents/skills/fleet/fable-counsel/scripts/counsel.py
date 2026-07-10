@@ -16,6 +16,7 @@ from pathlib import Path
 
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
+MODES = ("propose", "challenge")
 SANITIZED_ENV = (
     "ANTHROPIC_API_KEY",
     "ANTHROPIC_AUTH_TOKEN",
@@ -45,9 +46,10 @@ def parse_args() -> argparse.Namespace:
         "--root", default=".", metavar="DIR", help="Repository root (cwd)."
     )
     parser.add_argument(
-        "--cold-read",
-        action="store_true",
-        help="Cold-read posture (plan counsel).",
+        "--mode",
+        choices=MODES,
+        required=True,
+        help="Counsel mode.",
     )
     parser.add_argument(
         "--doc",
@@ -110,8 +112,8 @@ def compose(args: argparse.Namespace, work_dir: Path, prompt: Path) -> None:
         str(script),
         "--root",
         str(Path(args.root).expanduser().resolve()),
-        "--posture",
-        "cold-read" if args.cold_read else "plan-counsel",
+        "--mode",
+        args.mode,
         "--brief",
         str(work_dir / "brief.md"),
         "--output",
