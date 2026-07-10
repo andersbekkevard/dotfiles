@@ -75,88 +75,41 @@ exactly when paraphrase could distort that judgment. Omit adjacent and duplicate
 material. For plan counsel, include the strongest source that cuts against the
 proposed direction when one exists.
 
-Use the composer so appended source text goes directly from disk into the prompt
-file instead of entering Sol's context:
+## Run counsel
+
+Use a fresh work directory so source text goes from disk into the packet without
+entering Sol's context:
 
 ```sh
 COUNSEL_DIR=$(mktemp -d "${TMPDIR:-/tmp}/fable-counsel.XXXXXX")
 echo "$COUNSEL_DIR"
 ```
 
-Record the returned directory and write the brief and any worker digests there.
-Then compose the packet:
+Write `brief.md` there. Add `user-intent.md` when user-directed intent bears on
+the decision, and `user-anchors.md` only with it. The runner discovers those
+names and writes `prompt.md` and `fable.md` in the same directory:
+
+Run from the repository root with repo-relative evidence paths. This section is
+the complete invocation contract. Treat the runner as opaque during counsel;
+open `scripts/` only to change or audit the runner itself.
 
 ```sh
 SKILL_DIR="<directory containing this SKILL.md>"
 COUNSEL_DIR="<directory returned by mktemp>"
-uv run "$SKILL_DIR/scripts/compose_packet.py" \
-  --root "$PWD" \
-  --posture plan-counsel \
-  --user-intent "$COUNSEL_DIR/user-intent.md" \
-  --user-anchors "$COUNSEL_DIR/user-anchors.md" \
-  --brief "$COUNSEL_DIR/brief.md" \
-  --document docs/prd/feature.md \
+uv run "$SKILL_DIR/scripts/counsel.py" "$COUNSEL_DIR" \
+  --doc docs/prd/feature.md \
   --excerpt src/planner.rs:118-205 \
-  --redacted-document "$COUNSEL_DIR/redacted-auth.md" \
-  --digest "$COUNSEL_DIR/terra-runtime-digest.md" \
-  --output "$COUNSEL_DIR/prompt.md"
+  --redacted "$COUNSEL_DIR/redacted-auth.md" \
+  --digest "$COUNSEL_DIR/terra-runtime-digest.md"
 ```
 
-`plan-counsel` is the default; select `cold-read` when direction is still open.
-`--user-intent` is optional when no user-directed intent bears on the decision;
-`--user-anchors` is optional and requires it. Repeat context flags as needed.
-The command reports paths and token weights without printing packet contents.
-The packet is complete when every item earns its fidelity and Fable can form an
+Repeat evidence flags as needed. Plan counsel and `high` effort are defaults;
+use `--cold-read` or `--effort low|medium|high|xhigh|max` when warranted. The
+runner reports token telemetry without printing packet contents, requires
+Claude Code subscription authentication, strips API and cloud-provider routing,
+and invokes Fable from an isolated neutral directory with tools disabled. The
+packet is complete when every item earns its fidelity and Fable can form an
 informed view without repository access.
-
-## Ask Fable
-
-Use Claude Code subscription authentication, never an Anthropic API key or cloud
-provider. Before execution, run the token-free auth check below and require
-`authMethod: claude.ai` plus a non-empty `subscriptionType`. If either check
-fails, stop instead of invoking Fable:
-
-```sh
-env -u ANTHROPIC_API_KEY \
-  -u ANTHROPIC_AUTH_TOKEN \
-  -u ANTHROPIC_BASE_URL \
-  -u CLAUDE_CODE_USE_BEDROCK \
-  -u CLAUDE_CODE_USE_VERTEX \
-  -u CLAUDE_CODE_USE_FOUNDRY \
-  claude auth status | \
-  jq -e '.loggedIn == true and .authMethod == "claude.ai" and (.subscriptionType | type == "string" and length > 0)' \
-  >/dev/null
-```
-
-Run from a neutral directory with the same sanitized environment and with
-project customizations and tools disabled. Default to `high`; Codex may set
-`FABLE_COUNSEL_EFFORT` to `low`, `medium`, `high`, `xhigh`, or `max` when the
-consultation warrants another level:
-
-```sh
-COUNSEL_DIR="<directory returned by mktemp>"
-FABLE_COUNSEL_EFFORT="${FABLE_COUNSEL_EFFORT:-high}"
-(cd "${TMPDIR:-/tmp}" && env \
-  -u ANTHROPIC_API_KEY \
-  -u ANTHROPIC_AUTH_TOKEN \
-  -u ANTHROPIC_BASE_URL \
-  -u CLAUDE_CODE_USE_BEDROCK \
-  -u CLAUDE_CODE_USE_VERTEX \
-  -u CLAUDE_CODE_USE_FOUNDRY \
-  claude \
-  --safe-mode \
-  --strict-mcp-config \
-  --disallowedTools 'mcp__*' \
-  --tools '' \
-  --print \
-  --no-session-persistence \
-  --output-format text \
-  --model claude-fable-5 \
-  --effort "$FABLE_COUNSEL_EFFORT" \
-  < "$COUNSEL_DIR/prompt.md" \
-  > "$COUNSEL_DIR/fable.md")
-test -s "$COUNSEL_DIR/fable.md"
-```
 
 Read the note, reconsider the direction, and continue with the best view. Mention
 the consultation when it materially changed or sharpened the work. When counsel
