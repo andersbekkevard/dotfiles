@@ -183,10 +183,48 @@ test_pnpm_dry_run() {
   rm -rf "$fake_home"
 }
 
+test_codex_standalone_installer_contract() {
+  local fake_home install_log
+  fake_home="$(mktemp -d)"
+  install_log="$fake_home/install.log"
+
+  (
+    HOME="$fake_home"
+    PATH=/usr/bin:/bin
+    DOTFILES_DIR="$REPO_ROOT"
+    INSTALL_LOG="$install_log"
+    export INSTALL_LOG
+    curl() {
+      local output="${@: -1}"
+      cat > "$output" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$CODEX_NON_INTERACTIVE" > "$INSTALL_LOG"
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) printf '%s\n' path-ok >> "$INSTALL_LOG" ;;
+  *) exit 9 ;;
+esac
+EOF
+    }
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    DRY_RUN=0
+    SKIP_INSTALL=0
+    ERRORS=()
+    install_codex_cli
+    assert_eq "$(sed -n '1p' "$INSTALL_LOG")" "1"
+    assert_eq "$(sed -n '2p' "$INSTALL_LOG")" "path-ok"
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "Codex standalone install recorded an error"
+  )
+  rm -rf "$fake_home"
+}
+
 test_runtime_path_defaults
 test_profile_contract
 test_homebrew_activation
 test_homebrew_dry_run
 test_pnpm_setup_contract
 test_pnpm_dry_run
+test_codex_standalone_installer_contract
 printf 'bootstrap contracts: ok\n'
