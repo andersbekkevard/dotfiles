@@ -124,6 +124,24 @@ resolve_command_from_clean_login_shell() {
     "$zsh_bin" -lc "command -v '$cmd'" 2>/dev/null | tail -n 1
 }
 
+resolve_command_from_clean_login_shell_without_stable_path() {
+  local cmd="$1"
+  local user_name zsh_bin
+
+  user_name="${USER:-$(id -un)}"
+  zsh_bin="$(command -v zsh 2>/dev/null || printf '/bin/zsh')"
+  [[ -x "$zsh_bin" ]] || return 1
+
+  env -i \
+    HOME="$HOME" \
+    USER="$user_name" \
+    SHELL="$zsh_bin" \
+    PATH="$(base_system_path)" \
+    "$zsh_bin" -lc \
+      'path=(${path:#$HOME/.local/bin}); command -v "$1"' -- "$cmd" \
+      2>/dev/null | tail -n 1
+}
+
 command_exists_in_clean_login_shell() {
   local resolved
   resolved="$(resolve_command_from_clean_login_shell "$1")" || return 1
@@ -142,6 +160,18 @@ command_exists_in_stable_path_contract() {
     /bin/sh -lc "command -v '$cmd' >/dev/null 2>&1"
 }
 
+command_reports_version_in_stable_path_contract() {
+  local cmd="$1"
+  local user_name
+
+  user_name="${USER:-$(id -un)}"
+  env -i \
+    HOME="$HOME" \
+    USER="$user_name" \
+    PATH="$HOME/.local/bin:$(base_system_path)" \
+    "$cmd" --version >/dev/null 2>&1
+}
+
 path_is_in_base_system() {
   case "$1" in
     /usr/bin/*|/bin/*|/usr/sbin/*|/sbin/*)
@@ -153,9 +183,11 @@ path_is_in_base_system() {
 
 refresh_local_bin_entrypoints() {
   local profile="$1"
-  local cmd resolved link_path
+  local cmd resolved link_path wrapper_dir wrapper_path quoted_resolved
 
   mkdir -p "$HOME/.local/bin"
+  wrapper_dir="$HOME/.local/bin/.dotfiles-entrypoints"
+  mkdir -p "$wrapper_dir"
 
   while IFS= read -r cmd; do
     [[ -z "$cmd" ]] && continue
@@ -165,10 +197,19 @@ refresh_local_bin_entrypoints() {
       continue
     fi
 
-    resolved="$(resolve_command_from_clean_login_shell "$cmd")" || continue
+    resolved="$(resolve_command_from_clean_login_shell_without_stable_path "$cmd")" || \
+      resolved="$(resolve_command_from_clean_login_shell "$cmd")" || continue
     [[ "$resolved" = /* && -x "$resolved" ]] || continue
     [[ "$resolved" == "$link_path" ]] && continue
     path_is_in_base_system "$resolved" && continue
+
+    if [[ "$(head -c 2 "$resolved" 2>/dev/null || true)" == "#!" ]]; then
+      wrapper_path="$wrapper_dir/$cmd"
+      printf -v quoted_resolved '%q' "$resolved"
+      printf '#!/bin/sh\nexec %s "$@"\n' "$quoted_resolved" > "$wrapper_path"
+      chmod 0755 "$wrapper_path"
+      resolved="$wrapper_path"
+    fi
 
     ln -sfn "$resolved" "$link_path"
   done < <(profile_commands "$profile")
@@ -474,6 +515,13 @@ check_required_commands() {
   if [[ ${#missing_stable[@]} -gt 0 ]]; then
     record_error "Required commands missing from stable PATH contract for profile $profile: ${missing_stable[*]}"
   fi
+
+  for cmd in pnpm codex; do
+    if profile_commands "$profile" | grep -Fxq "$cmd" && \
+       ! command_reports_version_in_stable_path_contract "$cmd"; then
+      record_error "Required command does not execute from stable PATH contract for profile $profile: $cmd"
+    fi
+  done
 }
 
 exit_with_summary() {

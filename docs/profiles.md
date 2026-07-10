@@ -2,11 +2,11 @@
 
 ## `minimal`
 
-Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, links the global agent surface (`agents/` — skills + instructions for Claude Code and Codex; see `docs/architecture.md`), and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `delta`, `sesh`, `gum`, `forward-to-me`, `forward-from-me`, `git-clone-subdir`, `git-credential-gh-safe`, and `git-loc`).
+Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, links the global agent surface (`agents/` — skills + instructions for Claude Code and Codex; see `docs/architecture.md`), and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `cloudflared`, `delta`, `sesh`, `gum`, `forward-to-me`, `forward-from-me`, `git-clone-subdir`, `git-credential-gh-safe`, and `git-loc`).
 
 ## `full`
 
-Adds shared development runtimes and tooling on top of `minimal`. This layer installs the managed runtime stack (`tree-sitter`, `uv`, `rustup`/`cargo`, `fnm`, `node`, `pnpm`, `bun`, and the TypeScript language server tools), stows `lazygit`, `wt`, and `lsd`, and installs shared developer CLIs such as `gh`, `git-crypt`, `yazi`, `lazydocker`, and the PostgreSQL client (`psql`) used by Neovim Dadbod.
+Adds shared development runtimes and tooling on top of `minimal`. This layer installs the managed runtime stack (`tree-sitter`, `uv`, `rustup`/`cargo`, `fnm`, `node`, `pnpm`, `bun`, the Codex CLI, and the TypeScript language server tools), stows `lazygit`, `wt`, and `lsd`, and installs shared developer CLIs such as `gh`, `git-crypt`, `yazi`, `lazydocker`, and the PostgreSQL client (`psql`) used by Neovim Dadbod.
 
 ## `macos`
 

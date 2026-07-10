@@ -27,6 +27,25 @@ ensure_cargo_available_now() {
   fi
 }
 
+ensure_pnpm_global_bin_available_now() {
+  command_exists pnpm || return 0
+
+  local pnpm_home
+  pnpm_home="$(pnpm config get global-bin-dir 2>/dev/null || true)"
+  case "$pnpm_home" in
+    ""|null|undefined)
+      pnpm_home="$HOME/.local/share/pnpm"
+      run_cmd_allow_failure \
+        "Configure pnpm global bin directory" \
+        pnpm config set global-bin-dir "$pnpm_home"
+      ;;
+  esac
+
+  mkdir -p "$pnpm_home"
+  export PNPM_HOME="$pnpm_home"
+  export PATH="$PNPM_HOME:$PATH"
+}
+
 install_fnm_node_stack() {
   install_script_if_missing fnm "Install fnm" "curl -fsSL https://fnm.vercel.app/install | bash"
   ensure_fnm_available_now
@@ -57,6 +76,8 @@ install_fnm_node_stack() {
     record_error "Neither corepack nor npm available; pnpm not installed"
   fi
 
+  ensure_pnpm_global_bin_available_now
+
   # Final check: node and pnpm should be reachable now
   if ! command_exists node; then
     record_error "node not on PATH after fnm install"
@@ -85,6 +106,24 @@ install_typescript_language_tools() {
   fi
 }
 
+install_codex_cli() {
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if command_exists pnpm; then
+    run_cmd_allow_failure \
+      "Install Codex CLI with pnpm" \
+      pnpm add -g @openai/codex
+  elif command_exists npm; then
+    run_cmd_allow_failure \
+      "Install Codex CLI with npm (pnpm unavailable)" \
+      npm install -g @openai/codex
+  elif [[ "$DRY_RUN" -eq 0 ]]; then
+    record_error "Neither pnpm nor npm available; Codex CLI not installed"
+  fi
+}
+
 install_shared_runtimes() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0
@@ -101,6 +140,7 @@ install_shared_runtimes() {
     record_error "cargo not on PATH after rustup install; tree-sitter CLI skipped"
   fi
   install_fnm_node_stack
+  install_codex_cli
   install_typescript_language_tools
 }
 

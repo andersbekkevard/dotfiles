@@ -204,3 +204,7 @@ tracking = "local"
 [skills.skill-audit]
 local_path = "agents/skills/meta/skill-audit"
 tracking = "local"
+
+[skills.personal-edge]
+local_path = "agents/skills/desk/personal-edge"
+tracking = "local"

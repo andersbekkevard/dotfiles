@@ -46,6 +46,14 @@ verify_commands() {
     fi
   done < <(profile_commands "$profile")
 
+  for cmd in pnpm codex; do
+    if profile_commands "$profile" | grep -Fxq "$cmd" && \
+       ! command_reports_version_in_stable_path_contract "$cmd"; then
+      printf 'does not execute in stable PATH contract: %s\n' "$cmd"
+      failures=1
+    fi
+  done
+
   return $failures
 }
 

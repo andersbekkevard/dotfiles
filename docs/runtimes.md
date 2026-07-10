@@ -6,6 +6,7 @@
 - Python: `uv`
 - Rust: `rustup`
 - Node.js: `fnm` plus `corepack` for `pnpm`
+- Codex CLI: global `@openai/codex` package installed with `pnpm` after Node.js
 - TypeScript LSP: global `typescript` plus `typescript-language-server` for Neovim `ts_ls`
 - Bun: official install script
 - Go: Homebrew on macOS, official tarball on Linux
@@ -21,8 +22,9 @@ Why these choices:
 - `uv` replaces separate Python version, venv, and package tooling.
 - `rustup` is the canonical Rust toolchain installer.
 - All Linux binary downloads are architecture-aware (x86_64 and arm64/aarch64).
-- `fnm` node stack is hardened: PATH is re-evaluated after install, and pnpm falls back to `npm install -g pnpm` if corepack is unavailable.
-- Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, Go user binaries, repo scripts, and related CLI entrypoints lives in `shell/.profile`. zsh login shells inherit that through `shell/.zprofile`, and interactive non-login zsh shells backfill by sourcing `~/.profile` from `shell/.zshrc` when needed.
+- `fnm` node stack is hardened: PATH is re-evaluated after install, pnpm falls back to `npm install -g pnpm` if corepack is unavailable, and the configured pnpm global bin directory is exported into the active bootstrap PATH before global tools are installed.
+- The full layer installs the Codex CLI only after Node.js and pnpm are available; npm is the fallback when pnpm is unavailable. This makes `codex login` part of the verified `full`, `macos`, and `linux-desktop` machine contracts.
+- Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, Go user binaries, repo scripts, and related CLI entrypoints lives in `shell/.profile`. zsh login shells inherit that through `shell/.zprofile`, and interactive non-login zsh shells backfill by sourcing `~/.profile` from `shell/.zshrc` when needed. When an upstream command is a launcher script that depends on its own `$0`, the stable `~/.local/bin` entrypoint targets a generated exec wrapper rather than symlinking that launcher directly.
 - Interactive-only hooks such as `fnm --use-on-cd`, completions, and prompt/theme behavior stay in `shell/.zshrc`.
 - `./setup.sh` refreshes `~/.local/bin` symlinks for commands that resolve outside the base system PATH so agents and non-login shells can rely on the same stable command layer.
 - The runtime contract is explicit-profile only: `./setup.sh` installs the profile you name and does not auto-select one from the environment.
