@@ -1,14 +1,15 @@
 ---
 name: codex-lane
-description: Dispatch work to the codex coding agent (gpt-5.5) — the codex counterpart of the Agent tool. Use before every `codex exec` invocation, foreground or detached; when polling lane liveness; or when recovering a dead, hung, or quota-blocked lane.
+description: Dispatch Codex from a Claude or Fable orchestrator. Invoke before every Claude/Fable `codex exec`, foreground or detached; when polling lane liveness; or when recovering a dead, hung, or quota-blocked lane.
+disable-codex-model-invocation: true
 ---
 
 # Codex Lane — dispatching and supervising codex runs
 
-This skill is the codex mirror of the Agent tool: every delegation to the
-codex coding agent goes through it. A **lane** is one detached `codex exec`
-run with a prompt file, a log, and a sentinel. Every rule below traces to a
-real dispatch failure.
+This skill is the Claude/Fable bridge to Codex. GPT agents use their native
+agent tools instead. Every Claude/Fable delegation to Codex goes through it.
+A **lane** is one detached `codex exec` run with a prompt file, a log, and a
+sentinel. Every rule below traces to a real dispatch failure.
 
 ## Every dispatch — foreground or lane
 

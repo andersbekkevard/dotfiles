@@ -73,10 +73,15 @@ def skill_file(skill_dir: Path) -> tuple[Path | None, bool]:
     return None, False
 
 
-def mode_from(frontmatter: dict[str, str], is_off: bool) -> str:
+def mode_from(frontmatter: dict[str, str], is_off: bool, harness: str) -> str:
     if is_off:
         return "off"
-    if frontmatter.get("disable-model-invocation") == "true":
+    disabled = frontmatter.get("disable-model-invocation") == "true"
+    if harness == "codex":
+        override = frontmatter.get("disable-codex-model-invocation")
+        if override in ("true", "false"):
+            disabled = override == "true"
+    if disabled:
         return "user"
     return "model"
 
@@ -113,7 +118,7 @@ def flags_for(mode: str, description_tokens: int, skill_tokens: int) -> list[str
     return flags
 
 
-def collect(encoding) -> list[SkillStats]:
+def collect(encoding, harness: str) -> list[SkillStats]:
     rows: list[SkillStats] = []
     skill_dirs = sorted(
         (
@@ -133,7 +138,7 @@ def collect(encoding) -> list[SkillStats]:
         frontmatter = parse_frontmatter(text)
         name = frontmatter.get("name") or skill_dir.name
         description = frontmatter.get("description", "")
-        mode = mode_from(frontmatter, is_off)
+        mode = mode_from(frontmatter, is_off, harness)
         description_tokens = count_tokens(encoding, description)
         listing_tokens = count_tokens(encoding, f"{name}\n{description}") if description else count_tokens(encoding, name)
         skill_tokens = count_tokens(encoding, text)
@@ -156,6 +161,12 @@ def collect(encoding) -> list[SkillStats]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Report tiktoken counts for agents/skills SKILL.md files."
+    )
+    parser.add_argument(
+        "--harness",
+        choices=("claude", "codex"),
+        default="claude",
+        help="Report effective invocation state for this harness. Defaults to claude.",
     )
     parser.add_argument(
         "--mode",
@@ -219,10 +230,12 @@ def totals(rows: list[SkillStats]) -> dict[str, int]:
     }
 
 
-def print_text(rows: list[SkillStats], all_rows: list[SkillStats], encoding_name: str) -> None:
+def print_text(
+    rows: list[SkillStats], all_rows: list[SkillStats], encoding_name: str, harness: str
+) -> None:
     total = totals(all_rows)
     shown_total = sum(row.skill_tokens for row in rows)
-    print(f"skilltokens: tokenizer=tiktoken:{encoding_name}")
+    print(f"skilltokens: harness={harness} tokenizer=tiktoken:{encoding_name}")
     print(
         "totals: "
         f"model_desc={format_int(total['model_description_tokens'])} "
@@ -257,7 +270,7 @@ def main() -> int:
         encoding = tiktoken.get_encoding(args.encoding)
     except Exception as exc:
         sys.exit(f"skilltokens: unknown tiktoken encoding {args.encoding!r}: {exc}")
-    all_rows = collect(encoding)
+    all_rows = collect(encoding, args.harness)
     rows = all_rows if args.mode == "all" else [row for row in all_rows if row.mode == args.mode]
     rows = sort_rows(rows, args.sort, args.ascending)
     if args.top is not None:
@@ -268,6 +281,7 @@ def main() -> int:
             json.dumps(
                 {
                     "encoding": args.encoding,
+                    "harness": args.harness,
                     "totals": totals(all_rows),
                     "rows": [row.__dict__ for row in rows],
                 },
@@ -276,7 +290,7 @@ def main() -> int:
             )
         )
     else:
-        print_text(rows, all_rows, args.encoding)
+        print_text(rows, all_rows, args.encoding, args.harness)
     return 0
 
 

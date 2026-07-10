@@ -70,23 +70,24 @@ loop that proposes instruction-surface edits from observed behavior.
 
 ## Invocation modes
 
-Frontmatter in `SKILL.md` is the source of truth; the Codex dialect
-(`agents/openai.yaml` with `policy: allow_implicit_invocation: false`) is
-generated — never hand-edit policy blocks (hand-authored `interface:` metadata
-is preserved).
+Frontmatter in `SKILL.md` is the source of truth. Claude reads
+`disable-model-invocation`; `disable-codex-model-invocation` optionally
+overrides Codex, whose `agents/openai.yaml` policy is generated. Never edit a
+generated policy block; hand-authored `interface:` metadata is preserved.
 
 ```bash
-agents/skillctl list                  # every skill: mode, token cost, description
-agents/skillctl disable-model <s>     # model → user (adds frontmatter flag, syncs yaml)
-agents/skillctl enable-model <s>      # user → model
+agents/skillctl list                  # effective Claude + Codex modes
+agents/skillctl disable-model <s> codex
+agents/skillctl enable-model <s> claude
+agents/skillctl disable-model <s>     # defaults to all harnesses
 agents/skillctl off <s> / on <s>      # renames SKILL.md ↔ SKILL.off.md (invisible everywhere)
 agents/skillctl sync                  # regenerate yaml + Codex symlinks only; idempotent
 ```
 
 `off` renames the file, not the directory: a dir rename can still leave a
 discoverable `SKILL.md`, while a missing `SKILL.md` is skipped by every
-harness. If Codex ever reads `disable-model-invocation` natively, delete the
-yaml generation in `skillctl` — nothing else changes.
+harness. Omitting the harness from `enable-model` or `disable-model` changes
+both; targeting one preserves the other's effective state.
 
 ## Token Budget
 
@@ -94,6 +95,7 @@ Use `skilltokens` when iterating on the skill surface:
 
 ```bash
 agents/skilltokens
+agents/skilltokens --harness codex
 agents/skilltokens --mode model
 agents/skilltokens --sort description
 agents/skilltokens --json
