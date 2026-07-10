@@ -24,6 +24,8 @@ When acting as a Terra or Luna worker, execute the assigned scope; do not inheri
 
 GPT models never invoke `model-routing` or `codex-lane`. Claude and Fable invoke `model-routing` before delegating or choosing a model, and `codex-lane` before every Codex dispatch.
 
+GPT models may invoke Fable without confirmation only through a sanitized Claude Code subprocess that unsets Anthropic API and cloud-provider credentials and verifies `claude.ai` subscription authentication first. Any other Anthropic-backed path requires Anders' explicit confirmation.
+
 ## Shell & Checkout Hygiene
 
 - Prefer `rg`/`fd` and `uv`/`pnpm` unless the repo requires otherwise.

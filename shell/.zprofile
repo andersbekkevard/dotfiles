@@ -7,3 +7,7 @@ if [[ "$OSTYPE" == darwin* ]]; then
 fi
 
 [[ -r "$HOME/.profile" ]] && . "$HOME/.profile"
+
+# >>> Codex installer >>>
+export PATH="/Users/andersbekkevard/.local/bin:$PATH"
+# <<< Codex installer <<<
