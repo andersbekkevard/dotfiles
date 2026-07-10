@@ -1,13 +1,13 @@
 ---
 name: model-routing
-description: Route work across the model fleet — delegate vs do it yourself, and which model gets the work. Invoke before spawning any subagent or workflow, choosing a model, or starting bulk or parallelizable work that could be delegated.
+description: Route Claude/Fable orchestration across the model fleet. Invoke before a Claude or Fable orchestrator spawns any subagent or workflow, chooses a model, or starts delegable bulk or parallel work.
+disable-codex-model-invocation: true
 ---
 
 # Model Routing — fleet economics and delegation policy
 
-Orchestrator-only: this skill applies when running as Fable 5 (or another
-Mythos-class orchestrator model). A cheaper model reading this: skip it and
-do the work directly.
+Claude/Fable orchestrator-only. GPT agents use their native agent tools
+instead.
 
 Fable tokens are scarce: spend them on planning, decomposing, and judging
 results. Do small edits and quick answers yourself; delegate bulk work —
@@ -26,7 +26,7 @@ yourself before building on it.
 
 ## Route
 
-*Default to Codex.* gpt-5.5 runs on a separate subscription that doesn't
+*Default to Codex.* gpt-5.6-sol runs on a separate subscription that doesn't
 drain the Claude/Fable pool, so treat it as cheaper than every Claude model
 regardless of list price:
 
@@ -34,7 +34,7 @@ regardless of list price:
   checks, log digging, runbook extraction: codex.
 - Scoped, well-specified implementation: codex.
 - If computer use is helpful for completing or verifying work, shell out to
-  gpt-5.5 with Codex for it.
+  gpt-5.6-sol with Codex for it.
 
 Every codex dispatch — foreground or detached — follows the `codex-lane`
 skill, which owns invocation mechanics, reasoning-effort levels, lane
@@ -55,7 +55,7 @@ analytical prose, API/schema design, code quality, UI/UX.
 
 | model    | cost | intelligence | taste |
 |----------|------|--------------|-------|
-| gpt-5.5  | 9    | 8            | 5     |
+| gpt-5.6-sol | 9 | 8            | 5     |
 | sonnet-5 | 5    | 5            | 7     |
 | opus-4.8 | 4    | 7            | 8     |
 | fable-5  | 2    | 9            | 9     |
@@ -70,7 +70,7 @@ How to apply:
   intelligence > taste > cost.
 - The taste that matters for user-facing artifacts — domain judgment,
   semantics, prose — lives with you (fable-5). Spec tightly, delegate the
-  mechanics to gpt-5.5, and author or final-pass the judgment-heavy
+  mechanics to gpt-5.6-sol, and author or final-pass the judgment-heavy
   semantics and prose yourself.
 - opus-4.8 is not part of the default delegation stack: codex is quicker
   and at least as strong for most implementation work, and opus spends
@@ -96,8 +96,8 @@ How to apply:
 
 ## Mechanics
 
-- gpt-5.5 is only reachable through the Codex CLI (`~/.codex/config.toml`
-  defaults to gpt-5.5 @ high, full access, approvals off — intentional,
+- gpt-5.6-sol is only reachable through the Codex CLI (`~/.codex/config.toml`
+  defaults to gpt-5.6-sol @ high, full access, approvals off — intentional,
   never pass sandbox flags): `codex exec` for investigation, analysis, or
   implementation; `codex review` for the current repo's diff.
 - Claude models (sonnet-5, opus-4.8, fable-5) run via the Agent/Workflow

@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""skillctl — inspect and flip agent-skill invocation state.
+"""skillctl — inspect and set agent-skill invocation state per harness.
 
 Frontmatter in each skill's SKILL.md is the editable source of truth.
+`disable-model-invocation` controls Claude; `disable-codex-model-invocation`
+optionally overrides Codex.
 `sync` projects it into the Codex dialect (agents/openai.yaml policy blocks)
 and maintains the per-skill symlinks in ~/.codex/skills. Idempotent.
 
-Modes:
+Modes per harness:
   model — model-invoked: description loads into every session turn.
-  user  — user-invoked (disable-model-invocation: true): fires only by name.
+  user  — user-invoked: fires only by name.
   off   — SKILL.md renamed to SKILL.off.md: invisible to every harness.
 
 Commands:
   skillctl list
-  skillctl enable-model <skill> | disable-model <skill>
+  skillctl enable-model <skill> [claude|codex|all]
+  skillctl disable-model <skill> [claude|codex|all]
   skillctl off <skill> | on <skill>
   skillctl sync
 """
@@ -69,30 +72,41 @@ def parse_frontmatter(text):
     return fm
 
 
-def mode_of(d):
+def modes_of(d):
     f, is_off = skill_file(d)
     if f is None:
-        return "?", {}
+        return {"claude": "?", "codex": "?"}, {}
     fm = parse_frontmatter(f.read_text())
     if is_off:
-        return "off", fm
-    if fm.get("disable-model-invocation") == "true":
-        return "user", fm
-    return "model", fm
+        return {"claude": "off", "codex": "off"}, fm
+    claude = "user" if fm.get("disable-model-invocation") == "true" else "model"
+    codex_override = fm.get("disable-codex-model-invocation")
+    if codex_override in ("true", "false"):
+        codex = "user" if codex_override == "true" else "model"
+    else:
+        codex = claude
+    return {"claude": claude, "codex": codex}, fm
 
 
 def cmd_list():
-    rows = [(d.name, *mode_of(d)) for d in skill_dirs()]
-    loaded = 0
-    print(f"{'SKILL':<36} {'MODE':<6} {'~TOK':>5}  DESCRIPTION")
-    for name, mode, fm in rows:
+    rows = [(d.name, *modes_of(d)) for d in skill_dirs()]
+    loaded = {"claude": 0, "codex": 0}
+    print(f"{'SKILL':<36} {'CLAUDE':<6} {'CODEX':<6} {'~TOK':>5}  DESCRIPTION")
+    for name, modes, fm in rows:
         desc = fm.get("description", "")
         tokens = (len(name) + len(desc)) // 4
-        if mode == "model":
-            loaded += tokens
+        for harness in loaded:
+            if modes[harness] == "model":
+                loaded[harness] += tokens
         shown = desc if len(desc) <= 90 else desc[:87] + "..."
-        print(f"{name:<36} {mode:<6} {tokens:>5}  {shown}")
-    print(f"\nalways-loaded description cost (model-invoked only): ~{loaded} tokens")
+        print(
+            f"{name:<36} {modes['claude']:<6} {modes['codex']:<6} "
+            f"{tokens:>5}  {shown}"
+        )
+    print(
+        "\nalways-loaded description cost: "
+        f"claude~{loaded['claude']} codex~{loaded['codex']} tokens"
+    )
 
 
 def find(name):
@@ -102,20 +116,38 @@ def find(name):
     return matches[0]
 
 
-def set_flag(name, disabled):
+def set_flag(name, disabled, harness):
     d = find(name)
     f, is_off = skill_file(d)
     if f is None:
         sys.exit(f"skillctl: '{name}' has no SKILL.md")
     text = f.read_text()
+    modes, _ = modes_of(d)
+    enabled = {key: value == "model" for key, value in modes.items()}
+    targets = ("claude", "codex") if harness == "all" else (harness,)
+    for target in targets:
+        enabled[target] = not disabled
     m = re.match(r"\A---\n(.*?)\n---\n", text, re.DOTALL)
     if not m:
         sys.exit(f"skillctl: '{name}' has no frontmatter")
-    fm_body = re.sub(r"^disable-model-invocation:.*\n?", "", m.group(1) + "\n", flags=re.M).rstrip("\n")
-    if disabled:
+    fm_body = re.sub(
+        r"^disable-(?:codex-)?model-invocation:.*\n?",
+        "",
+        m.group(1) + "\n",
+        flags=re.M,
+    ).rstrip("\n")
+    if not enabled["claude"]:
         fm_body += "\ndisable-model-invocation: true"
+    if enabled["codex"] != enabled["claude"]:
+        fm_body += (
+            "\ndisable-codex-model-invocation: "
+            + ("false" if enabled["codex"] else "true")
+        )
     f.write_text(f"---\n{fm_body}\n---\n" + text[m.end():])
-    print(f"{name}: mode -> {'user' if disabled else 'model'}")
+    print(
+        f"{name}: claude={'model' if enabled['claude'] else 'user'} "
+        f"codex={'model' if enabled['codex'] else 'user'}"
+    )
     cmd_sync()
 
 
@@ -162,10 +194,10 @@ def cmd_sync():
     changed = 0
     CODEX_SKILLS.mkdir(parents=True, exist_ok=True)
     for d in skill_dirs():
-        mode, _ = mode_of(d)
-        if mode == "?":
+        modes, _ = modes_of(d)
+        if modes["codex"] == "?":
             continue
-        if sync_yaml(d, mode):
+        if sync_yaml(d, modes["codex"]):
             changed += 1
         link = CODEX_SKILLS / d.name
         if link.is_symlink():
@@ -197,8 +229,11 @@ def main():
         cmd_list()
     elif cmd == "sync":
         cmd_sync()
-    elif cmd in ("enable-model", "disable-model") and len(rest) == 1:
-        set_flag(rest[0], cmd == "disable-model")
+    elif cmd in ("enable-model", "disable-model") and len(rest) in (1, 2):
+        harness = rest[1] if len(rest) == 2 else "all"
+        if harness not in ("claude", "codex", "all"):
+            sys.exit(f"skillctl: unknown harness {harness!r}; use claude, codex, or all")
+        set_flag(rest[0], cmd == "disable-model", harness)
     elif cmd in ("off", "on") and len(rest) == 1:
         set_off(rest[0], cmd == "off")
     else:
