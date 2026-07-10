@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+
+# Cross-platform capacity indicators for the tmux status bar.
+# Both percentages use the same convention: higher means less headroom.
+
+set -u
+
+cpu_warning=70
+cpu_critical=90
+memory_warning=80
+memory_critical=90
+
+clamp_percent() {
+  awk -v value="${1:-0}" 'BEGIN {
+    value += 0
+    if (value < 0) value = 0
+    if (value > 100) value = 100
+    printf "%.0f", value
+  }'
+}
+
+macos_cpu_percent() {
+  local idle
+
+  idle="$(
+    LC_ALL=C top -l 1 -n 0 2>/dev/null \
+      | awk '/CPU usage:/ {
+          for (i = 1; i <= NF; i++) {
+            if ($i == "idle") {
+              value = $(i - 1)
+              gsub(/%/, "", value)
+              print value
+              exit
+            }
+          }
+        }'
+  )"
+
+  [[ -n "$idle" ]] || return 1
+  awk -v idle="$idle" 'BEGIN { printf "%.0f", 100 - idle }'
+}
+
+linux_cpu_snapshot() {
+  local label user nice system idle iowait irq softirq steal
+  local idle_total total
+
+  read -r label user nice system idle iowait irq softirq steal _ < /proc/stat || return 1
+  [[ "$label" == "cpu" ]] || return 1
+
+  idle_total=$((idle + iowait))
+  total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+  printf '%s %s\n' "$idle_total" "$total"
+}
+
+linux_cpu_percent() {
+  local tmux_info tmux_pid state_file state_dir
+  local idle total previous_idle previous_total delta_idle delta_total
+
+  tmux_info="${TMUX:-default,default,0}"
+  tmux_pid="${tmux_info#*,}"
+  tmux_pid="${tmux_pid%%,*}"
+  state_dir="${TMPDIR:-/tmp}/tmux-system-status-${UID:-$(id -u)}"
+  state_file="${state_dir%/}/cpu-${tmux_pid}"
+  mkdir -p "$state_dir" 2>/dev/null || return 1
+
+  read -r idle total < <(linux_cpu_snapshot) || return 1
+
+  previous_idle=""
+  previous_total=""
+  if [[ -r "$state_file" ]]; then
+    read -r previous_idle previous_total < "$state_file" || true
+  fi
+
+  if [[ "$previous_idle" =~ ^[0-9]+$ && "$previous_total" =~ ^[0-9]+$ \
+    && "$idle" -ge "$previous_idle" && "$total" -gt "$previous_total" ]]; then
+    delta_idle=$((idle - previous_idle))
+    delta_total=$((total - previous_total))
+  else
+    previous_idle="$idle"
+    previous_total="$total"
+    sleep 0.2
+    read -r idle total < <(linux_cpu_snapshot) || return 1
+    delta_idle=$((idle - previous_idle))
+    delta_total=$((total - previous_total))
+  fi
+
+  printf '%s %s\n' "$idle" "$total" > "${state_file}.$$"
+  mv -f "${state_file}.$$" "$state_file"
+
+  ((delta_total > 0)) || return 1
+  awk -v idle="$delta_idle" -v total="$delta_total" \
+    'BEGIN { printf "%.0f", 100 * (total - idle) / total }'
+}
+
+macos_memory_percent() {
+  local free_percent
+
+  free_percent="$(
+    memory_pressure -Q 2>/dev/null \
+      | awk '/System-wide memory free percentage:/ {
+          gsub(/%/, "", $5)
+          print $5
+          exit
+        }'
+  )"
+
+  [[ "$free_percent" =~ ^[0-9]+$ ]] || return 1
+  printf '%s\n' "$((100 - free_percent))"
+}
+
+linux_memory_percent() {
+  awk '
+    /^MemTotal:/ { total = $2 }
+    /^MemAvailable:/ { available = $2 }
+    /^MemFree:/ { free = $2 }
+    /^Buffers:/ { buffers = $2 }
+    /^Cached:/ { cached = $2 }
+    END {
+      if (available <= 0) available = free + buffers + cached
+      if (total <= 0 || available < 0) exit 1
+      printf "%.0f", 100 * (total - available) / total
+    }
+  ' /proc/meminfo
+}
+
+metric_percent() {
+  local metric="$1"
+
+  case "$(uname -s)" in
+    Darwin)
+      if [[ "$metric" == "cpu" ]]; then
+        macos_cpu_percent
+      else
+        macos_memory_percent
+      fi
+      ;;
+    Linux)
+      if [[ "$metric" == "cpu" ]]; then
+        linux_cpu_percent
+      else
+        linux_memory_percent
+      fi
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+segment_style() {
+  local percent="$1" warning="$2" critical="$3"
+
+  if ((percent >= critical)); then
+    printf '#[fg=colour15,bg=colour160,bold]'
+  elif ((percent >= warning)); then
+    printf '#[fg=colour0,bg=colour178,bold]'
+  else
+    printf '#[fg=colour0,bg=colour244]'
+  fi
+}
+
+render_metric() {
+  local label="$1" percent="$2" warning="$3" critical="$4"
+
+  segment_style "$percent" "$warning" "$critical"
+  printf ' %s %s%% ' "$label" "$percent"
+}
+
+cpu_percent="$(metric_percent cpu 2>/dev/null || printf '0')"
+memory_percent="$(metric_percent memory 2>/dev/null || printf '0')"
+cpu_percent="$(clamp_percent "$cpu_percent")"
+memory_percent="$(clamp_percent "$memory_percent")"
+
+if [[ "${1:-}" == "--plain" ]]; then
+  printf 'CPU %s%% MEM %s%%\n' "$cpu_percent" "$memory_percent"
+  exit 0
+fi
+
+render_metric CPU "$cpu_percent" "$cpu_warning" "$cpu_critical"
+render_metric MEM "$memory_percent" "$memory_warning" "$memory_critical"
+printf '#[default]'
