@@ -140,4 +140,4 @@ The user may run unblocked tickets in parallel, so expect other sessions to be e
 
 ## When the way is clear
 
-When the frontier is empty and no fog remains, hand off by reader: `/to-prd` when ownership will cross a context boundary (big-ownership handoff, blind verification); `/to-issues` when execution will fan out or span sessions; neither reader coming — the map's decisions are the spec, and the user's session builds against them.
+When the frontier is empty and no fog remains, hand off by reader: `/to-spec` when ownership will cross a context boundary (big-ownership handoff, blind verification), then `/to-tickets` when the work should become claimable execution — one ticket may carry the whole spec, or several may expose a frontier. Neither reader coming — the map's decisions are the spec, and the user's session builds against them.

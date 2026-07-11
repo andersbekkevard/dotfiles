@@ -48,6 +48,15 @@ longer tracked — builtin /code-review, codex review, and autoreview cover
 review; the port over-encoded it. Do not report upstream `code-review` as a
 gap in future audits.
 
+Update 2026-07-11: upstream `to-prd`/`to-issues` were replaced locally by the
+current `to-spec`/`to-tickets` pair. Preserve upstream wording and behavior
+except for the beads substrate adaptations: `to-spec` publishes its full
+Markdown with high-level `## Success Criteria` as an organizational umbrella
+epic description; `to-tickets` publishes child epics with native
+parent/blocking edges and executable `## Success Criteria`; tracker
+setup/triage assumptions and the `/implement` pointer are removed. Upstream
+test-seam negotiation and fresh-context sizing are expressly retained.
+
 ### mattpocock/skills — deliberate non-adoptions (2026-07-07)
 
 Anders explicitly decided NOT to adopt the following upstream skills. Do not

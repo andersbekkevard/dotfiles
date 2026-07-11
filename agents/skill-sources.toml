@@ -101,7 +101,7 @@ local_path = "agents/skills/flow/wayfinder"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
 preserve = [
-  "Minimal-delta rewrite of upstream (2026-07-09). Intentional deltas: model-invoked with a land-a-conversation trigger and invocation mode (with done-when criterion); one-ticket-per-session scoped to fog-heavy exploration (record-on-map is the guard); Decisions-so-far append-only with supersession; tickets only for questions that must wait (Land step 3, Work step 5); tracker paragraph points at repo conventions + the beads skill (no wayfinder:* labels, type/mode as body fields); /prototype and /setup-matt-pocock-skills references removed; closing When-the-way-is-clear section hands off reader-gated to /to-prd//to-issues.",
+  "Minimal-delta rewrite of upstream (2026-07-09). Intentional deltas: model-invoked with a land-a-conversation trigger and invocation mode (with done-when criterion); one-ticket-per-session scoped to fog-heavy exploration (record-on-map is the guard); Decisions-so-far append-only with supersession; tickets only for questions that must wait (Land step 3, Work step 5); tracker paragraph points at repo conventions + the beads skill (no wayfinder:* labels, type/mode as body fields); /prototype and /setup-matt-pocock-skills references removed; closing When-the-way-is-clear section hands off to /to-spec then /to-tickets for claimable execution.",
 ]
 
 [skills.writing-great-skills]
@@ -132,18 +132,20 @@ preserve = [
   "Review-stage pointer to upstream code-review is dropped (that port is archived); review routes to general review tooling.",
 ]
 
-[skills.to-issues]
-local_path = "agents/skills/flow/to-issues"
-tracking = "local"
-notes = [
-  "Diverged 2026-07-09: reader-gated (fan-out/multi-session only) with bead-owned success criteria; pending the compile-to-beads pilot it may merge with to-prd into a single to-epic skill. Upstream (mattpocock engineering/to-tickets) is idea-source only.",
+[skills.to-tickets]
+local_path = "agents/skills/flow/to-tickets"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-tickets" }
+preserve = [
+  "Minimal beads port accepted 2026-07-11: use br child epics and native parent/blocking edges, require ## Success Criteria for executable epics, remove the local-file tracker branch and /implement pointer, and keep upstream sizing, slicing, and user-review behavior unchanged.",
 ]
 
-[skills.to-prd]
-local_path = "agents/skills/flow/to-prd"
-tracking = "local"
-notes = [
-  "Diverged 2026-07-09: reader-gated (big-ownership handoff / blind verification only), ownership matrix (status in beads via frontmatter bead pointer, criteria in slices' beads, decisions cite the map), Verification Seams template section; pending the compile-to-beads pilot it may merge with to-issues into a single to-epic skill. Upstream (mattpocock engineering/to-spec) is idea-source only.",
+[skills.to-spec]
+local_path = "agents/skills/flow/to-spec"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-spec" }
+preserve = [
+  "Minimal beads port accepted 2026-07-11: publish the full spec as a beads umbrella epic description, add high-level ## Success Criteria required by br lint, remove setup/triage-label assumptions, and keep upstream user-story and test-seam behavior unchanged.",
 ]
 
 [skills.visual-plan]

@@ -11,10 +11,9 @@ Beads (`br`) is the cross-session coordination substrate. State lives in
 same truth. Beads is the one shared file that is safe to co-write concurrently
 — SQLite + JSONL handle the locking.
 
-Authoring work items — PRDs, slices, `## Success Criteria`, `## Scope` — is
-owned by `/to-prd` and `/to-issues`. The execution lifecycle (claim → work →
-close with evidence) is this skill's own contract: the CLI and the invariants
-below.
+Authoring work items — specs, tickets, and `## Success Criteria` — is owned by
+`/to-spec` and `/to-tickets`. The execution lifecycle (claim → work → close
+with evidence) is this skill's own contract: the CLI and the invariants below.
 
 ## Invariants
 
@@ -48,6 +47,11 @@ Beads form a **forest**, not one tree; epics nest by dotted ID (`<prefix>-7` →
 never claimed directly. The grabbable unit is a childless epic with
 `## Success Criteria` (`br lint` flags epics missing one; `## Acceptance
 Criteria` is the equivalent for tasks).
+
+`/to-spec` publishes the full spec, including its high-level `## Success
+Criteria`, as an umbrella epic's description. `/to-tickets` creates its
+claimable child epic or epics with executable `## Success Criteria`, even when
+one child can carry the whole spec, so the umbrella remains organizational.
 
 ## CLI
 

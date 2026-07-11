@@ -43,19 +43,18 @@ Claude per-skill symlinks or the top-level harness instruction symlinks.
 ## Main flow
 
 Planning is conversation-first; artifacts exist for readers, not for stages.
-Everything an effort produces lives in **one home**: `docs/prd/<effort-slug>/`
-(or the repo constitution's named planning home).
 
 1. **Talk** — a plain conversation (or `/grilling` / `/grill-with-docs`)
    builds the shared understanding. No skill required to plan.
-2. **Land** — `wayfinder` makes it durable: the effort's `map.md` is the
-   current-intent register (append-only decision log, fog, supersessions).
+2. **Land** — `wayfinder` makes it durable: the effort's map issue is the
+   current-intent register (append-only decision index, fog, supersessions).
    Tickets only for questions that must outlive the session; big foggy
    efforts get charted and worked as a map across sessions.
-3. **Compile, reader-gated** — `/to-prd` only when ownership will cross a
-   context boundary (big-ownership handoff, blind verification); `/to-issues`
-   only when execution fans out or spans sessions. Neither reader coming →
-   the map's decisions are the spec.
+3. **Compile, reader-gated** — `/to-spec` publishes the full spec as a beads
+   umbrella epic when ownership will cross a context boundary (big-ownership
+   handoff, blind verification); `/to-tickets` turns it into claimable work.
+   One child may carry the whole spec, or several may expose a frontier.
+   Neither reader coming → the map's decisions are the spec.
 4. **Execute** — claim (the lock, per the `beads` skill), work at the
    pre-agreed seams, review against the same spec on completion (builtin
    /code-review or codex review), commit, close with evidence. The
