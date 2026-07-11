@@ -36,7 +36,7 @@ regardless of list price:
 - If computer use is helpful for completing or verifying work, shell out to
   gpt-5.6-sol with Codex for it.
 
-Every codex dispatch — foreground or detached — follows the `codex-lane`
+Every Codex dispatch — foreground or detached — follows the `codex-dispatch`
 skill, which owns invocation mechanics, reasoning-effort levels, lane
 supervision, and recovery.
 
