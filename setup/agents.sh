@@ -2,7 +2,8 @@
 # Agent surface: global skills + instructions for Claude Code and Codex.
 #
 # Canonical content lives in agents/ (skills/, AGENTS.global.md, skillctl).
-# Claude Code reads ~/.claude/skills/<name> per-skill symlinks and ~/.claude/CLAUDE.md.
+# Claude Code reads ~/.claude/skills/<category>/<name> per-skill symlinks and
+# ~/.claude/CLAUDE.md.
 # Codex reads ~/.codex/AGENTS.md and per-skill symlinks in ~/.codex/skills,
 # maintained by `skillctl sync` so Codex-managed content (.system/) stays
 # untouched beside them.
@@ -69,10 +70,13 @@ ensure_claude_skill_dir() {
 
 link_claude_skill() {
   local skill_dir="$1" claude_skills_dir="$2"
-  local name link
+  local category name link
 
+  category="$(basename "$(dirname "$skill_dir")")"
   name="$(basename "$skill_dir")"
-  link="$claude_skills_dir/$name"
+  link="$claude_skills_dir/$category/$name"
+
+  agent_mkdir_p "$claude_skills_dir/$category"
 
   if [[ -L "$link" ]]; then
     if [[ "$(readlink "$link")" == "$skill_dir" ]]; then
@@ -92,16 +96,19 @@ link_claude_skill() {
 
 prune_stale_claude_skill_links() {
   local claude_skills_dir="$1" managed_skills_dir="$2"
-  local link target
+  local link target expected category name
 
   [[ -d "$claude_skills_dir" ]] || return 0
 
-  for link in "$claude_skills_dir"/*; do
+  while IFS= read -r -d '' link; do
     [[ -L "$link" ]] || continue
     target="$(readlink "$link")"
     case "$target" in
       "$managed_skills_dir"/*)
-        [[ -e "$target" ]] && continue
+        category="$(basename "$(dirname "$target")")"
+        name="$(basename "$target")"
+        expected="$claude_skills_dir/$category/$name"
+        [[ -e "$target" && "$link" == "$expected" ]] && continue
         if [[ "$DRY_RUN" -eq 1 ]]; then
           log_info "[dry-run] Prune stale Claude skill link $link"
         else
@@ -110,7 +117,7 @@ prune_stale_claude_skill_links() {
         fi
         ;;
     esac
-  done
+  done < <(find "$claude_skills_dir" -mindepth 1 -maxdepth 2 -type l -print0)
 }
 
 sync_claude_skill_links() {
@@ -121,8 +128,7 @@ sync_claude_skill_links() {
   ensure_claude_skill_dir "$claude_skills_dir" "$managed_skills_dir"
   prune_stale_claude_skill_links "$claude_skills_dir" "$managed_skills_dir"
 
-  # Skills live one level below category folders (skills/<category>/<name>);
-  # the harness link namespace stays flat, keyed by the skill dir's basename.
+  # Mirror the canonical skills/<category>/<name> structure into the harness.
   for skill_dir in "$managed_skills_dir"/*/*; do
     [[ -d "$skill_dir" ]] || continue
     [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue

@@ -9,9 +9,10 @@ and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
   `flow/` (planning surface + beads substrate), `engineering/` (craft +
   review), `fleet/` (orchestration/delegation), `meta/` (the system that
   maintains the system), `desk/` (personal utilities + format references).
-  Skill names are globally unique; `~/.claude/skills/<name>` and
-  `~/.codex/skills/<name>` get flat per-skill symlinks so user, third-party,
-  and Codex-managed `.system/` skills survive beside them.
+  Skill names are globally unique; `~/.claude/skills/<category>/<name>` and
+  `~/.codex/skills/<category>/<name>` mirror the canonical categories with
+  per-skill symlinks so root-level user and third-party skills plus
+  Codex-managed `.system/` skills survive beside them.
 - `archive/<name>/` — retired skills, kept whole but unlinked from every
   harness and excluded from all skill tooling. `archive/README.md` owns the
   archive/restore procedure.
@@ -33,7 +34,7 @@ Use setup for the machine-level agent surface:
 ```
 
 That command skips package/runtime installers but still runs `setup/agents.sh`,
-which creates or repairs `~/.claude/skills/<name>`, `~/.claude/CLAUDE.md`,
+which creates or repairs `~/.claude/skills/<category>/<name>`, `~/.claude/CLAUDE.md`,
 `~/.codex/AGENTS.md`, and the Codex-generated skill projection. On a fresh
 machine that still needs packages, run the normal explicit profile instead.
 
