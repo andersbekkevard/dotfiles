@@ -66,7 +66,7 @@ report them as gaps in future audits; revisit only if Anders asks.
   `engineering/setup-matt-pocock-skills` — built for external
   reporters/PRs and Matt's tracker scaffolding; solo repos + beads make them
   moot.
-- `engineering/research` — overlaps deep-research and codex-lane delegation.
+- `engineering/research` — overlaps deep-research and codex-dispatch delegation.
 - `productivity/grill-me` — local `grilling` is already directly invocable.
 - `productivity/teach`, `misc/*` (git-guardrails, setup-pre-commit,
   migrate-to-shoehorn, scaffold-exercises), `in-progress/claude-handoff`,
