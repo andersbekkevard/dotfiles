@@ -193,35 +193,53 @@ def sync_yaml(d, mode):
 def cmd_sync():
     changed = 0
     CODEX_SKILLS.mkdir(parents=True, exist_ok=True)
-    expected_links = set()
-    for d in skill_dirs():
+    dirs = skill_dirs()
+    desired = {CODEX_SKILLS / d.relative_to(SKILLS): d for d in dirs}
+    skills_root = SKILLS.resolve()
+
+    # Prune obsolete managed links without touching independent root entries
+    # such as .system or machine-local skills.
+    for link in CODEX_SKILLS.glob("**/*"):
+        if not link.is_symlink():
+            continue
+        target = link.resolve(strict=False)
+        try:
+            target.relative_to(skills_root)
+        except ValueError:
+            continue
+        expected = desired.get(link)
+        if expected is None or target != expected.resolve():
+            link.unlink()
+            changed += 1
+
+    for d in dirs:
         modes, _ = modes_of(d)
         if modes["codex"] == "?":
             continue
         if sync_yaml(d, modes["codex"]):
             changed += 1
         category_dir = CODEX_SKILLS / d.parent.name
-        category_dir.mkdir(exist_ok=True)
+        if category_dir.is_symlink() or (
+            category_dir.exists() and not category_dir.is_dir()
+        ):
+            print(
+                f"warning: {category_dir} is not a real directory; "
+                f"skipping {d.relative_to(SKILLS)}"
+            )
+            continue
+        category_dir.mkdir(parents=True, exist_ok=True)
         link = category_dir / d.name
-        expected_links.add(link)
         if link.is_symlink():
-            if link.resolve() != d.resolve():
-                link.unlink()
+            if link.resolve() == d.resolve():
+                continue
+            print(f"warning: {link} already points elsewhere; leaving it alone")
+            continue
         elif link.exists():
             print(f"warning: {link} exists and is not a symlink; leaving it alone")
             continue
         if not link.is_symlink():
             link.symlink_to(d)
             changed += 1
-    # Prune obsolete flat links, moved links, and links to retired managed skills.
-    for link in CODEX_SKILLS.glob("**/*"):
-        if link.is_symlink():
-            target = link.resolve(strict=False)
-            if str(target).startswith(str(SKILLS)) and (
-                link not in expected_links or not target.exists()
-            ):
-                link.unlink()
-                changed += 1
     print(f"sync: {'no changes' if changed == 0 else f'{changed} change(s)'}")
 
 
