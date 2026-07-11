@@ -5,7 +5,7 @@ Frontmatter in each skill's SKILL.md is the editable source of truth.
 `disable-model-invocation` controls Claude; `disable-codex-model-invocation`
 optionally overrides Codex.
 `sync` projects it into the Codex dialect (agents/openai.yaml policy blocks)
-and maintains the per-skill symlinks in ~/.codex/skills. Idempotent.
+and maintains categorized per-skill symlinks in ~/.codex/skills. Idempotent.
 
 Modes per harness:
   model — model-invoked: description loads into every session turn.
@@ -34,7 +34,7 @@ POLICY_BLOCK = POLICY_HEADER + "\npolicy:\n  allow_implicit_invocation: false\n"
 def skill_dirs():
     # Skills live one level below category folders (skills/<category>/<name>).
     # A dir is a skill iff it holds SKILL.md or SKILL.off.md; names are
-    # globally unique across categories (the harness link namespace is flat).
+    # globally unique across categories (invocation still uses the skill name).
     dirs = [
         d
         for cat in SKILLS.iterdir()
@@ -193,13 +193,17 @@ def sync_yaml(d, mode):
 def cmd_sync():
     changed = 0
     CODEX_SKILLS.mkdir(parents=True, exist_ok=True)
+    expected_links = set()
     for d in skill_dirs():
         modes, _ = modes_of(d)
         if modes["codex"] == "?":
             continue
         if sync_yaml(d, modes["codex"]):
             changed += 1
-        link = CODEX_SKILLS / d.name
+        category_dir = CODEX_SKILLS / d.parent.name
+        category_dir.mkdir(exist_ok=True)
+        link = category_dir / d.name
+        expected_links.add(link)
         if link.is_symlink():
             if link.resolve() != d.resolve():
                 link.unlink()
@@ -209,11 +213,13 @@ def cmd_sync():
         if not link.is_symlink():
             link.symlink_to(d)
             changed += 1
-    # Prune symlinks pointing at skills we no longer have.
-    for link in CODEX_SKILLS.iterdir():
-        if link.is_symlink() and not link.resolve().exists():
-            target = Path(str(link.readlink()))
-            if str(target).startswith(str(SKILLS)):
+    # Prune obsolete flat links, moved links, and links to retired managed skills.
+    for link in CODEX_SKILLS.glob("**/*"):
+        if link.is_symlink():
+            target = link.resolve(strict=False)
+            if str(target).startswith(str(SKILLS)) and (
+                link not in expected_links or not target.exists()
+            ):
                 link.unlink()
                 changed += 1
     print(f"sync: {'no changes' if changed == 0 else f'{changed} change(s)'}")

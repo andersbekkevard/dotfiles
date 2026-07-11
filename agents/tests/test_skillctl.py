@@ -63,6 +63,13 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.assertNotIn("disable-codex-model-invocation", self.frontmatter())
         self.assertIn("sample: claude=model codex=model", output)
 
+    def test_sync_preserves_category_structure(self):
+        self.run_skillctl("sync")
+        link = self.home / ".codex" / "skills" / "test" / "sample"
+        self.assertTrue(link.is_symlink())
+        self.assertEqual(link.resolve(), self.skill.resolve())
+        self.assertFalse((self.home / ".codex" / "skills" / "sample").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
