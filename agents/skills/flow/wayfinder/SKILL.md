@@ -1,9 +1,9 @@
 ---
 name: wayfinder
-description: "Plan a huge chunk of work — more than one agent session can hold — as a shared map of investigation tickets on your issue tracker, and resolve them until the way to the destination is clear. Also use when a planning conversation should become durable — 'write this down', 'document this so we can pick up later' — landing it on the map."
+description: "Plan a huge chunk of work — more than one agent session can hold — as a shared Markdown map of investigation tickets, and resolve them until the way to the destination is clear. Also use when a planning conversation should become durable — 'write this down', 'document this so we can pick up later' — landing it on the map."
 ---
 
-A loose idea has arrived — too big for one agent session, and wrapped in fog: the way from here to the **destination** isn't visible yet. Wayfinding is about finding that way, not charging at the destination. This skill charts the way as a **shared map** on the repo's issue tracker, then works its tickets until the route is clear.
+A loose idea has arrived — too big for one agent session, and wrapped in fog: the way from here to the **destination** isn't visible yet. Wayfinding is about finding that way, not charging at the destination. This skill charts the way as a **shared Markdown map** in the repo, then works its tickets until the route is clear.
 
 The destination varies per effort, and naming it is the first act of charting — it shapes every ticket. It might be a spec to hand off and iterate on, a decision to lock before planning starts, or a change made in place like a data-structure migration. The map is domain-agnostic — engineering work, course content, whatever fits the shape.
 
@@ -13,19 +13,17 @@ Wayfinder is **planning** by default: each ticket resolves a decision, and the m
 
 ## Refer by name
 
-Every map and ticket is an issue, so it has a **name** — its title. In everything the human reads — narration, the map's Decisions-so-far — refer to it by that name, never by a bare id, number, or slug. A wall of `#42, #43, #44` is illegible; names read at a glance. The id and URL don't vanish — a name wraps its link — but they ride *inside* the name, never stand in for it.
+Every map and ticket has a **name** — its title. In everything the human reads — narration, the map's Decisions-so-far — refer to it by that name as a Markdown link, never by a bare path or slug.
 
 ## The Map
 
-The map is a single issue on this repo's issue tracker — the canonical artifact. Its tickets are child issues of the map.
+The canonical artifact is `map.md` in the repo's planning home (default `docs/prd/<effort-slug>/map.md`). Its investigation tickets live beside it under `tickets/`; substantial research and prototypes live under `assets/`.
 
 The map is an **index**, not a store. It lists the decisions made and points at the tickets that hold their detail; a decision lives in exactly one place — its ticket — so the map never restates it, only gists it and links.
 
-**Where the map, its child tickets, blocking, and frontier queries physically live is tracker-specific.** Follow the repo's issue-tracker conventions (its `AGENTS.md` or tracker doc). For beads, follow the `beads` skill: map = umbrella planning epic; tickets = child issues (`--parent`); blocking via `br dep add`; claim via `br update <id> --claim`; resolution as a concise comment plus close reason; `Wayfinder type:` and `Mode:` as ticket-body fields, not labels. Heavy artifacts live in the effort's folder (default `docs/prd/<effort-slug>/`), linked from the ticket.
-
 ### The map body
 
-The whole map at low resolution, loaded once per session. Open tickets are **not** listed — they are open child issues, found by query.
+The whole map at low resolution, loaded once per session. Open tickets are **not** listed — find them from their metadata under `tickets/`.
 
 ```markdown
 ## Destination
@@ -38,9 +36,9 @@ The whole map at low resolution, loaded once per session. Open tickets are **not
 
 ## Decisions so far
 
-<!-- the index — one line per closed ticket: enough to judge relevance, then zoom the link for the detail the ticket holds. Append-only: never edit a past line; a changed decision gets a new line that supersedes the old by name. -->
+<!-- the index — one line per resolved ticket: enough to judge relevance, then zoom the link for the detail the ticket holds. Append-only: never edit a past line; a changed decision gets a new line that supersedes the old by name. -->
 
-- [<closed ticket title>](link) — <one-line gist of the answer>
+- [<resolved ticket title>](link) — <one-line gist of the answer>
 
 ## Not yet specified
 
@@ -55,22 +53,27 @@ A pivot is an edit to the map — the old direction explicitly superseded in Dec
 
 ### Tickets
 
-Each ticket is a **child issue** of the map; the tracker's issue id is its identity. Its body is the question, sized to one 100K token agent session:
+Each ticket is a Markdown file under `tickets/`, sized to one 100K token agent session:
 
 ```markdown
-Wayfinder type: research | prototype | grilling | task
+Type: research | prototype | grilling | task
 Mode: AFK | HITL
+Status: open | claimed | resolved | out-of-scope
+Claimed by: <agent or human name; omit while open>
+Blocked by: <ticket links, or none>
 
 ## Question
 
 <the decision or investigation this ticket resolves>
+
+## Answer
+
+<filled when resolved; link substantial supporting artifacts>
 ```
 
-A session **claims** a ticket by assigning it to the dev driving the map, **first**, before any work, so concurrent sessions skip it. That assignee _is_ the claim: an open, unassigned ticket is unclaimed.
+A session **claims** a ticket by setting `Status: claimed` and `Claimed by:`, **first**, before any work, so concurrent sessions skip it.
 
-Blocking uses the tracker's **native** dependency relationship — essential because it renders the frontier _visually_ in the tracker's own UI, so the human sees what's takeable without opening the map. Only a tracker that lacks native blocking falls back to a body convention. A ticket is **unblocked** when every ticket blocking it is closed; the **frontier** is the open, unblocked, unclaimed children — the edge of the known.
-
-The answer isn't part of the body — it's recorded on resolution (see [Work through the map](#work-through-the-map)). Assets created while resolving a ticket are linked from the issue, not pasted in.
+A ticket is **unblocked** when every ticket in `Blocked by:` is resolved; the **frontier** is the open, unblocked, unclaimed tickets — the edge of the known. Find candidates by searching `tickets/` for `Status: open`, then read only those tickets' blocker fields. Assets created while resolving a ticket are linked from its Answer, not pasted into the map.
 
 ## Ticket Types
 
@@ -100,7 +103,7 @@ Fog only ever gathers _toward_ the destination. The destination fixes the scope,
 
 Out-of-scope work never graduates — the frontier stops at the destination — so it returns only if the destination is redrawn, and then as a fresh effort, not a resumption.
 
-Ruling something out of scope is a scoping act, not a step on the route. When a ticket that already exists turns out to sit past the destination — mis-scoped in while charting, or exposed by a resolution — **close it** (a closed ticket is unambiguously off the frontier) and leave one line in the **Out of scope** section: the gist plus why it's out of scope, linking the closed ticket. It stays out of **Decisions so far**, which records the route actually walked — a scope boundary isn't a step on it.
+Ruling something out of scope is a scoping act, not a step on the route. When a ticket that already exists turns out to sit past the destination — mis-scoped in while charting, or exposed by a resolution — set `Status: out-of-scope` and leave one line in the **Out of scope** section: the gist plus why it's out of scope, linking the ticket. It stays out of **Decisions so far**, which records the route actually walked — a scope boundary isn't a step on it.
 
 ## Invocation
 
@@ -123,20 +126,20 @@ User invokes with a loose idea.
 1. **Name the destination.** Run a `/grilling` and `/domain-modeling` session to pin down what this map is finding its way to — the spec, decision, or change. The destination fixes the scope, so it's settled first.
 2. **Map the frontier.** Grill again, **breadth-first** this time: fan out across the whole space rather than deep on any one thread, surfacing the open decisions and the first steps takeable now. **If this surfaces no fog** — the way to the destination is already clear, the whole journey small enough for one session — you don't need a map. Stop and ask the user how they'd like to proceed.
 3. **Create the map**: Destination and Notes filled in, Decisions-so-far empty, the fog sketched into **Not yet specified**.
-4. **Create the tickets you can specify now** as child issues of the map — then wire blocking edges in a **second pass** (issues need ids before they can reference each other). Wiring sorts them into the frontier and the blocked; everything you can't yet specify stays in the fog — the **Not yet specified** section.
+4. **Create the tickets you can specify now** as Markdown files, then add their `Blocked by:` links. This sorts them into the frontier and the blocked; everything you can't yet specify stays in the fog — the **Not yet specified** section.
 5. Stop — charting the map is one session's work; do not also resolve tickets.
 
 ### Work through the map
 
-User invokes with a map (URL or number). A ticket is **optional** — without one, you pick the next decision, not the user.
+User invokes with a map path. A ticket is **optional** — without one, you pick the next decision, not the user.
 
 1. Load the **map** — the low-res view, not every ticket body.
-2. Choose the ticket. If the user named one, use it. Otherwise take the first frontier ticket in order. **Claim it**: assign it to yourself before any work.
-3. Resolve it — **zoom as needed**: fetch the full body of any related or closed ticket on demand; invoke the skills the `## Notes` block names. If in doubt, use `/grilling` and `/domain-modeling`.
-4. Record the resolution: post the answer as a **resolution comment**, **close** the issue, and **append a context pointer** to the map's Decisions-so-far.
-5. Add newly-surfaced tickets (create-then-wire) — but a surfaced question you can already answer in this session is answered and recorded as a decision line, not ticketed; ticket only what must wait. Graduate any fog the answer has made specifiable, clearing each graduated patch from **Not yet specified** so it lives only as its new ticket. If the answer reveals a ticket — this one or another — sits beyond the destination, **rule it out of scope** rather than resolving it on the route. If the decision invalidates other parts of the map, update or delete those tickets.
+2. Choose the ticket. If the user named one, use it. Otherwise take the first frontier ticket in order. **Claim it** in the ticket metadata before any work.
+3. Resolve it — **zoom as needed**: read the full body of any related or resolved ticket on demand; invoke the skills the `## Notes` block names. If in doubt, use `/grilling` and `/domain-modeling`.
+4. Record the resolution: write its `## Answer`, mark it resolved, and **append a context pointer** to the map's Decisions-so-far.
+5. Add newly-surfaced Markdown tickets and their blocker links — but a surfaced question you can already answer in this session is answered and recorded as a decision line, not ticketed; ticket only what must wait. Graduate any fog the answer has made specifiable, clearing each graduated patch from **Not yet specified** so it lives only as its new ticket. If the answer reveals a ticket — this one or another — sits beyond the destination, **rule it out of scope** rather than resolving it on the route. If the decision invalidates other parts of the map, update or delete those tickets.
 
-The user may run unblocked tickets in parallel, so expect other sessions to be editing the tracker concurrently.
+The user may run unblocked tickets in parallel, so expect other sessions to be editing the shared Markdown concurrently.
 
 ## When the way is clear
 

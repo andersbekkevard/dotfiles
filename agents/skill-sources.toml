@@ -101,7 +101,7 @@ local_path = "agents/skills/flow/wayfinder"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
 preserve = [
-  "Minimal-delta rewrite of upstream (2026-07-09). Intentional deltas: model-invoked with a land-a-conversation trigger and invocation mode (with done-when criterion); one-ticket-per-session scoped to fog-heavy exploration (record-on-map is the guard); Decisions-so-far append-only with supersession; tickets only for questions that must wait (Land step 3, Work step 5); tracker paragraph points at repo conventions + the beads skill (no wayfinder:* labels, type/mode as body fields); /prototype and /setup-matt-pocock-skills references removed; closing When-the-way-is-clear section hands off to /to-spec then /to-tickets for claimable execution.",
+  "Minimal-delta rewrite of upstream (2026-07-11). Intentional deltas: Markdown-only map and investigation tickets in the repo planning home; model-invoked with a land-a-conversation trigger and invocation mode (with done-when criterion); one-ticket-per-session scoped to fog-heavy exploration (record-on-map is the guard); Decisions-so-far append-only with supersession; tickets only for questions that must wait (Land step 3, Work step 5); type/mode/status/claim/blockers live in ticket metadata; /prototype and /setup-matt-pocock-skills references removed; closing When-the-way-is-clear section hands off to /to-spec then /to-tickets for claimable execution.",
 ]
 
 [skills.writing-great-skills]

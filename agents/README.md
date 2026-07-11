@@ -47,13 +47,13 @@ Planning is conversation-first; artifacts exist for readers, not for stages.
 
 1. **Talk** — a plain conversation (or `/grilling` / `/grill-with-docs`)
    builds the shared understanding. No skill required to plan.
-2. **Land** — `wayfinder` makes it durable: the effort's map issue is the
+2. **Land** — `wayfinder` makes it durable: the effort's Markdown `map.md` is the
    current-intent register (append-only decision index, fog, supersessions).
-   Tickets only for questions that must outlive the session; big foggy
-   efforts get charted and worked as a map across sessions.
+   Markdown tickets exist only for questions that must outlive the session;
+   big foggy efforts get charted and worked as a map across sessions.
 3. **Compile, reader-gated** — `/to-spec` publishes the full spec as a beads
    umbrella epic when ownership will cross a context boundary (big-ownership
-   handoff, blind verification); `/to-tickets` turns it into claimable work.
+   handoff, blind verification); `/to-tickets` turns it into claimable execution.
    One child may carry the whole spec, or several may expose a frontier.
    Neither reader coming → the map's decisions are the spec.
 4. **Execute** — claim (the lock, per the `beads` skill), work at the
