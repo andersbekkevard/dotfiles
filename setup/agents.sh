@@ -123,7 +123,7 @@ prune_stale_claude_skill_links() {
 sync_claude_skill_links() {
   local managed_skills_dir="$1"
   local claude_skills_dir="$HOME/.claude/skills"
-  local skill_dir
+  local skill_dir category_dir
 
   ensure_claude_skill_dir "$claude_skills_dir" "$managed_skills_dir"
   prune_stale_claude_skill_links "$claude_skills_dir" "$managed_skills_dir"
@@ -132,6 +132,11 @@ sync_claude_skill_links() {
   for skill_dir in "$managed_skills_dir"/*/*; do
     [[ -d "$skill_dir" ]] || continue
     [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
+    category_dir="$claude_skills_dir/$(basename "$(dirname "$skill_dir")")"
+    if [[ -L "$category_dir" || ( -e "$category_dir" && ! -d "$category_dir" ) ]]; then
+      log_warn "skipping Claude skill '$(basename "$(dirname "$skill_dir")")/$(basename "$skill_dir")': $category_dir is not a real directory"
+      continue
+    fi
     link_claude_skill "$skill_dir" "$claude_skills_dir"
   done
 }

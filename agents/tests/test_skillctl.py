@@ -1,4 +1,5 @@
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -63,12 +64,64 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.assertNotIn("disable-codex-model-invocation", self.frontmatter())
         self.assertIn("sample: claude=model codex=model", output)
 
-    def test_sync_preserves_category_structure(self):
+    def test_sync_preserves_category_path_and_migrates_flat_link(self):
+        codex_skills = self.home / ".codex" / "skills"
+        codex_skills.mkdir(parents=True)
+        flat_link = codex_skills / "sample"
+        flat_link.symlink_to(self.skill)
+        unrelated = codex_skills / "run-on-mac"
+        unrelated.mkdir()
+
         self.run_skillctl("sync")
-        link = self.home / ".codex" / "skills" / "test" / "sample"
-        self.assertTrue(link.is_symlink())
-        self.assertEqual(link.resolve(), self.skill.resolve())
-        self.assertFalse((self.home / ".codex" / "skills" / "sample").exists())
+        nested_link = codex_skills / "test" / "sample"
+        self.assertTrue(nested_link.is_symlink())
+        self.assertEqual(nested_link.resolve(), self.skill.resolve())
+        self.assertFalse(flat_link.exists())
+        self.assertTrue(unrelated.is_dir())
+
+
+class ClaudeSkillProjectionTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.home = self.root / "home"
+        self.home.mkdir()
+        self.skills = self.root / "skills"
+        self.skill = self.skills / "fleet" / "sample"
+        self.skill.mkdir(parents=True)
+        (self.skill / "SKILL.md").write_text(
+            "---\nname: sample\ndescription: Sample skill.\n---\n"
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_sync_preserves_category_path_and_migrates_flat_link(self):
+        claude_skills = self.home / ".claude" / "skills"
+        claude_skills.mkdir(parents=True)
+        flat_link = claude_skills / "sample"
+        flat_link.symlink_to(self.skill)
+        unrelated = claude_skills / "run-on-mac"
+        unrelated.mkdir()
+
+        script = f"""\\
+set -euo pipefail
+export HOME={shlex.quote(str(self.home))}
+DRY_RUN=0
+log_info() {{ :; }}
+log_warn() {{ :; }}
+run_cmd() {{ local description=\"$1\"; shift; \"$@\"; }}
+backup_path() {{ return 1; }}
+source {shlex.quote(str(SOURCE.parent.parent / "setup" / "agents.sh"))}
+sync_claude_skill_links {shlex.quote(str(self.skills))}
+"""
+        subprocess.run(["bash", "-c", script], check=True)
+
+        nested_link = claude_skills / "fleet" / "sample"
+        self.assertTrue(nested_link.is_symlink())
+        self.assertEqual(nested_link.resolve(), self.skill.resolve())
+        self.assertFalse(flat_link.exists())
+        self.assertTrue(unrelated.is_dir())
 
 
 if __name__ == "__main__":
