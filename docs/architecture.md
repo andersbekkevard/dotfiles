@@ -8,6 +8,8 @@ The repository is split into three categories:
 4. The global agent surface under `agents/` — canonical skills grouped by category (`agents/skills/<category>/<name>`; skill names globally unique and harness projections preserve those categories), retired skills under `agents/archive/`, global agent instructions (`agents/AGENTS.global.md`), and the `skillctl` invocation-state tool. Not a stow package: `setup/agents.sh` owns machine-level wiring and links it directly (`~/.claude/skills/<category>/<name>` per-skill symlinks so root-level user or third-party Claude skills survive; `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` both point at `AGENTS.global.md`; Codex categorized per-skill symlinks are refreshed by the `skillctl sync` call inside setup so Codex-managed `.system/` survives). See `agents/README.md`.
 5. Retired configs and scripts under `archive/`.
 
+The `claudex` integration follows the same tracked/runtime split: `scripts/.local/bin/claudex` and `claudex-proxy` are portable stowed commands; setup installs the versioned CLIProxyAPI binary. The generated proxy configuration, local API key, OAuth credentials, PID, and logs are machine state and never live in the repository. The proxy binds to `127.0.0.1`, and only the `claudex` process receives its endpoint and token.
+
 `setup.sh` requires an explicit profile, expands it into an additive layer chain, installs the required packages for each layer, backs up first-run conflicts, and stows the corresponding packages with `stow --no-folding`.
 
 Operator entrypoint rule:

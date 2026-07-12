@@ -40,13 +40,13 @@ profile_commands() {
       printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql brew typescript-language-server
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql brew typescript-language-server
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }

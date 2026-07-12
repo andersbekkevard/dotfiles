@@ -133,6 +133,7 @@ test_pnpm_setup_contract() {
     HOME="$fake_home"
     PATH=/usr/bin:/bin
     DOTFILES_DIR="$REPO_ROOT"
+    unset XDG_CONFIG_HOME
     unset PNPM_HOME
     PNPM_LOG="$pnpm_log"
     uname() { [[ "${1:-}" == "-s" ]] && printf 'Darwin\n'; }
@@ -220,6 +221,80 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_cliproxyapi_config_contract() {
+  local fake_home config_file env_file config_key env_key
+  fake_home="$(mktemp -d)"
+  config_file="$fake_home/.config/cliproxyapi/config.yaml"
+  env_file="$fake_home/.config/cliproxyapi/claudex.env"
+
+  (
+    HOME="$fake_home"
+    PATH=/usr/bin:/bin
+    DOTFILES_DIR="$REPO_ROOT"
+    unset XDG_CONFIG_HOME
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    DRY_RUN=0
+    ERRORS=()
+    ensure_cliproxyapi_config
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "CLIProxyAPI config generation recorded an error"
+  )
+
+  [[ -r "$config_file" ]] || fail "CLIProxyAPI config was not created"
+  [[ -r "$env_file" ]] || fail "CLIProxyAPI env file was not created"
+  grep -Fxq 'host: "127.0.0.1"' "$config_file" || fail "CLIProxyAPI is not localhost-only"
+  grep -Fxq '  disable-control-panel: true' "$config_file" || fail "CLIProxyAPI control panel is enabled"
+  config_key="$(awk -F'"' '/^  - "/ {print $2}' "$config_file")"
+  env_key="$(sed -n "s/^CLIPROXY_API_KEY='\(.*\)'$/\1/p" "$env_file")"
+  [[ -n "$config_key" ]] || fail "CLIProxyAPI config key is empty"
+  assert_eq "$env_key" "$config_key"
+
+  rm -rf "$fake_home"
+}
+
+test_claudex_environment_isolation() {
+  local fake_home fake_bin capture
+  fake_home="$(mktemp -d)"
+  fake_bin="$fake_home/bin"
+  capture="$fake_home/capture"
+  mkdir -p "$fake_bin" "$fake_home/.config/cliproxyapi"
+  cat >"$fake_home/.config/cliproxyapi/claudex.env" <<'EOF'
+CLIPROXY_BASE_URL='http://127.0.0.1:8317'
+CLIPROXY_API_KEY='local-test-key'
+EOF
+cat >"$fake_bin/claudex-proxy" <<'EOF'
+#!/bin/sh
+[ "$1" = start ]
+EOF
+  cat >"$fake_bin/claude" <<'EOF'
+#!/bin/sh
+{
+  printf 'api_key=%s\n' "${ANTHROPIC_API_KEY-unset}"
+  printf 'base_url=%s\n' "$ANTHROPIC_BASE_URL"
+  printf 'auth_token=%s\n' "$ANTHROPIC_AUTH_TOKEN"
+  printf 'subagent=%s\n' "$CLAUDE_CODE_SUBAGENT_MODEL"
+  printf 'args=%s\n' "$*"
+} >"$CAPTURE"
+EOF
+  chmod +x "$fake_bin/claudex-proxy" "$fake_bin/claude"
+
+  env -u XDG_CONFIG_HOME \
+    HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    ANTHROPIC_API_KEY=must-not-pass \
+    "$REPO_ROOT/scripts/.local/bin/claudex" --safe-mode
+
+  grep -Fxq 'api_key=unset' "$capture" || fail "claudex leaked ANTHROPIC_API_KEY"
+  grep -Fxq 'base_url=http://127.0.0.1:8317' "$capture" || fail "claudex base URL is wrong"
+  grep -Fxq 'auth_token=local-test-key' "$capture" || fail "claudex auth token is wrong"
+  grep -Fxq 'subagent=gpt-5.6-sol' "$capture" || fail "claudex subagent model is wrong"
+  grep -Fxq 'args=--model gpt-5.6-sol --effort medium --safe-mode' "$capture" ||
+    fail "claudex arguments are wrong"
+
+  rm -rf "$fake_home"
+}
+
 test_runtime_path_defaults
 test_profile_contract
 test_homebrew_activation
@@ -227,4 +302,6 @@ test_homebrew_dry_run
 test_pnpm_setup_contract
 test_pnpm_dry_run
 test_codex_standalone_installer_contract
+test_cliproxyapi_config_contract
+test_claudex_environment_isolation
 printf 'bootstrap contracts: ok\n'
