@@ -148,6 +148,154 @@ install_codex_cli() {
   fi
 }
 
+sha256_file() {
+  if command_exists sha256sum; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+ensure_cliproxyapi_config() {
+  local config_dir config_file env_file api_key
+  config_dir="${XDG_CONFIG_HOME:-"$HOME/.config"}/cliproxyapi"
+  config_file="$config_dir/config.yaml"
+  env_file="$config_dir/claudex.env"
+
+  if [[ -e "$config_file" || -e "$env_file" ]]; then
+    if [[ -r "$config_file" && -r "$env_file" ]]; then
+      return 0
+    fi
+    record_error "CLIProxyAPI configuration is incomplete under $config_dir"
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Create localhost-only CLIProxyAPI configuration in $config_dir"
+    return 0
+  fi
+
+  umask 077
+  mkdir -p "$config_dir"
+  api_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+  if [[ -z "$api_key" ]]; then
+    record_error "Could not generate CLIProxyAPI local API key"
+    return 0
+  fi
+
+  cat >"$config_file" <<EOF
+host: "127.0.0.1"
+port: 8317
+tls:
+  enable: false
+remote-management:
+  allow-remote: false
+  secret-key: ""
+  disable-control-panel: true
+auth-dir: "~/.cli-proxy-api"
+api-keys:
+  - "$api_key"
+debug: false
+EOF
+  cat >"$env_file" <<EOF
+CLIPROXY_BASE_URL='http://127.0.0.1:8317'
+CLIPROXY_API_KEY='$api_key'
+EOF
+  chmod 0600 "$config_file" "$env_file"
+  log_info "Created localhost-only CLIProxyAPI configuration in $config_dir"
+}
+
+install_cliproxyapi() {
+  ensure_cliproxyapi_config
+
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install latest CLIProxyAPI release for $OS_FAMILY/$ARCH_GO"
+    return 0
+  fi
+
+  if ! command_exists curl || ! command_exists jq; then
+    record_error "curl and jq are required to install CLIProxyAPI"
+    return 0
+  fi
+
+  local release_json version platform release_arch archive_name download_url
+  local tmp_dir archive checksums expected actual install_dir status
+  release_json="$(curl -fsSL https://api.github.com/repos/router-for-me/CLIProxyAPI/releases/latest)"
+  status=$?
+  if [[ $status -ne 0 || -z "$release_json" ]]; then
+    record_error "Could not resolve latest CLIProxyAPI release"
+    return 0
+  fi
+
+  version="$(jq -r '.tag_name // empty' <<<"$release_json")"
+  case "$OS_FAMILY" in
+    darwin) platform="darwin" ;;
+    linux) platform="linux" ;;
+    *)
+      record_error "CLIProxyAPI is unsupported on $OS_FAMILY"
+      return 0
+      ;;
+  esac
+  case "$ARCH_GO" in
+    amd64) release_arch="amd64" ;;
+    arm64) release_arch="aarch64" ;;
+    *)
+      record_error "CLIProxyAPI is unsupported on architecture $ARCH_GO"
+      return 0
+      ;;
+  esac
+  archive_name="CLIProxyAPI_${version#v}_${platform}_${release_arch}.tar.gz"
+  download_url="$(jq -r --arg name "$archive_name" \
+    '.assets[] | select(.name == $name) | .browser_download_url' <<<"$release_json")"
+  if [[ -z "$version" || -z "$download_url" ]]; then
+    record_error "No CLIProxyAPI release asset for $platform/$release_arch"
+    return 0
+  fi
+
+  install_dir="$HOME/.local/share/cliproxyapi/$version"
+  if [[ -x "$install_dir/cli-proxy-api" ]]; then
+    mkdir -p "$HOME/.local/bin"
+    ln -sfn "$install_dir/cli-proxy-api" "$HOME/.local/bin/cli-proxy-api"
+    return 0
+  fi
+
+  tmp_dir="$(mktemp -d)"
+  archive="$tmp_dir/$archive_name"
+  checksums="$tmp_dir/checksums.txt"
+  curl -fsSL "$download_url" -o "$archive"
+  status=$?
+  if [[ $status -ne 0 || ! -s "$archive" ]]; then
+    rm -rf "$tmp_dir"
+    record_error "Download CLIProxyAPI $version failed (exit $status)"
+    return 0
+  fi
+  curl -fsSL "https://github.com/router-for-me/CLIProxyAPI/releases/download/$version/checksums.txt" \
+    -o "$checksums"
+  status=$?
+  expected="$(awk -v name="$archive_name" '$2 == name {print $1}' "$checksums" 2>/dev/null)"
+  actual="$(sha256_file "$archive")"
+  if [[ $status -ne 0 || -z "$expected" || "$actual" != "$expected" ]]; then
+    rm -rf "$tmp_dir"
+    record_error "CLIProxyAPI checksum verification failed for $archive_name"
+    return 0
+  fi
+
+  mkdir -p "$install_dir" "$HOME/.local/bin"
+  tar -xzf "$archive" -C "$install_dir" cli-proxy-api
+  status=$?
+  rm -rf "$tmp_dir"
+  if [[ $status -ne 0 || ! -x "$install_dir/cli-proxy-api" ]]; then
+    record_error "Install CLIProxyAPI $version failed (exit $status)"
+    return 0
+  fi
+  ln -sfn "$install_dir/cli-proxy-api" "$HOME/.local/bin/cli-proxy-api"
+  log_info "Installed CLIProxyAPI ${version#v}"
+}
+
 install_shared_runtimes() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0
@@ -165,6 +313,7 @@ install_shared_runtimes() {
   fi
   install_fnm_node_stack
   install_codex_cli
+  install_cliproxyapi
   install_typescript_language_tools
 }
 

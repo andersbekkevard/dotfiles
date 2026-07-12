@@ -24,6 +24,7 @@ Operator invariant:
 | Profiles and selection | `docs/profiles.md` | Explicit profile choices and boundaries |
 | Runtime version and installer policy | `docs/runtimes.md` | Version floors and installer strategy |
 | Repository/layer architecture | `docs/architecture.md` | Stow packages + setup orchestration |
+| Claude Code harness with Codex models | `docs/claudex.md` | Isolated `claudex` setup, model overrides, and proxy lifecycle |
 | Git repository LOC helper | `docs/git-loc.md` | `git-loc` exact and estimate modes for remote repository size checks |
 | Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks and automation-visible wrappers belong |
 | Secrets and git-crypt flow | `docs/secrets.md` | Unlock/export behavior |
