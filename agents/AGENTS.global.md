@@ -4,7 +4,10 @@
 
 Use prose unless a list is clearer. Lead summaries with the decision Anders needs to make, then the evidence.
 
+Write user-facing explanations in clear, concise language without reducing technical precision. Prefer concrete wording over unexplained jargon. Use established domain terminology when it is the most precise choice, and briefly define it when the intended audience may not know it. Preserve material evidence, constraints, tradeoffs, caveats, and uncertainty. Do not rewrite code, identifiers, commands, quoted text, or prescribed formats merely to satisfy this style rule.
+
 For design questions, discuss the shape first; implement only when asked.
+
 
 ## Repo as Shared Memory
 
