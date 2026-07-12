@@ -29,4 +29,4 @@ exec env -u ANTHROPIC_API_KEY \
   CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY="${CLAUDEX_MAX_TOOL_CONCURRENCY:-3}" \
   ENABLE_TOOL_SEARCH="${CLAUDEX_ENABLE_TOOL_SEARCH:-false}" \
   claude --model "${CLAUDEX_MODEL:-gpt-5.6-sol}" \
-    --effort "${CLAUDEX_EFFORT:-medium}" "$@"
+    --effort "${CLAUDEX_EFFORT:-high}" "$@"

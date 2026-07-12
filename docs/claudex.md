@@ -18,7 +18,7 @@ After the smoke test succeeds, use the normal Claude Code customizations:
 claudex
 ```
 
-`claudex` starts the proxy when necessary and launches GPT-5.6 Sol at medium effort. It explicitly removes `ANTHROPIC_API_KEY` and scopes the proxy URL, token, model, effort, and tool variables to its own process. Running `claude` continues to use the existing Anthropic configuration.
+`claudex` starts the proxy when necessary and launches GPT-5.6 Sol at high effort. It explicitly removes `ANTHROPIC_API_KEY` and scopes the proxy URL, token, model, effort, and tool variables to its own process. Running `claude` continues to use the existing Anthropic configuration.
 
 Do not use `claudex --continue` to resume a conversation created by ordinary Claude Code under a different provider.
 
@@ -33,7 +33,7 @@ CLAUDEX_MAX_TOOL_CONCURRENCY=2 claudex
 CLAUDEX_ENABLE_TOOL_SEARCH=true claudex
 ```
 
-The defaults are Sol medium for the main agent, Luna medium for Claude Code subagents, three concurrent tool calls, and dynamic tool search disabled. Set `CLAUDEX_SUBAGENT_MODEL=gpt-5.6-sol` when a session needs Sol workers instead.
+The defaults are Sol high for the main agent, Luna high for Claude Code subagents, three concurrent tool calls, and dynamic tool search disabled. Set `CLAUDEX_SUBAGENT_MODEL=gpt-5.6-sol` when a session needs Sol workers instead.
 
 ## Proxy lifecycle
 
