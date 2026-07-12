@@ -15,11 +15,11 @@ Use repo artifacts, not chat, as durable context for readers who lack this conve
 
 ## Delegation
 
-Preserve Sol for direction, difficult judgment, integration, and final verification. Spawn Terra for bounded exploration and everyday implementation, and Luna for repetitive, high-volume, mechanically verifiable work; both use `high`, Sol uses `medium` or `high`.
+Use only Sol or Luna. Sol uses `medium` reasoning effort for routine ownership, coordination, integration, and final verification, and `high` for architecture, difficult judgment, and hard debugging. Luna always uses `high` reasoning effort for bounded exploration, everyday implementation, and repetitive, mechanically verifiable work.
 
 Use subagents as context firewalls. At execution break-even, delegate independent low-signal work to preserve clean Sol context and reduce drift. Give each lane one terminal deliverable; serialize shared files, decisions, and prerequisites.
 
-Every GPT worker turn is typed: use `spawn_agent` with explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and a compact handoff. Steer ongoing turns with `send_message`; continue ended Terra or Luna work with a fresh typed `spawn_agent`. `followup_task` resumes the worker as parent Sol, wasting scarce, higher-usage Sol tokens on work deliberately routed to a worker model.
+Every GPT worker turn is typed: use `spawn_agent` with explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and a compact handoff. Steer ongoing turns with `send_message`; continue any ended worker lane with a fresh typed `spawn_agent` using an explicit model and reasoning effort. `followup_task` resumes the worker as parent Sol, wasting scarce, higher-usage Sol tokens on work deliberately routed to a worker model.
 
 The turn trace is authoritative. If it shows model drift, orchestration has failed: stop the lane and correct the dispatch or continuation pattern before retrying.
 
