@@ -275,6 +275,8 @@ EOF
   printf 'base_url=%s\n' "$ANTHROPIC_BASE_URL"
   printf 'auth_token=%s\n' "$ANTHROPIC_AUTH_TOKEN"
   printf 'subagent=%s\n' "$CLAUDE_CODE_SUBAGENT_MODEL"
+  printf 'context_window=%s\n' "$CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+  printf 'compact_pct=%s\n' "$CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
   printf 'args=%s\n' "$*"
 } >"$CAPTURE"
 EOF
@@ -289,6 +291,8 @@ EOF
   grep -Fxq 'base_url=http://127.0.0.1:8317' "$capture" || fail "claudex base URL is wrong"
   grep -Fxq 'auth_token=local-test-key' "$capture" || fail "claudex auth token is wrong"
   grep -Fxq 'subagent=gpt-5.6-luna' "$capture" || fail "claudex subagent model is wrong"
+  grep -Fxq 'context_window=272000' "$capture" || fail "claudex context window is wrong"
+  grep -Fxq 'compact_pct=88' "$capture" || fail "claudex compaction threshold is wrong"
   grep -Fxq 'args=--model gpt-5.6-sol --effort high --safe-mode' "$capture" ||
     fail "claudex arguments are wrong"
 
