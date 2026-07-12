@@ -288,7 +288,7 @@ EOF
   grep -Fxq 'api_key=unset' "$capture" || fail "claudex leaked ANTHROPIC_API_KEY"
   grep -Fxq 'base_url=http://127.0.0.1:8317' "$capture" || fail "claudex base URL is wrong"
   grep -Fxq 'auth_token=local-test-key' "$capture" || fail "claudex auth token is wrong"
-  grep -Fxq 'subagent=gpt-5.6-sol' "$capture" || fail "claudex subagent model is wrong"
+  grep -Fxq 'subagent=gpt-5.6-luna' "$capture" || fail "claudex subagent model is wrong"
   grep -Fxq 'args=--model gpt-5.6-sol --effort medium --safe-mode' "$capture" ||
     fail "claudex arguments are wrong"
 

@@ -33,7 +33,7 @@ CLAUDEX_MAX_TOOL_CONCURRENCY=2 claudex
 CLAUDEX_ENABLE_TOOL_SEARCH=true claudex
 ```
 
-The defaults are Sol medium for the main agent, Sol for Claude Code subagents, three concurrent tool calls, and dynamic tool search disabled.
+The defaults are Sol medium for the main agent, Luna medium for Claude Code subagents, three concurrent tool calls, and dynamic tool search disabled. Set `CLAUDEX_SUBAGENT_MODEL=gpt-5.6-sol` when a session needs Sol workers instead.
 
 ## Proxy lifecycle
 
