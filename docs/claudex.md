@@ -18,7 +18,9 @@ After the smoke test succeeds, use the normal Claude Code customizations:
 claudex
 ```
 
-`claudex` starts the proxy when necessary and launches GPT-5.6 Sol at high effort. It explicitly removes `ANTHROPIC_API_KEY` and scopes the proxy URL, token, model, effort, and tool variables to its own process. Running `claude` continues to use the existing Anthropic configuration.
+`claudex` starts the proxy when necessary and launches GPT-5.6 Sol at high effort. It explicitly removes `ANTHROPIC_API_KEY` and scopes the proxy URL, token, model, effort, context-compaction boundary, and tool variables to its own process. Running `claude` continues to use the existing Anthropic configuration.
+
+Claude Code owns context management in this harness; Codex CLI settings from `~/.codex/config.toml` do not apply. The wrapper therefore treats the context window as 272,000 tokens and asks Claude Code to auto-compact at 88%, approximately 239,360 tokens. This keeps requests below the 240,000-token billing boundary without depending on Claude Code's classification of the proxied model name.
 
 Do not use `claudex --continue` to resume a conversation created by ordinary Claude Code under a different provider.
 
@@ -29,11 +31,12 @@ Defaults can be changed for one invocation:
 ```bash
 CLAUDEX_MODEL=gpt-5.6-sol CLAUDEX_EFFORT=high claudex
 CLAUDEX_SUBAGENT_MODEL=gpt-5.6-luna claudex
+CLAUDEX_CONTEXT_WINDOW=272000 CLAUDEX_AUTOCOMPACT_PCT=88 claudex
 CLAUDEX_MAX_TOOL_CONCURRENCY=2 claudex
 CLAUDEX_ENABLE_TOOL_SEARCH=true claudex
 ```
 
-The defaults are Sol high for the main agent, Luna high for Claude Code subagents, three concurrent tool calls, and dynamic tool search disabled. Set `CLAUDEX_SUBAGENT_MODEL=gpt-5.6-sol` when a session needs Sol workers instead.
+The defaults are Sol high for the main agent, Luna high for Claude Code subagents, a 272,000-token compaction window with an 88% threshold, three concurrent tool calls, and dynamic tool search disabled. Set `CLAUDEX_SUBAGENT_MODEL=gpt-5.6-sol` when a session needs Sol workers instead. Keep any context overrides below the provider's higher-priced long-context boundary.
 
 ## Proxy lifecycle
 
