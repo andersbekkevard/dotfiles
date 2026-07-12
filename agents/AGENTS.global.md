@@ -15,33 +15,21 @@ Use repo artifacts, not chat, as durable context for readers who lack this conve
 
 ## Delegation
 
-The root agent retains architecture, direction, judgment, integration, difficult work, and final verification. Delegate proactively through native subagents.
+Token efficiency governs delegation; model continuity is primary. Start every GPT subagent turn with `spawn_agent`, explicitly setting `model` and `reasoning_effort`. Steer only ongoing turns with `send_message`; continue ended work in a fresh typed agent. `followup_task` can resume Terra or Luna as parent Sol, wasting frontier quota, so never use it for continuation.
 
-Always set the subagent `model` explicitly:
-- `gpt-5.6-terra` for bounded exploration and everyday implementation.
-- `gpt-5.6-luna` for repetitive, high-volume, mechanically verifiable work.
+Sol retains architecture, direction, difficult judgment, integration, and final verification. Terra handles bounded exploration and everyday implementation; Luna handles repetitive, high-volume, mechanically verifiable work. Always use `reasoning_effort: high` for Terra and Luna; Sol uses `medium` or `high`.
+
+Subagents are context firewalls. Delegate when execution and context-preservation benefits meet or exceed handoff and integration costs. At execution break-even, delegate to keep low-signal exploration, logs, and mechanical work out of root Sol context; clean context preserves judgment and reduces drift.
+
+Use one-shot lanes: one bounded task, ownership boundary, and terminal deliverable. Workers complete and return their assigned lane; only agents explicitly assigned orchestration create further lanes. Delegation does not transfer ownership: the delegating agent inspects the work, runs final checks, opens the artifact, and reports only verified results.
+
+Use compact, durable handoffs with exact paths, state, and acceptance criteria. Default to `fork_turns: "none"`; use the smallest useful fork. Full forks require the full conversation and the parent's model for cache reuse; otherwise send a compact handoff.
+
+Fan-out follows independent seams, not available slots. Use serial work when lanes share files, decisions, or prerequisites. Track lanes through wait and status surfaces, and intervene only on new evidence or a blocker.
 
 GPT agents delegate through native subagent tools and invoke neither `model-routing` nor `codex-dispatch`. Claude and Fable invoke `model-routing` before delegating or setting a `model`. Their local `Agent` tool is the Claude subagent surface; `codex-dispatch` is its Codex counterpoint and owns every Codex dispatch.
 
-Delegation does not transfer ownership. If you delegate or use subagents, you own the outcome: inspect their work, run the final checks, open the artifact, and report only what you verified.
-
-### Usage Discipline
-
-Use one-shot lanes: one bounded task, ownership boundary, and terminal deliverable. Steer a running agent with `send_message`; continue idle or completed work in a fresh explicitly typed agent. Do not reactivate completed agents with `followup_task`, which may inherit the root model and lose prompt-cache reuse.
-
-Set `reasoning_effort` explicitly and proportionally: low or medium for mechanical work, medium or high for implementation, and xhigh only when the task warrants it.
-
-Prefer durable handoffs: exact paths, commits, hashes, tracker state, and acceptance criteria. Default to `fork_turns: "none"`; use the smallest useful fork when recent conversation is essential. Do not repeat forked context in the task message.
-
-Use `fork_turns: "all"` only when the task genuinely requires the full conversation. In that case, use the same model as the parent so the inherited prefix can reuse prompt cache. If the task calls for a different model, prefer a compact durable handoff over copying the full conversation.
-
-Fan-out follows seams, not available slots. Parallelize lanes with distinct ownership and no unresolved shared prerequisite; prefer serial execution when files, decisions, or intermediate outputs overlap.
-
-Use wait and status surfaces instead of polling agents through messages. Intervene only when new evidence changes the task or an agent is blocked.
-
-The `model` parameter and displayed agent name show what was requested, not necessarily what ran; the turn trace is authoritative. If the actual model differs from your intent, treat it as an orchestration failure: stop the lane and change the dispatch or continuation pattern before trying again.
-
-Subagents follow these rules when delegating.
+The requested model and displayed agent name are not proof of what ran; the turn trace is authoritative. A different actual model is an orchestration failure: stop the lane and correct the dispatch pattern before continuing.
 
 ## Shell & Checkout Hygiene
 
