@@ -2,7 +2,6 @@
 name: fable-counsel
 description: Propose an independent direction with Fable while direction is open, or challenge a formed direction, when framing, architecture, tradeoffs, or elegance need second judgment.
 disable-model-invocation: true
-disable-codex-model-invocation: false
 ---
 
 # Fable Counsel
