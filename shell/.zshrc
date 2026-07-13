@@ -30,5 +30,3 @@ fi
 
 # OpenClaw Completion
 [ -f "/home/anders/.openclaw/completions/openclaw.zsh" ] && source "/home/anders/.openclaw/completions/openclaw.zsh"
-
-. "$HOME/.local/share/../bin/env"
