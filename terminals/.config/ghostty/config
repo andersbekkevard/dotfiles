@@ -28,6 +28,9 @@ keybind = shift+enter=text:\x1b\r
 # Cmd+Enter sends F13. Neovim maps F13 to repeat the previous Ex command.
 keybind = super+enter=csi:25~
 
+# Cmd+S sends Alt+S so tmux can open the session picker locally and over SSH.
+keybind = super+s=esc:s
+
 # Option+Tab → Esc+Tab so nvim sees <M-Tab> (used by Copilot accept_word).
 keybind = alt+tab=text:\x1b\t
 

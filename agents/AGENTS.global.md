@@ -15,7 +15,9 @@ Use repo artifacts, not chat, as durable context for readers who lack this conve
 
 ## Delegation
 
-Use only Sol or Luna. Sol uses `medium` reasoning effort for routine ownership, coordination, integration, and final verification, and `high` for architecture, difficult judgment, and hard debugging. Luna always uses `high` reasoning effort for bounded exploration, everyday implementation, and repetitive, mechanically verifiable work.
+Route each GPT worker by work shape: Luna with `high` reasoning effort for high-volume, routine, and trivial work; Terra with `high` for scoped implementation; Sol with `medium` for high-judgment work; and Sol with `high` for difficult high-judgment work. This keeps routing efficient by default and reserves maximum performance for when it is needed.
+
+Use your judgment to choose the model and reasoning effort when delegating to subagents.
 
 Use subagents as context firewalls. At execution break-even, delegate independent low-signal work to preserve clean Sol context and reduce drift. Give each lane one terminal deliverable; serialize shared files, decisions, and prerequisites.
 
