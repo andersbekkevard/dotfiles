@@ -8,6 +8,8 @@ Write user-facing explanations in clear, concise language without reducing techn
 
 For design questions, discuss the shape first; implement only when asked.
 
+When Anders says “open in Comet,” use the CLI only: `open -a "Comet" <url>`.
+
 
 ## Repo as Shared Memory
 
