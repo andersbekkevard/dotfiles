@@ -130,8 +130,8 @@ Sol's direction and rationale inside the `challenge` packet only, run `propose`
 and `challenge` concurrently, then integrate both notes. This is two isolated
 consultations, not a third mode.
 
-Read the note, reconsider the direction, and continue with the best view. Mention
-the consultation when it materially changed or sharpened the work. When counsel
-contradicts a fact you directly observed, recheck the source and keep factual
-authority with the evidence; use Fable for judgment. If explicitly requested
-counsel fails, surface the failure; preserve Sol's existing work.
+Read the note, reconsider the direction, and continue with the best view. End the
+response by reproducing the runner's `Fable Council mode` line verbatim. When
+counsel contradicts a fact you directly observed, recheck the source and keep
+factual authority with the evidence; use Fable for judgment. If explicitly
+requested counsel fails, surface the failure; preserve Sol's existing work.

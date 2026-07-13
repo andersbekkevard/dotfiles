@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -112,9 +113,13 @@ print(response, end="")
         )
         claude.chmod(0o755)
         environment = os.environ.copy()
+        home = self.base / "home"
+        home.mkdir(exist_ok=True)
         environment.update(
             {
+                "HOME": str(home),
                 "PATH": f"{fake_bin}{os.pathsep}{environment.get('PATH', '')}",
+                "XDG_STATE_HOME": str(self.base / "state"),
                 "FAKE_CLAUDE_LOG": str(log),
                 "FAKE_CLAUDE_AUTH": auth,
                 "FAKE_CLAUDE_RESPONSE": response,
@@ -126,7 +131,13 @@ print(response, end="")
                 "CLAUDE_CODE_USE_FOUNDRY": "1",
             }
         )
+        environment.pop("CODEX_HOME", None)
+        environment.pop("CODEX_THREAD_ID", None)
         return environment, log
+
+    def archive_dirs(self) -> list[Path]:
+        root = self.base / "state/fable-counsel/runs"
+        return sorted(path for path in root.glob("*") if path.is_dir())
 
     def test_minimal_packet_is_standalone_and_reports_only_metadata(self) -> None:
         result = self.run_packet()
@@ -140,8 +151,7 @@ print(response, end="")
         self.assertIsNone(packet.find("user_intent"))
         self.assertEqual(packet.find("context").tag, "context")
         self.assertNotIn("Goal: choose", result.stdout)
-        self.assertIn("Packet:", result.stdout)
-        self.assertIn("Mode: challenge", result.stdout)
+        self.assertEqual(result.stdout, "Dry run: Claude not invoked\n")
 
     def test_propose_selects_independent_prompt(self) -> None:
         result = self.run_packet(mode="propose")
@@ -152,7 +162,7 @@ print(response, end="")
         self.assertIn("outside this packet", prompt)
         self.assertNotIn("Sol has supplied a formed direction", prompt)
         self.assertEqual(self.packet_xml().attrib["mode"], "propose")
-        self.assertIn("Mode: propose", result.stdout)
+        self.assertEqual(result.stdout, "Dry run: Claude not invoked\n")
 
     def test_runner_requires_an_explicit_mode(self) -> None:
         result = self.run_packet(mode=None)
@@ -198,7 +208,7 @@ print(response, end="")
             packet_text = (work / "prompt.md").read_text()
             packet = ET.fromstring(packet_text[packet_text.index("<counsel_packet") :])
             self.assertEqual(packet.attrib["mode"], mode)
-            self.assertIn(f"Mode: {mode}", stdout)
+            self.assertEqual(stdout, "Dry run: Claude not invoked\n")
 
         propose = (runs["propose"][0] / "prompt.md").read_text()
         challenge = (runs["challenge"][0] / "prompt.md").read_text()
@@ -224,8 +234,7 @@ print(response, end="")
             set(packet.find("user_intent").attrib),
             {"content_encoding"},
         )
-        self.assertIn("User intent:", result.stdout)
-        self.assertIn("User anchors:", result.stdout)
+        self.assertEqual(result.stdout, "Dry run: Claude not invoked\n")
         self.assertNotIn("Fresh eyes matter", result.stdout)
 
     def test_user_anchors_require_reconstructed_intent(self) -> None:
@@ -319,6 +328,16 @@ print(response, end="")
         result = self.run_packet(dry_run=False, env=environment)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.counsel.read_text(), "intercepted counsel")
+        prompt_tokens = len(
+            tiktoken.get_encoding("o200k_base").encode(self.output.read_text())
+        )
+        self.assertEqual(
+            result.stdout,
+            (
+                f"Counsel: {self.counsel.resolve()}\n"
+                f"Fable Council mode: challenge | prompt: {prompt_tokens:,} tokens\n"
+            ).replace(",", " "),
+        )
         calls = [json.loads(line) for line in log.read_text().splitlines()]
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0]["args"], ["auth", "status"])
@@ -335,6 +354,55 @@ print(response, end="")
         self.assertEqual(invocation[invocation.index("--model") + 1], "claude-fable-5")
         self.assertEqual(invocation[invocation.index("--effort") + 1], "high")
 
+    def test_completed_run_is_privately_archived_with_codex_attribution(self) -> None:
+        environment, _ = self.fake_claude_environment()
+        thread_id = "019f58ed-db1c-7ca3-aeec-fbf3d70a2a0a"
+        rollout = (
+            Path(environment["HOME"])
+            / ".codex/sessions/2026/07/13"
+            / f"rollout-2026-07-13T02-43-31-{thread_id}.jsonl"
+        )
+        rollout.parent.mkdir(parents=True)
+        rollout.write_text('{"event":"before counsel"}\n')
+        environment["CODEX_THREAD_ID"] = thread_id
+
+        result = self.run_packet(dry_run=False, env=environment)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        archives = self.archive_dirs()
+        self.assertEqual(len(archives), 1)
+        run = archives[0]
+        manifest = json.loads((run / "manifest.json").read_text())
+        prompt_tokens = len(
+            tiktoken.get_encoding("o200k_base").encode(self.output.read_text())
+        )
+
+        self.assertEqual(manifest["schema_version"], 1)
+        self.assertEqual(manifest["status"], "completed")
+        self.assertEqual(manifest["mode"], "challenge")
+        self.assertEqual(manifest["effort"], "high")
+        self.assertEqual(manifest["prompt_tokens"], prompt_tokens)
+        self.assertEqual(manifest["token_encoding"], "o200k_base")
+        self.assertEqual(
+            manifest["prompt_sha256"],
+            hashlib.sha256(self.output.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(
+            manifest["response_sha256"],
+            hashlib.sha256(b"intercepted counsel").hexdigest(),
+        )
+        self.assertEqual(manifest["repository"]["root"], str(self.root.resolve()))
+        self.assertEqual(manifest["codex"]["thread_id"], thread_id)
+        self.assertEqual(manifest["codex"]["resolution"], "resolved")
+        self.assertEqual(manifest["codex"]["rollout_path"], str(rollout.resolve()))
+        self.assertEqual(
+            manifest["codex"]["rollout_byte_offset"], rollout.stat().st_size
+        )
+        self.assertEqual((run / "prompt.md").read_text(), self.output.read_text())
+        self.assertEqual((run / "fable.md").read_text(), "intercepted counsel")
+        self.assertEqual(run.stat().st_mode & 0o777, 0o700)
+        for artifact in (run / "prompt.md", run / "fable.md", run / "manifest.json"):
+            self.assertEqual(artifact.stat().st_mode & 0o777, 0o600)
+
     def test_dry_run_writes_packet_without_calling_claude(self) -> None:
         environment, log = self.fake_claude_environment()
         result = self.run_packet(env=environment)
@@ -343,6 +411,8 @@ print(response, end="")
         self.assertFalse(self.counsel.exists())
         self.assertFalse(log.exists())
         self.assertIn("Dry run: Claude not invoked", result.stdout)
+        self.assertFalse((self.work / ".packet-metadata.json").exists())
+        self.assertEqual(self.archive_dirs(), [])
 
     def test_subscription_failure_stops_before_counsel(self) -> None:
         environment, log = self.fake_claude_environment(auth="bad")
@@ -352,6 +422,12 @@ print(response, end="")
         calls = [json.loads(line) for line in log.read_text().splitlines()]
         self.assertEqual([call["args"] for call in calls], [["auth", "status"]])
         self.assertFalse(self.counsel.exists())
+        archives = self.archive_dirs()
+        self.assertEqual(len(archives), 1)
+        manifest = json.loads((archives[0] / "manifest.json").read_text())
+        self.assertEqual(manifest["status"], "failed")
+        self.assertIn("claude.ai subscription", manifest["failure"])
+        self.assertFalse((archives[0] / "fable.md").exists())
 
     def test_failed_counsel_preserves_existing_output(self) -> None:
         self.counsel.write_text("existing\n")
@@ -360,6 +436,54 @@ print(response, end="")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("exited with status 7", result.stderr)
         self.assertEqual(self.counsel.read_text(), "existing\n")
+        archives = self.archive_dirs()
+        self.assertEqual(len(archives), 1)
+        manifest = json.loads((archives[0] / "manifest.json").read_text())
+        self.assertEqual(manifest["status"], "failed")
+        self.assertIn("exited with status 7", manifest["failure"])
+        self.assertFalse((archives[0] / "fable.md").exists())
+
+    def test_concurrent_runs_get_distinct_archives(self) -> None:
+        environment, _ = self.fake_claude_environment()
+        processes = []
+        for mode in ("propose", "challenge"):
+            work = self.base / f"archive-{mode}"
+            work.mkdir()
+            (work / "brief.md").write_text(f"Goal: test {mode}.\n")
+            command = [
+                sys.executable,
+                str(SCRIPT),
+                str(work),
+                "--root",
+                str(self.root),
+                "--mode",
+                mode,
+            ]
+            processes.append(
+                (
+                    mode,
+                    subprocess.Popen(
+                        command,
+                        text=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        env=environment,
+                    ),
+                )
+            )
+
+        for mode, process in processes:
+            stdout, stderr = process.communicate()
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertIn(f"Fable Council mode: {mode} | prompt: ", stdout)
+
+        archives = self.archive_dirs()
+        self.assertEqual(len(archives), 2)
+        manifests = [
+            json.loads((run / "manifest.json").read_text()) for run in archives
+        ]
+        self.assertEqual({item["mode"] for item in manifests}, {"propose", "challenge"})
+        self.assertEqual(len({item["run_id"] for item in manifests}), 2)
 
     def test_runner_rejects_model_override(self) -> None:
         result = self.run_packet("--model", "other")
@@ -401,6 +525,9 @@ print(response, end="")
         self.assertIn("repo-relative evidence paths", skill)
         self.assertIn("Treat the runner as opaque", skill)
         self.assertIn("open `scripts/` only to change or audit the runner", skill)
+        self.assertIn(
+            "reproducing the runner's `Fable Council mode` line verbatim", skill
+        )
 
     def test_skill_routes_implicit_invocation_from_decision_state(self) -> None:
         skill = SKILL.read_text()
