@@ -191,6 +191,10 @@ tracking = "local"
 local_path = "agents/skills/fleet/pro-brief"
 tracking = "local"
 
+[skills.provision-hetzner-dev-server]
+local_path = "agents/skills/fleet/provision-hetzner-dev-server"
+tracking = "local"
+
 [skills.recap]
 local_path = "agents/skills/desk/recap"
 tracking = "local"
