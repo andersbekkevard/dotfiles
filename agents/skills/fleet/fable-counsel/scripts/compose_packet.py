@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import html
+import json
 import os
 import re
 import tempfile
@@ -140,6 +141,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output", required=True, help="Prompt file to write atomically."
+    )
+    parser.add_argument(
+        "--metadata-output",
+        help="Optional machine-readable packet metadata file.",
     )
     parser.add_argument(
         "--max-file-bytes",
@@ -447,6 +452,17 @@ def main() -> int:
 
     output = Path(args.output).expanduser().resolve()
     atomic_write(output, prompt)
+    if args.metadata_output:
+        metadata = {
+            "schema_version": 1,
+            "mode": args.mode,
+            "prompt_tokens": total_tokens,
+            "token_encoding": "o200k_base",
+        }
+        atomic_write(
+            Path(args.metadata_output),
+            json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+        )
     print(f"Packet: {format_int(total_tokens)} tokens")
     print(f"Mode: {args.mode}")
     if user_intent is not None:

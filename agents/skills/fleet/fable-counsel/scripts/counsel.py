@@ -7,11 +7,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -25,6 +30,7 @@ SANITIZED_ENV = (
     "CLAUDE_CODE_USE_VERTEX",
     "CLAUDE_CODE_USE_FOUNDRY",
 )
+THREAD_ID_PATTERN = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", re.I)
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,8 +111,152 @@ def sanitized_environment() -> dict[str, str]:
     return environment
 
 
-def compose(args: argparse.Namespace, work_dir: Path, prompt: Path) -> None:
+def format_int(value: int) -> str:
+    return f"{value:,}".replace(",", " ")
+
+
+def timestamp() -> str:
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def atomic_json(path: Path, data: dict[str, object]) -> None:
+    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(temp_name, path)
+    except BaseException:
+        try:
+            os.unlink(temp_name)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def copy_private(source: Path, destination: Path) -> None:
+    shutil.copyfile(source, destination)
+    destination.chmod(0o600)
+
+
+def git_metadata(root: Path) -> dict[str, object]:
+    try:
+        commit = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if commit.returncode != 0:
+            return {"root": str(root), "commit": None, "dirty": None}
+        status = subprocess.run(
+            ["git", "-C", str(root), "status", "--porcelain"],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return {"root": str(root), "commit": None, "dirty": None}
+    return {
+        "root": str(root),
+        "commit": commit.stdout.strip(),
+        "dirty": bool(status.stdout) if status.returncode == 0 else None,
+    }
+
+
+def codex_metadata() -> dict[str, object]:
+    thread_id = os.environ.get("CODEX_THREAD_ID")
+    metadata: dict[str, object] = {
+        "thread_id": thread_id,
+        "rollout_path": None,
+        "rollout_byte_offset": None,
+        "resolution": "unavailable",
+    }
+    if not thread_id:
+        return metadata
+    if not THREAD_ID_PATTERN.fullmatch(thread_id):
+        metadata["resolution"] = "invalid-thread-id"
+        return metadata
+
+    codex_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
+    sessions = codex_home.expanduser() / "sessions"
+    matches = sorted(sessions.glob(f"*/*/*/rollout-*-{thread_id}.jsonl"))
+    if len(matches) != 1:
+        metadata["resolution"] = "missing" if not matches else "ambiguous"
+        return metadata
+
+    rollout = matches[0].resolve()
+    metadata.update(
+        {
+            "rollout_path": str(rollout),
+            "rollout_byte_offset": rollout.stat().st_size,
+            "resolution": "resolved",
+        }
+    )
+    return metadata
+
+
+def archive_root() -> Path:
+    state_home = os.environ.get("XDG_STATE_HOME")
+    base = Path(state_home).expanduser() if state_home else Path.home() / ".local/state"
+    root = base / "fable-counsel" / "runs"
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    root.parent.chmod(0o700)
+    root.chmod(0o700)
+    return root
+
+
+def begin_archive(
+    args: argparse.Namespace,
+    prompt: Path,
+    packet: dict[str, object],
+) -> tuple[Path, dict[str, object]]:
+    created_at = timestamp()
+    run_id = (
+        datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+        + f"-{uuid.uuid4().hex[:12]}"
+    )
+    run_dir = archive_root() / run_id
+    run_dir.mkdir(mode=0o700)
+    copy_private(prompt, run_dir / "prompt.md")
+    manifest: dict[str, object] = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "created_at": created_at,
+        "finished_at": None,
+        "status": "running",
+        "mode": args.mode,
+        "effort": args.effort,
+        "prompt_tokens": packet["prompt_tokens"],
+        "token_encoding": packet.get("token_encoding"),
+        "prompt_sha256": sha256(prompt),
+        "response_sha256": None,
+        "repository": git_metadata(Path(args.root).expanduser().resolve()),
+        "codex": codex_metadata(),
+        "artifacts": {"prompt": "prompt.md", "response": None},
+    }
+    atomic_json(run_dir / "manifest.json", manifest)
+    return run_dir, manifest
+
+
+def compose(
+    args: argparse.Namespace, work_dir: Path, prompt: Path
+) -> dict[str, object]:
     script = Path(__file__).with_name("compose_packet.py")
+    metadata = work_dir / ".packet-metadata.json"
     command = [
         sys.executable,
         str(script),
@@ -118,6 +268,8 @@ def compose(args: argparse.Namespace, work_dir: Path, prompt: Path) -> None:
         str(work_dir / "brief.md"),
         "--output",
         str(prompt),
+        "--metadata-output",
+        str(metadata),
     ]
     intent = work_dir / "user-intent.md"
     anchors = work_dir / "user-anchors.md"
@@ -133,9 +285,21 @@ def compose(args: argparse.Namespace, work_dir: Path, prompt: Path) -> None:
     ):
         for value in values:
             command.extend((flag, value))
-    result = subprocess.run(command, check=False)
+    result = subprocess.run(command, text=True, capture_output=True, check=False)
     if result.returncode != 0:
+        sys.stderr.write(result.stderr)
         raise SystemExit(result.returncode)
+    try:
+        packet = json.loads(metadata.read_text())
+    except (OSError, json.JSONDecodeError):
+        fail("packet metadata was not valid JSON")
+    finally:
+        metadata.unlink(missing_ok=True)
+    if packet.get("mode") != args.mode or not isinstance(
+        packet.get("prompt_tokens"), int
+    ):
+        fail("packet metadata was incomplete")
+    return packet
 
 
 def verify_subscription(environment: dict[str, str], cwd: Path) -> None:
@@ -220,17 +384,49 @@ def main() -> int:
         fail(f"work directory does not exist: {args.work_dir}")
     prompt = work_dir / "prompt.md"
     output = work_dir / "fable.md"
-    compose(args, work_dir, prompt)
+    packet = compose(args, work_dir, prompt)
     if args.dry_run:
         print("Dry run: Claude not invoked")
         return 0
 
-    environment = sanitized_environment()
-    with tempfile.TemporaryDirectory(prefix="fable-counsel-run.") as neutral:
-        neutral_dir = Path(neutral)
-        verify_subscription(environment, neutral_dir)
-        invoke(prompt, output, args.effort, environment, neutral_dir)
+    try:
+        run_dir, manifest = begin_archive(args, prompt, packet)
+    except OSError as exc:
+        fail(f"cannot create private run archive: {exc}")
+
+    try:
+        environment = sanitized_environment()
+        with tempfile.TemporaryDirectory(prefix="fable-counsel-run.") as neutral:
+            neutral_dir = Path(neutral)
+            verify_subscription(environment, neutral_dir)
+            invoke(prompt, output, args.effort, environment, neutral_dir)
+        copy_private(output, run_dir / "fable.md")
+    except BaseException as exc:
+        manifest.update(
+            {
+                "finished_at": timestamp(),
+                "status": "failed",
+                "failure_type": type(exc).__name__,
+                "failure": str(exc.code) if isinstance(exc, SystemExit) else None,
+            }
+        )
+        atomic_json(run_dir / "manifest.json", manifest)
+        raise
+
+    manifest.update(
+        {
+            "finished_at": timestamp(),
+            "status": "completed",
+            "response_sha256": sha256(output),
+            "artifacts": {"prompt": "prompt.md", "response": "fable.md"},
+        }
+    )
+    atomic_json(run_dir / "manifest.json", manifest)
     print(f"Counsel: {output}")
+    print(
+        f"Fable Council mode: {args.mode} | "
+        f"prompt: {format_int(packet['prompt_tokens'])} tokens"
+    )
     return 0
 
 
