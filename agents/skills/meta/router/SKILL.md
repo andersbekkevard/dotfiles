@@ -1,7 +1,7 @@
 ---
 name: router
 description: Index of the user-invoked skill set — shows every global skill, its mode, and what it is for.
-disable-codex-model-invocation: true
+disable-model-invocation: true
 ---
 
 # Router
