@@ -113,6 +113,9 @@ upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref
 local_path = "agents/skills/engineering/diagnosing-bugs"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/diagnosing-bugs" }
+preserve = [
+  "Keep the local description scoped to hard bugs; broad broken/failing/slow triggers over-invoke this heavyweight loop.",
+]
 
 [skills.grill-with-docs]
 local_path = "agents/skills/flow/grill-with-docs"
