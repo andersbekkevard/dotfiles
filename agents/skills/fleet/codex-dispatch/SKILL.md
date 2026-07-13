@@ -6,15 +6,11 @@ disable-codex-model-invocation: true
 
 # Codex Dispatch — dispatching and supervising Codex runs
 
-`codex-dispatch` is the Codex counterpoint to Claude and Fable's local `Agent`
-tool. It owns every Codex dispatch, foreground or detached. GPT agents use
-native subagent tools instead. A **lane** is one detached `codex exec` run with
-a prompt file, a log, and a sentinel. Every rule below traces to a real dispatch
-failure.
+`codex-dispatch` owns every Claude/Fable `codex exec`; GPT agents use native
+subagent tools. A **lane** is a detached run with a prompt file, log, and
+sentinel.
 
 ## Every dispatch — foreground or lane
-
-These rules bind every `codex exec`, not only detached lanes:
 
 - Prompts are fully self-contained — paths, context, constraints,
   acceptance criteria, and exactly what to return. Codex cannot ask
@@ -22,10 +18,8 @@ These rules bind every `codex exec`, not only detached lanes:
 - Run from the target repo, or pass `-C <repo>`.
 - Stage the prompt to a file **with the Write tool or a quoted heredoc
   (`<<'EOF'`)**, then pass it on stdin: `codex exec … - < /tmp/<name>.md`.
-  The `-` makes codex read instructions from stdin, so the prompt never
-  touches argv (multi-KB argv prompts have died at exit 144) and stdin
-  closes at EOF (a connected stdin blocks codex forever). An unquoted
-  heredoc executes any `$(...)` inside the prompt text while staging it.
+  The `-` keeps the prompt off argv and closes stdin at EOF. Quote heredocs so
+  `$(...)` in prompt text is not executed while staging.
 - Add `-o /tmp/<name>.out.md` (`--output-last-message`) to every
   invocation. Codex writes its final message there on completion, making
   the file both the harvestable report and the completion **sentinel**: it
@@ -41,8 +35,7 @@ These rules bind every `codex exec`, not only detached lanes:
 - When a prompt references a skill, verify the path resolves before dispatch
   (`test -f <path>/SKILL.md`) or inline the skill text. A missing skill
   reference is a dispatch defect — surface it loudly; never let the lane
-  silently downgrade to "normal engineering discipline". (A one-character
-  path typo once disabled a skill for a whole adoption week.)
+  silently downgrade to "normal engineering discipline".
 - Prompts that stage shell snippets: never use `status` as a variable name —
   it is read-only in zsh and the assignment kills the script.
 - Follow-ups reuse the session instead of paying for a fresh run:
