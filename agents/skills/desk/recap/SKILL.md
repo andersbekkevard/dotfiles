@@ -1,6 +1,7 @@
 ---
 name: recap
 description: "Re-orient Anders after time away: a prose TLDR of where we are, what was decided, and the next decision he needs to make. Use for 'where are we', 'TLDR', 'recap', 'I was away', 'what's the status', 'what's next'."
+disable-codex-model-invocation: true
 ---
 
 # Recap
