@@ -72,6 +72,28 @@ test_profile_contract() {
   rm -rf "$fake_home"
 }
 
+test_canonical_repo_path_contract() {
+  grep -Fqx 'alias zrc="nvim ~/dotfiles/shell/.zshrc"' \
+    "$REPO_ROOT/shell/.zsh/aliases.zsh" ||
+    fail "zrc does not use the canonical ~/dotfiles path"
+  grep -Fq -- '--dir="$HOME/dotfiles"' \
+    "$REPO_ROOT/shell/.zsh/aliases.zsh" ||
+    fail "dstow does not use the canonical ~/dotfiles path"
+  grep -Fqx 'path = "~/dotfiles"' \
+    "$REPO_ROOT/shell/.config/sesh/sesh.toml" ||
+    fail "sesh does not use the canonical ~/dotfiles path"
+
+  if grep -Fq '~/.dotfiles' \
+    "$REPO_ROOT/README.md" \
+    "$REPO_ROOT/docs/usage.md" \
+    "$REPO_ROOT/shell/.zsh/aliases.zsh" \
+    "$REPO_ROOT/shell/.config/sesh/sesh.toml" \
+    "$REPO_ROOT/agents/skills/fleet/provision-hetzner-dev-server/SKILL.md" \
+    "$REPO_ROOT/agents/skills/fleet/provision-hetzner-dev-server/scripts/verify-host.sh"; then
+    fail "canonical operator surfaces still reference ~/.dotfiles"
+  fi
+}
+
 test_homebrew_activation() {
   local fake_bin
   fake_bin="$(mktemp -d)"
@@ -301,6 +323,7 @@ EOF
 
 test_runtime_path_defaults
 test_profile_contract
+test_canonical_repo_path_contract
 test_homebrew_activation
 test_homebrew_dry_run
 test_pnpm_setup_contract

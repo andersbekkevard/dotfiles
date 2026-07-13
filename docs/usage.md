@@ -3,8 +3,8 @@
 Fresh clone:
 
 ```bash
-git clone <repo-url> ~/.dotfiles
-cd ~/.dotfiles
+git clone <repo-url> ~/dotfiles
+cd ~/dotfiles
 ./setup.sh macos
 ```
 
