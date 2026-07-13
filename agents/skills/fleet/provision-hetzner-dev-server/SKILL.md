@@ -52,7 +52,7 @@ Stop on an SSH-alias collision or evidence belonging to another target.
   unsolicited incoming traffic.
 - Europe/Oslo, unattended security upgrades, Snapper retention, monthly Btrfs
   scrub, weekly TRIM, SMART monitoring, and mdadm monitoring.
-- `~/.dotfiles` on the requested revision (default: repository HEAD), with
+- `~/dotfiles` on the requested revision (default: repository HEAD), with
   `./setup.sh full` and `./setup.sh --verify full` both successful.
 - Official Claude Code, Codex, and `claudex` installed; machine-local logins
   complete.
@@ -148,7 +148,7 @@ disabled.
 
 Inside remote tmux as the administrator:
 
-1. Clone `https://github.com/andersbekkevard/dotfiles.git` to `~/.dotfiles`.
+1. Clone `https://github.com/andersbekkevard/dotfiles.git` to `~/dotfiles`.
 2. Record the commit and run `./setup.sh full`, preserving its full log and exit
    status. Retry only idempotent transient failures; repair a reproducible
    dotfiles defect at its source rather than weakening verification.
@@ -156,7 +156,7 @@ Inside remote tmux as the administrator:
 4. Install Claude Code from Anthropic's current official Linux instructions;
    the dotfiles `full` profile installs Codex and `claudex`, not ordinary
    `claude`.
-5. Read `~/.dotfiles/docs/claudex.md`, then initiate the documented Codex,
+5. Read `~/dotfiles/docs/claudex.md`, then initiate the documented Codex,
    Claude, and CLIProxyAPI authentication flows. Give the user the minimum
    browser/device-code handoff and continue after approval.
 6. Create post-dotfiles root and read-only home snapshots.

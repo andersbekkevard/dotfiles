@@ -5,8 +5,8 @@ Unified cross-platform dotfiles for macOS, Ubuntu desktop, and Ubuntu headless.
 ## Quick start
 
 ```bash
-git clone <repo-url> ~/.dotfiles
-cd ~/.dotfiles
+git clone <repo-url> ~/dotfiles
+cd ~/dotfiles
 ./setup.sh macos
 ```
 

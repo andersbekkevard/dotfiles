@@ -1,6 +1,6 @@
 [[session]]
 name = "dotfiles"
-path = "~/.dotfiles"
+path = "~/dotfiles"
 
 [[session]]
 path = "~/dev/web/projects/bekkevard.me"

@@ -1,5 +1,5 @@
 alias src="source ~/.zshrc"
-alias zrc="nvim ~/.dotfiles/shell/.zshrc"
+alias zrc="nvim ~/dotfiles/shell/.zshrc"
 alias c="clear"
 
 alias nv="nvim"
@@ -14,7 +14,7 @@ alias v.="nvim ."
 alias ..="cd .."
 alias cc="claude --dangerously-skip-permissions"
 alias co="codex --yolo"
-alias dstow='stow --restow --target="$HOME" --dir="${HOME}/$(test -d "$HOME/.dotfiles" && printf %s .dotfiles || printf %s dotfiles)" --no-folding shell git nvim tmux scripts fd btop lazygit wt lsd terminals macos linux-desktop'
+alias dstow='stow --restow --target="$HOME" --dir="$HOME/dotfiles" --no-folding shell git nvim tmux scripts fd btop lazygit wt lsd terminals macos linux-desktop'
 alias sp="sesh picker"
 alias t="tn"
 

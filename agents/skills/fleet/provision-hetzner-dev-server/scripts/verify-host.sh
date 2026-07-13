@@ -81,17 +81,17 @@ fi
 sudo -n snapper -c root list || fail snapper-root
 
 printf '%s\n' '=== DEVELOPMENT ==='
-[[ -d "$HOME/.dotfiles/.git" ]] && pass dotfiles-clone || fail dotfiles-clone
-if [[ -x "$HOME/.dotfiles/setup.sh" ]]; then
-  (cd "$HOME/.dotfiles" && ./setup.sh --verify full) && pass dotfiles-full-verify || fail dotfiles-full-verify
+[[ -d "$HOME/dotfiles/.git" ]] && pass dotfiles-clone || fail dotfiles-clone
+if [[ -x "$HOME/dotfiles/setup.sh" ]]; then
+  (cd "$HOME/dotfiles" && ./setup.sh --verify full) && pass dotfiles-full-verify || fail dotfiles-full-verify
 else
   fail dotfiles-full-verify
 fi
 for command_name in git zsh tmux nvim gh uv cargo go fnm node pnpm bun codex claude claudex cli-proxy-api; do
   check "command-$command_name" env -i HOME="$HOME" USER="$USER" PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/sh -lc "command -v '$command_name'"
 done
-git -C "$HOME/.dotfiles" remote -v 2>/dev/null || true
-git -C "$HOME/.dotfiles" rev-parse HEAD 2>/dev/null || true
+git -C "$HOME/dotfiles" remote -v 2>/dev/null || true
+git -C "$HOME/dotfiles" rev-parse HEAD 2>/dev/null || true
 codex --version 2>/dev/null || true
 claude --version 2>/dev/null || true
 
