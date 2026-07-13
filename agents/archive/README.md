@@ -32,3 +32,6 @@ commit message that moves it.
   (claim/close lifecycle) lives in the `beads` skill.
 - `prototype` — throwaway-prototype conventions (logic/UI branches). Moved to
   the archive by Anders 2026-07-09 during the skill-surface cleanup.
+- `gemma-dev` — Google Gemma development guidance formerly installed directly
+  in Codex. Archived by Anders 2026-07-13 while pruning the implicit skill
+  surface.
