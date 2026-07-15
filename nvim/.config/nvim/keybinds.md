@@ -10,8 +10,8 @@
 |---------|------|--------|
 | `H` | All | Jump to start of current visual line |
 | `L` | All | Jump to end of current visual line |
-| `j` | Normal | Move down by visual line (soft-wrapped text) |
-| `k` | Normal | Move up by visual line (soft-wrapped text) |
+| `j` | Normal | Move down by visual line, including rendered Markdown table rows |
+| `k` | Normal | Move up by visual line, including rendered Markdown table rows |
 | `n` | Normal | Next search result (centered) |
 | `N` | Normal | Previous search result (centered) |
 | `<C-u>` | Normal | Scroll up half page (centered) |
@@ -160,6 +160,8 @@
 | `<CR>` on heading | Normal | Toggle the heading section fold |
 | `<leader>mf` | Normal | Fold all Markdown heading sections |
 | `<leader>mu` | Normal | Unfold all Markdown heading sections |
+| `i` / `a` / `I` / `A` in table lens | Normal | Edit the source cell at the rendered cursor position; return to the lens on `InsertLeave` |
+| `q` / `<Esc>` in table lens | Normal | Leave the table lens above the source table |
 
 ---
 
