@@ -442,7 +442,9 @@ return {
 			max_col_width = 50,
 			row_separator = true,
 			render_all = true,
-			inline_viewport_scrolling = false,
+			-- Keep rendered tables the same height as their source so virtual rows
+			-- do not distort relative line numbers or j/k navigation.
+			inline_viewport_scrolling = true,
 			highlight_preset = "render_markdown",
 		},
 	},
