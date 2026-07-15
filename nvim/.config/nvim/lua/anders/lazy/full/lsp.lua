@@ -417,8 +417,33 @@ return {
 		ft = { "markdown" },
 		dependencies = { "nvim-treesitter/nvim-treesitter", "echasnovski/mini.icons" },
 		keys = {
-			{ "<leader>md", "<cmd>RenderMarkdown toggle<cr>", desc = "Toggle markdown render" },
+			{
+				"<leader>md",
+				function()
+					vim.cmd("RenderMarkdown toggle")
+					vim.cmd("MarkdownTableToggleAutoPreview")
+				end,
+				desc = "Toggle markdown render",
+			},
 		},
-		opts = {},
+		opts = {
+			-- Neovim soft-wraps the complete source line after table extmarks are
+			-- positioned, which breaks column borders. A dedicated renderer below
+			-- wraps each cell independently instead.
+			pipe_table = { enabled = false },
+		},
+	},
+	{
+		"ice345/markdown-table-wrap.nvim",
+		ft = { "markdown" },
+		opts = {
+			max_width_ratio = 0.95,
+			min_col_width = 8,
+			max_col_width = 50,
+			row_separator = true,
+			render_all = true,
+			inline_viewport_scrolling = false,
+			highlight_preset = "render_markdown",
+		},
 	},
 }
