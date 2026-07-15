@@ -442,9 +442,8 @@ return {
 			max_col_width = 50,
 			row_separator = true,
 			render_all = true,
-			-- Keep rendered tables the same height as their source so virtual rows
-			-- do not distort relative line numbers or j/k navigation.
-			inline_viewport_scrolling = true,
+			-- Outside the focusable table lens, keep the complete table visible.
+			inline_viewport_scrolling = false,
 			highlight_preset = "render_markdown",
 		},
 	},
