@@ -148,6 +148,7 @@ print(response, end="")
         self.assertEqual(packet.attrib["mode"], "challenge")
         self.assertEqual([child.tag for child in packet], ["context", "sol_brief"])
         self.assertIsNotNone(packet.find("sol_brief"))
+        self.assertEqual(packet.find("sol_brief").attrib, {})
         self.assertIsNone(packet.find("user_intent"))
         self.assertEqual(packet.find("context").tag, "context")
         self.assertNotIn("Goal: choose", result.stdout)
@@ -163,6 +164,21 @@ print(response, end="")
         self.assertNotIn("Sol has supplied a formed direction", prompt)
         self.assertEqual(self.packet_xml().attrib["mode"], "propose")
         self.assertEqual(result.stdout, "Dry run: Claude not invoked\n")
+
+    def test_prompt_exposes_independent_judgment_and_claim_provenance(self) -> None:
+        result = self.run_packet()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        prompt = self.output.read_text()
+        for contract in (
+            "Understanding: reconstruct the user's decision",
+            "Independent view: state the direction you would choose",
+            "Assessment of Sol: compare your view with Sol's causal case",
+            "credible better direction absent from Sol's brief",
+            "[packet-grounded], [inference], or [model-prior]",
+            "observed facts through assumptions and mechanism",
+            "verification signals, and falsifiers",
+        ):
+            self.assertIn(contract, prompt)
 
     def test_runner_requires_an_explicit_mode(self) -> None:
         result = self.run_packet(mode=None)
@@ -230,12 +246,27 @@ print(response, end="")
         self.assertIn("lightweight source", packet.findtext("user_intent"))
         self.assertNotIn("Fresh eyes matter", packet.findtext("user_intent"))
         self.assertIn("Fresh eyes matter", packet.findtext("verbatim_user_anchors"))
-        self.assertEqual(
-            set(packet.find("user_intent").attrib),
-            {"content_encoding"},
-        )
+        self.assertEqual(packet.find("user_intent").attrib, {})
+        self.assertEqual(packet.find("verbatim_user_anchors").attrib, {})
         self.assertEqual(result.stdout, "Dry run: Claude not invoked\n")
         self.assertNotIn("Fresh eyes matter", result.stdout)
+
+    def test_repository_model_is_distinct_and_precedes_evidence_and_brief(self) -> None:
+        (self.work / "repo-model.md").write_text(
+            "Module: planner.py:10-40\nInvariant: one owner for scheduling.\n"
+        )
+        (self.root / "planner.py").write_text(
+            "def schedule():\n    return 'one owner'\n"
+        )
+        result = self.run_packet("--doc", "planner.py")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        packet = self.packet_xml()
+        self.assertEqual(
+            [child.tag for child in packet],
+            ["repository_model", "context", "sol_brief"],
+        )
+        self.assertIn("one owner for scheduling", packet.findtext("repository_model"))
+        self.assertEqual(packet.find("repository_model").attrib, {})
 
     def test_user_anchors_require_reconstructed_intent(self) -> None:
         anchors = self.work / "user-anchors.md"
@@ -267,7 +298,20 @@ print(response, end="")
         )
         self.assertEqual(packet.findtext("context/excerpt"), "\ntwo\nthree\n\n    ")
         self.assertIn("boundary is cohesive", packet.findtext("context/digest"))
-        self.assertEqual(packet.find("context/excerpt").attrib["lines"], "2-3")
+        self.assertEqual(
+            packet.find("context/document").attrib,
+            {"path": "plan.md"},
+        )
+        self.assertEqual(
+            packet.find("context/excerpt").attrib,
+            {"path": "module.py", "lines": "2-3"},
+        )
+        self.assertEqual(
+            packet.find("context/digest").attrib,
+            {"name": "terra-runtime"},
+        )
+        for noise in ("bytes=", "sha256=", "content_encoding="):
+            self.assertNotIn(noise, self.output.read_text())
 
     def test_excerpt_bounds_fail_without_clipping(self) -> None:
         (self.root / "module.py").write_text("one\ntwo\n")
@@ -320,7 +364,10 @@ print(response, end="")
         result = self.run_packet("--redacted", str(redacted))
         self.assertEqual(result.returncode, 0, result.stderr)
         item = self.packet_xml().find("context/redacted_document")
-        self.assertEqual(item.attrib["redacted"], "true")
+        self.assertEqual(
+            item.attrib,
+            {"name": "redacted-auth", "redacted": "true"},
+        )
         self.assertIn("Original: src/auth.py", item.text)
 
     def test_runner_sanitizes_and_isolates_both_claude_calls(self) -> None:
@@ -356,6 +403,14 @@ print(response, end="")
 
     def test_completed_run_is_privately_archived_with_codex_attribution(self) -> None:
         environment, _ = self.fake_claude_environment()
+        (self.work / "user-intent.md").write_text("Choose a durable boundary.\n")
+        (self.work / "user-anchors.md").write_text("Keep the feedback loop private.\n")
+        (self.work / "repo-model.md").write_text(
+            "Archive owner: counsel.py. Verified by test_fable_counsel.py.\n"
+        )
+        (self.root / "evidence.md").write_text(
+            "Observed behavior: one archive per run.\n"
+        )
         thread_id = "019f58ed-db1c-7ca3-aeec-fbf3d70a2a0a"
         rollout = (
             Path(environment["HOME"])
@@ -366,7 +421,7 @@ print(response, end="")
         rollout.write_text('{"event":"before counsel"}\n')
         environment["CODEX_THREAD_ID"] = thread_id
 
-        result = self.run_packet(dry_run=False, env=environment)
+        result = self.run_packet("--doc", "evidence.md", dry_run=False, env=environment)
         self.assertEqual(result.returncode, 0, result.stderr)
         archives = self.archive_dirs()
         self.assertEqual(len(archives), 1)
@@ -376,11 +431,34 @@ print(response, end="")
             tiktoken.get_encoding("o200k_base").encode(self.output.read_text())
         )
 
-        self.assertEqual(manifest["schema_version"], 1)
+        self.assertEqual(manifest["schema_version"], 3)
         self.assertEqual(manifest["status"], "completed")
         self.assertEqual(manifest["mode"], "challenge")
         self.assertEqual(manifest["effort"], "high")
         self.assertEqual(manifest["prompt_tokens"], prompt_tokens)
+        self.assertEqual(
+            set(manifest["prompt_sections"]),
+            {
+                "instructions",
+                "user_intent",
+                "user_anchors",
+                "repository_model",
+                "context",
+                "sol_brief",
+                "structure",
+            },
+        )
+        self.assertEqual(sum(manifest["prompt_sections"].values()), prompt_tokens)
+        for section in (
+            "instructions",
+            "user_intent",
+            "user_anchors",
+            "repository_model",
+            "context",
+            "sol_brief",
+            "structure",
+        ):
+            self.assertGreater(manifest["prompt_sections"][section], 0)
         self.assertEqual(manifest["token_encoding"], "o200k_base")
         self.assertEqual(
             manifest["prompt_sha256"],
@@ -515,6 +593,7 @@ print(response, end="")
             "--digest",
             "--effort",
             "--dry-run",
+            "repo-model.md",
         ):
             self.assertIn(fragment, help_text)
         tokens = len(tiktoken.get_encoding("o200k_base").encode(help_text))
@@ -529,13 +608,27 @@ print(response, end="")
             "reproducing the runner's `Fable Council mode` line verbatim", skill
         )
 
-    def test_skill_routes_implicit_invocation_from_decision_state(self) -> None:
+    def test_skill_requires_decision_local_model_and_causal_challenge(self) -> None:
+        skill = SKILL.read_text()
+        for contract in (
+            "write `repo-model.md` as",
+            "relevant modules and interfaces",
+            "`Causal case`: observed facts, assumptions, mechanism",
+            "verification signals, and falsifiers",
+            "credible missing alternative",
+            "`[packet-grounded]`, `[inference]`, or `[model-prior]`",
+        ):
+            self.assertIn(contract, skill)
+
+    def test_explicitly_invoked_skill_routes_mode_from_decision_state(self) -> None:
         skill = SKILL.read_text()
         self.assertIn("if Fable were unavailable", skill)
         self.assertIn("yes selects `challenge`; a no selects `propose`", skill)
         self.assertIn("Ambiguity selects `propose`", skill)
-        self.assertIn("disable-codex-model-invocation: false", skill)
+        self.assertIn("disable-model-invocation: true", skill)
+        self.assertNotIn("disable-codex-model-invocation", skill)
         self.assertIn("infer the mode from context", OPENAI.read_text())
+        self.assertIn("allow_implicit_invocation: false", OPENAI.read_text())
 
     def test_legacy_modes_are_absent_from_the_runtime_surface(self) -> None:
         for path in (SKILL, SCRIPT, COMPOSER, OPENAI):
