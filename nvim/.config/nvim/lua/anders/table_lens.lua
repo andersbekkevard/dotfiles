@@ -433,14 +433,47 @@ local function lens_motion(direction)
 	end
 end
 
+local function write_source(session)
+	if not vim.api.nvim_buf_is_valid(session.source_buf) then
+		error("Cannot write Markdown table: the source buffer no longer exists")
+	end
+
+	vim.api.nvim_buf_call(session.source_buf, function()
+		vim.cmd("write")
+	end)
+	vim.bo[session.lens_buf].modified = false
+end
+
 local function configure_lens_buffer(session)
 	local buf = session.lens_buf
-	vim.bo[buf].buftype = "nofile"
+	local source_name = vim.api.nvim_buf_get_name(session.source_buf)
+	local lens_name = source_name ~= "" and source_name or ("buffer/" .. session.source_buf)
+	vim.api.nvim_buf_set_name(buf, "table-lens://" .. lens_name)
+	vim.bo[buf].buftype = "acwrite"
 	vim.bo[buf].bufhidden = "hide"
 	vim.bo[buf].swapfile = false
 	vim.bo[buf].filetype = "markdown-table-lens"
 	vim.bo[buf].modifiable = false
 	vim.bo[buf].undolevels = -1
+
+	vim.api.nvim_create_autocmd("BufWriteCmd", {
+		buffer = buf,
+		callback = function()
+			write_source(session)
+		end,
+	})
+	vim.api.nvim_create_autocmd("BufHidden", {
+		buffer = buf,
+		callback = function()
+			if active ~= session or session.editing then
+				return
+			end
+			active = nil
+			vim.schedule(function()
+				delete_lens(session)
+			end)
+		end,
+	})
 
 	for _, key in ipairs({ "i", "a", "I", "A" }) do
 		vim.keymap.set("n", key, function()

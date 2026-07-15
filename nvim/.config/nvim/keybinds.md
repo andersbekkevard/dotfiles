@@ -162,6 +162,7 @@
 | `<leader>mu` | Normal | Unfold all Markdown heading sections |
 | `i` / `a` / `I` / `A` in table lens | Normal | Edit the source cell at the rendered cursor position; return to the lens on `InsertLeave` |
 | `q` / `<Esc>` in table lens | Normal | Leave the table lens above the source table |
+| `:w` / `:wq` in table lens | Command | Write the underlying Markdown file; `:wq` then closes Neovim normally |
 
 ---
 
