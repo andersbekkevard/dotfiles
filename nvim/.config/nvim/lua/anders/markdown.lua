@@ -87,6 +87,18 @@ function M.setup_buffer(bufnr)
 		buffer = bufnr,
 		desc = "Unfold all Markdown headings",
 	})
+	vim.keymap.set("n", "<leader>mj", function()
+		require("markdown-table-wrap").scroll_view(vim.v.count1)
+	end, {
+		buffer = bufnr,
+		desc = "Scroll rendered Markdown table down",
+	})
+	vim.keymap.set("n", "<leader>mk", function()
+		require("markdown-table-wrap").scroll_view(-vim.v.count1)
+	end, {
+		buffer = bufnr,
+		desc = "Scroll rendered Markdown table up",
+	})
 end
 
 return M
