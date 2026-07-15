@@ -96,11 +96,11 @@ class ClaudeSkillProjectionTest(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_sync_preserves_category_path_and_migrates_flat_link(self):
+    def test_sync_flattens_category_path_and_migrates_nested_link(self):
         claude_skills = self.home / ".claude" / "skills"
-        claude_skills.mkdir(parents=True)
-        flat_link = claude_skills / "sample"
-        flat_link.symlink_to(self.skill)
+        nested_link = claude_skills / "fleet" / "sample"
+        nested_link.parent.mkdir(parents=True)
+        nested_link.symlink_to(self.skill)
         unrelated = claude_skills / "run-on-mac"
         unrelated.mkdir()
 
@@ -117,10 +117,11 @@ sync_claude_skill_links {shlex.quote(str(self.skills))}
 """
         subprocess.run(["bash", "-c", script], check=True)
 
-        nested_link = claude_skills / "fleet" / "sample"
-        self.assertTrue(nested_link.is_symlink())
-        self.assertEqual(nested_link.resolve(), self.skill.resolve())
-        self.assertFalse(flat_link.exists())
+        flat_link = claude_skills / "sample"
+        self.assertTrue(flat_link.is_symlink())
+        self.assertEqual(flat_link.resolve(), self.skill.resolve())
+        self.assertFalse(nested_link.exists())
+        self.assertFalse(nested_link.parent.exists())
         self.assertTrue(unrelated.is_dir())
 
 

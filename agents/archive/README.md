@@ -12,7 +12,7 @@ To archive a skill:
    requires the manifest to match `agents/skills/` exactly).
 3. Fix any references to it in other skills' descriptions or bodies.
 4. Run `./setup.sh --layer minimal --skip-install` (or remove the two dangling
-   `~/.claude/skills/<category>/<name>` / `~/.codex/skills/<category>/<name>` links and run
+   `~/.claude/skills/<name>` / `~/.codex/skills/<category>/<name>` links and run
    `agents/skillctl sync`) so the harness links are pruned.
 
 To restore, reverse the same steps. Record why a skill was archived in the
