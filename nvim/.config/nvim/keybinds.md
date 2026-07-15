@@ -160,8 +160,6 @@
 | `<CR>` on heading | Normal | Toggle the heading section fold |
 | `<leader>mf` | Normal | Fold all Markdown heading sections |
 | `<leader>mu` | Normal | Unfold all Markdown heading sections |
-| `<leader>mj` | Normal | Scroll down through wrapped rows in a rendered Markdown table |
-| `<leader>mk` | Normal | Scroll up through wrapped rows in a rendered Markdown table |
 
 ---
 
