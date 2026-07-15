@@ -51,15 +51,31 @@ passages whose language the reconstruction may flatten, including the latest
 operative request. Join passages plainly without message metadata. Keep Sol's
 reasoning in the brief.
 
-The pair is complete when an advisor who has never seen the
-conversation can explain why the work exists, what outcome the user wants, what
-shapes the decision, and what is being decided now.
+When the codebase or live system bears on the decision, write `repo-model.md` as
+a decision-local map: relevant modules and interfaces, applicable invariants and
+rules, current behavior and verification state, and known drift or
+contradictions. Retain file, line, test, or runtime provenance for its material
+claims. Omit it when repository structure cannot change the judgment.
 
-Write a natural-language brief with the goal, counsel question, decisive
-constraints, and genuine uncertainties. For `propose`, add agreed premises. For
-`challenge`, add the proposed direction and compact rationale, plus the
-strongest live alternative and what would make it win. Match each context item
-to the fidelity the decision needs:
+These intent surfaces are complete when an advisor who has never seen the
+conversation can explain why the work exists, what outcome the user wants, what
+shapes the decision, what is being decided now, and—when applicable—where that
+decision lives in the system.
+
+Write a compact brief with headings for the counsel question, decisive
+constraints, and genuine uncertainties. For `propose`, add only agreed
+premises. For `challenge`, add:
+
+- `Proposed direction`;
+- `Causal case`: observed facts, assumptions, mechanism, expected consequence,
+  verification signals, and falsifiers;
+- `Strongest alternative`: why it currently loses and what would make it win;
+- strongest contrary evidence.
+
+Keep observed facts distinct from Sol's inferences and assumptions. The brief
+is complete when each link in the causal case is explicit enough for Fable to
+reject it independently. Match each context item to the fidelity the decision
+needs:
 
 - `document`: exact source text whose wording matters, such as a PRD, plan, ADR,
   contract, or short specification;
@@ -73,12 +89,13 @@ Choose contents by judgment; token counts are telemetry, not targets. Stop when
 another item would not add a constraint, observed behavior, uncertainty, or
 plausible alternative.
 
-Use typed authority: user intent owns purpose and desired outcome; Sol's brief
-owns Sol's working model, proposed direction, and rationale; live code, data,
-runtime observations, and tests own behavior; applicable `AGENTS.md` owns rules;
-ADRs and docs explain rationale or prior intent to the extent they remain
-current. State known drift or contradiction in the brief instead of silently
-resolving it in favor of the written artifact.
+Use typed authority: user intent owns purpose and desired outcome; the repository
+model maps the decision to the system; Sol's brief owns Sol's working model,
+proposed direction, and causal case; live code, data, runtime observations, and
+tests own behavior; applicable `AGENTS.md` owns rules; ADRs and docs explain
+rationale or prior intent to the extent they remain current. State known drift
+or contradiction instead of silently resolving it in favor of the written
+artifact.
 
 Include an item when its absence could change Fable's judgment; preserve it
 exactly when paraphrase could distort that judgment. Omit adjacent and duplicate
@@ -96,8 +113,9 @@ echo "$COUNSEL_DIR"
 ```
 
 Write `brief.md` there. Add `user-intent.md` when user-directed intent bears on
-the decision, and `user-anchors.md` only with it. The runner discovers those
-names and writes `prompt.md` and `fable.md` in the same directory:
+the decision, `user-anchors.md` only with it, and `repo-model.md` when the
+codebase or live system bears on the judgment. The runner discovers those names
+and writes `prompt.md` and `fable.md` in the same directory:
 
 Run from the repository root with repo-relative evidence paths. This section is
 the complete invocation contract. Treat the runner as opaque during counsel;
@@ -129,8 +147,13 @@ Sol's direction and rationale inside the `challenge` packet only, run `propose`
 and `challenge` concurrently, then integrate both notes. This is two isolated
 consultations, not a third mode.
 
-Read the note, reconsider the direction, and continue with the best view. End the
-response by reproducing the runner's `Fable Council mode` line verbatim. When
-counsel contradicts a fact you directly observed, recheck the source and keep
-factual authority with the evidence; use Fable for judgment. If explicitly
-requested counsel fails, surface the failure; preserve Sol's existing work.
+Read the note and verify that Fable reconstructed the user's decision before
+comparing Sol, stated its own preferred direction, tested the causal case,
+considered a credible missing alternative, and labeled each material factual
+premise as `[packet-grounded]`, `[inference]`, or `[model-prior]`. Treat a missing
+element as an explicit limitation rather than silently upgrading the counsel.
+Reconsider the direction and continue with the best view. End the response by
+reproducing the runner's `Fable Council mode` line verbatim. When counsel
+contradicts a fact you directly observed, recheck the source and keep factual
+authority with the evidence; use Fable for judgment. If explicitly requested
+counsel fails, surface the failure; preserve Sol's existing work.

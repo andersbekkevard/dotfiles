@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         usage="%(prog)s WORK_DIR [options]",
         description=(
-            "WORK_DIR: brief.md; optional user-intent.md and user-anchors.md; "
+            "WORK_DIR: brief.md; optional intent, anchors, repo-model.md; "
             "writes prompt.md and fable.md. Evidence flags repeat."
         ),
         add_help=False,
@@ -233,7 +233,7 @@ def begin_archive(
     run_dir.mkdir(mode=0o700)
     copy_private(prompt, run_dir / "prompt.md")
     manifest: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 3,
         "run_id": run_id,
         "created_at": created_at,
         "finished_at": None,
@@ -241,6 +241,7 @@ def begin_archive(
         "mode": args.mode,
         "effort": args.effort,
         "prompt_tokens": packet["prompt_tokens"],
+        "prompt_sections": packet["prompt_sections"],
         "token_encoding": packet.get("token_encoding"),
         "prompt_sha256": sha256(prompt),
         "response_sha256": None,
@@ -273,10 +274,13 @@ def compose(
     ]
     intent = work_dir / "user-intent.md"
     anchors = work_dir / "user-anchors.md"
+    repository_model = work_dir / "repo-model.md"
     if intent.exists():
         command.extend(("--user-intent", str(intent)))
     if anchors.exists():
         command.extend(("--user-anchors", str(anchors)))
+    if repository_model.exists():
+        command.extend(("--repository-model", str(repository_model)))
     for flag, values in (
         ("--document", args.doc),
         ("--excerpt", args.excerpt),
@@ -295,8 +299,27 @@ def compose(
         fail("packet metadata was not valid JSON")
     finally:
         metadata.unlink(missing_ok=True)
-    if packet.get("mode") != args.mode or not isinstance(
-        packet.get("prompt_tokens"), int
+    prompt_tokens = packet.get("prompt_tokens")
+    prompt_sections = packet.get("prompt_sections")
+    section_names = {
+        "instructions",
+        "user_intent",
+        "user_anchors",
+        "repository_model",
+        "context",
+        "sol_brief",
+        "structure",
+    }
+    if (
+        packet.get("schema_version") != 2
+        or packet.get("mode") != args.mode
+        or type(prompt_tokens) is not int
+        or not isinstance(prompt_sections, dict)
+        or set(prompt_sections) != section_names
+        or any(
+            type(value) is not int or value < 0 for value in prompt_sections.values()
+        )
+        or sum(prompt_sections.values()) != prompt_tokens
     ):
         fail("packet metadata was incomplete")
     return packet

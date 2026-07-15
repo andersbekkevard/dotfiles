@@ -44,6 +44,14 @@ local_path = "agents/skills/desk/obsidian-markdown"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/kepano/obsidian-skills.git", ref = "main", path = "skills/obsidian-markdown" }
 
+[skills.defuddle]
+local_path = "agents/skills/desk/defuddle"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/kepano/obsidian-skills.git", ref = "main", path = "skills/defuddle" }
+preserve = [
+  "Keep disable-model-invocation=true so defuddle remains user-invoked in this global skill surface.",
+]
+
 [skills.officecli]
 local_path = "agents/skills/desk/officecli/SKILL.md"
 tracking = "tracked"
@@ -73,7 +81,8 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/resolving-merge-conflicts" }
 preserve = [
   "Local name is fix-merge-conflicts; upstream name is resolving-merge-conflicts.",
-  "Local version is intentionally condensed.",
+  "Keep the upstream five-step workflow; local additions identify rebase sides explicitly and resolve common .beads/issues.jsonl conflicts structurally by issue ID.",
+  "Keep fix-merge-conflicts user-invoked in both Claude and Codex.",
 ]
 
 [skills.grilling]
