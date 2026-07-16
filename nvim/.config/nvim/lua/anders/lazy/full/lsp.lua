@@ -419,11 +419,8 @@ return {
 		keys = {
 			{
 				"<leader>md",
-				function()
-					vim.cmd("RenderMarkdown toggle")
-					vim.cmd("MarkdownTableToggleAutoPreview")
-				end,
-				desc = "Toggle markdown render",
+				"<cmd>RenderMarkdown toggle<cr>",
+				desc = "Toggle Markdown rendering",
 			},
 		},
 		opts = {
@@ -436,6 +433,15 @@ return {
 	{
 		"ice345/markdown-table-wrap.nvim",
 		ft = { "markdown" },
+		keys = {
+			{
+				"<leader>mt",
+				function()
+					require("anders.table_lens").toggle()
+				end,
+				desc = "Toggle visual Markdown tables",
+			},
+		},
 		opts = {
 			max_width_ratio = 0.95,
 			min_col_width = 8,
@@ -446,5 +452,11 @@ return {
 			inline_viewport_scrolling = false,
 			highlight_preset = "render_markdown",
 		},
+		config = function(_, opts)
+			require("markdown-table-wrap").setup(opts)
+			vim.api.nvim_create_user_command("MarkdownTablesToggle", function()
+				require("anders.table_lens").toggle()
+			end, { desc = "Toggle visual Markdown tables in the current buffer" })
+		end,
 	},
 }

@@ -46,6 +46,7 @@ local function plugin_parts()
 		return nil
 	end
 	return {
+		plugin = plugin,
 		config = plugin.config,
 		parser = parser,
 		render = render,
@@ -502,6 +503,9 @@ local function open(source_buf, source_row, direction)
 	if not parts then
 		return false
 	end
+	if parts.plugin.state.paused_buffers[source_buf] then
+		return false
+	end
 	local table_info = parts.parser.parse_at_cursor(source_buf, source_row)
 	if not table_info then
 		return false
@@ -546,6 +550,29 @@ function M.motion(direction)
 			return
 		end
 	end
+end
+
+function M.toggle()
+	local source_buf = active and active.source_buf or vim.api.nvim_get_current_buf()
+	local parts = plugin_parts()
+	if not parts or not vim.api.nvim_buf_is_valid(source_buf) then
+		return
+	end
+
+	local enabled = parts.plugin.state.paused_buffers[source_buf] ~= true
+	if active and active.source_buf == source_buf then
+		leave_lens(active.table_info.start_lnum)
+	end
+
+	vim.api.nvim_buf_call(source_buf, function()
+		if enabled then
+			parts.plugin.disable_auto_preview()
+		else
+			parts.plugin.enable_auto_preview()
+		end
+	end)
+
+	vim.notify("Visual Markdown tables " .. (enabled and "disabled" or "enabled"))
 end
 
 function M.attach(bufnr)
