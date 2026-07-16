@@ -552,6 +552,17 @@ function M.motion(direction)
 	end
 end
 
+local function set_native_tables(bufnr, enabled)
+	local ok_state, state = pcall(require, "render-markdown.state")
+	local ok_render, render_markdown = pcall(require, "render-markdown")
+	if not ok_state or not ok_render then
+		return
+	end
+
+	state.get(bufnr).pipe_table.enabled = enabled
+	render_markdown.render({ buf = bufnr })
+end
+
 function M.toggle()
 	local source_buf = active and active.source_buf or vim.api.nvim_get_current_buf()
 	local parts = plugin_parts()
@@ -559,20 +570,21 @@ function M.toggle()
 		return
 	end
 
-	local enabled = parts.plugin.state.paused_buffers[source_buf] ~= true
+	local custom_enabled = parts.plugin.state.paused_buffers[source_buf] ~= true
 	if active and active.source_buf == source_buf then
 		leave_lens(active.table_info.start_lnum)
 	end
 
 	vim.api.nvim_buf_call(source_buf, function()
-		if enabled then
+		if custom_enabled then
 			parts.plugin.disable_auto_preview()
 		else
 			parts.plugin.enable_auto_preview()
 		end
 	end)
+	set_native_tables(source_buf, custom_enabled)
 
-	vim.notify("Visual Markdown tables " .. (enabled and "disabled" or "enabled"))
+	vim.notify("Visual Markdown tables " .. (custom_enabled and "disabled" or "enabled"))
 end
 
 function M.attach(bufnr)
