@@ -26,9 +26,11 @@ sentinel.
   exists only if the run actually finished.
 - After 3–5s, confirm the log has bytes (`wc -c`). A tiny dead log means
   the dispatch itself failed — read it before assuming the run is live.
-- Regular mode only: never fast mode, never priority service tier.
-  Read-only mining/exploration: `-c model_reasoning_effort="medium"`;
-  implementation: `-c model_reasoning_effort="high"`.
+- Regular mode only: never fast mode, never priority service tier. Apply the
+  `model-routing` choice explicitly with `-m <model>` and
+  `-c model_reasoning_effort="<effort>"`; never inherit model or effort from
+  `~/.codex/config.toml`. For reviews, use `codex exec review` so the same
+  explicit model, effort, and `-o` sentinel contract remains available.
 - Foreground runs may add `2>/dev/null` — codex's thinking stream bloats
   context, and the result lives in the `-o` file. Drop the suppression only
   to debug a failing dispatch.
@@ -39,7 +41,7 @@ sentinel.
 - Prompts that stage shell snippets: never use `status` as a variable name —
   it is read-only in zsh and the assignment kills the script.
 - Follow-ups reuse the session instead of paying for a fresh run:
-  `codex exec resume <session-id> -o /tmp/<name>.out.md - < /tmp/<name>-resume.md`,
+  `codex exec resume -m "$CODEX_MODEL" -c "model_reasoning_effort=\"$CODEX_EFFORT\"" <session-id> -o /tmp/<name>.out.md - < /tmp/<name>-resume.md`,
   session id from `~/.codex/sessions/YYYY/MM/DD/` (grep for the prompt
   text). Never `resume --last` when more than one run may have happened —
   it races.
@@ -71,13 +73,19 @@ verbatim.
    always-available floor:
 
 ```bash
+CODEX_MODEL=gpt-5.6-terra # replace with the model selected by model-routing
+CODEX_EFFORT=high         # replace with its selected effort
+
 if command -v setsid >/dev/null 2>&1; then
-  setsid codex exec -o /tmp/<lane>.out.md - < /tmp/<lane>.md > /tmp/<lane>.log 2>&1 &
+  setsid codex exec -m "$CODEX_MODEL" -c "model_reasoning_effort=\"$CODEX_EFFORT\"" \
+    -o /tmp/<lane>.out.md - < /tmp/<lane>.md > /tmp/<lane>.log 2>&1 &
 elif command -v perl >/dev/null 2>&1; then
   perl -MPOSIX -e 'fork && exit; POSIX::setsid(); exec @ARGV' \
-    codex exec -o /tmp/<lane>.out.md - < /tmp/<lane>.md > /tmp/<lane>.log 2>&1 &
+    codex exec -m "$CODEX_MODEL" -c "model_reasoning_effort=\"$CODEX_EFFORT\"" \
+    -o /tmp/<lane>.out.md - < /tmp/<lane>.md > /tmp/<lane>.log 2>&1 &
 else
-  ( nohup codex exec -o /tmp/<lane>.out.md - < /tmp/<lane>.md > /tmp/<lane>.log 2>&1 & )
+  ( nohup codex exec -m "$CODEX_MODEL" -c "model_reasoning_effort=\"$CODEX_EFFORT\"" \
+      -o /tmp/<lane>.out.md - < /tmp/<lane>.md > /tmp/<lane>.log 2>&1 & )
 fi
 ```
 
