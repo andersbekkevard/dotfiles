@@ -26,19 +26,26 @@ yourself before building on it.
 
 ## Route
 
-*Default to Codex.* gpt-5.6-sol runs on a separate subscription that doesn't
-drain the Claude/Fable pool, so treat it as cheaper than every Claude model
-regardless of list price:
+Treat the **Delegation** section in the active global agent instructions as
+the routing authority. Keep this executable projection aligned with it:
 
-- Quick read-only tasks — exploration, "what does this file/repo do", state
-  checks, log digging, runbook extraction: codex.
-- Scoped, well-specified implementation: codex.
+*Default to the GPT fleet.* Luna, Terra, and Sol run on a separate
+subscription that doesn't drain the Claude/Fable pool, so treat them as
+cheaper than every Claude model regardless of list price. Route each worker
+by work shape:
+
+- `gpt-5.6-luna` with `high` reasoning effort: high-volume, routine, and
+  trivial work.
+- `gpt-5.6-terra` with `high` reasoning effort: scoped implementation.
+- `gpt-5.6-sol` with `medium` reasoning effort: high-judgment work.
+- `gpt-5.6-sol` with `high` reasoning effort: difficult high-judgment work.
+- Use judgment at the boundary: classify the work before choosing the model,
+  and escalate when the result misses the bar.
 - If computer use is helpful for completing or verifying work, shell out to
-  gpt-5.6-sol with Codex for it.
+  the GPT model that matches the work shape.
 
 Every Codex dispatch — foreground or detached — follows the `codex-dispatch`
-skill, which owns invocation mechanics, reasoning-effort levels, lane
-supervision, and recovery.
+skill, which owns invocation mechanics, lane supervision, and recovery.
 
 Reach for Claude subagents only when codex is a poor fit (needs taste ≥ 7,
 needs Claude-specific tools/MCP, or orchestration-internal glue) — opus and
@@ -53,12 +60,14 @@ list price. Intelligence is how hard a problem you can hand the model
 unsupervised. Taste is judgment quality: domain and semantic modeling,
 analytical prose, API/schema design, code quality, UI/UX.
 
-| model    | cost | intelligence | taste |
-|----------|------|--------------|-------|
-| gpt-5.6-sol | 9 | 8            | 5     |
-| sonnet-5 | 5    | 5            | 7     |
-| opus-4.8 | 4    | 7            | 8     |
-| fable-5  | 2    | 9            | 9     |
+| model         | cost | intelligence | taste |
+|---------------|------|--------------|-------|
+| gpt-5.6-luna  | 10   | 5            | 3     |
+| gpt-5.6-terra | 9    | 7            | 4     |
+| gpt-5.6-sol   | 8    | 8            | 5     |
+| sonnet-5      | 5    | 5            | 7     |
+| opus-4.8      | 4    | 7            | 8     |
+| fable-5       | 2    | 9            | 9     |
 
 How to apply:
 
@@ -70,8 +79,8 @@ How to apply:
   intelligence > taste > cost.
 - The taste that matters for user-facing artifacts — domain judgment,
   semantics, prose — lives with you (fable-5). Spec tightly, delegate the
-  mechanics to gpt-5.6-sol, and author or final-pass the judgment-heavy
-  semantics and prose yourself.
+  mechanics to Luna or Terra, use Sol for a judgment-heavy second
+  perspective, and author or final-pass the semantics and prose yourself.
 - opus-4.8 is not part of the default delegation stack: codex is quicker
   and at least as strong for most implementation work, and opus spends
   Fable-pool tokens. Its remaining niche is true UI work, where it
@@ -96,9 +105,11 @@ How to apply:
 
 ## Mechanics
 
-- gpt-5.6-sol is only reachable through the Codex CLI (`~/.codex/config.toml`
-  defaults to gpt-5.6-sol @ high, full access, approvals off — intentional,
-  never pass sandbox flags): `codex exec` for investigation, analysis, or
-  implementation; `codex review` for the current repo's diff.
+- Luna, Terra, and Sol are reachable through the Codex CLI. Pass the selected
+  model and effort explicitly on every dispatch; never rely on
+  `~/.codex/config.toml` defaults. Use `codex exec` for investigation,
+  analysis, or implementation and `codex exec review` for the current repo's
+  diff. Full access and approvals off are intentional; never pass sandbox
+  flags.
 - Claude models (sonnet-5, opus-4.8, fable-5) run via the Agent/Workflow
   model parameter.
