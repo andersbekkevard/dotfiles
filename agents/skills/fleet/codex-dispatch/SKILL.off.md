@@ -1,7 +1,7 @@
 ---
 name: codex-dispatch
 description: Dispatch Codex from a Claude or Fable orchestrator. Invoke before every Claude/Fable `codex exec`, foreground or detached; when polling lane liveness; or when recovering a dead, hung, or quota-blocked lane.
-disable-codex-model-invocation: true
+disable-model-invocation: true
 ---
 
 # Codex Dispatch — dispatching and supervising Codex runs

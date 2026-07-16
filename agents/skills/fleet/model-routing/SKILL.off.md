@@ -1,7 +1,7 @@
 ---
 name: model-routing
 description: Route Claude/Fable orchestration across the model fleet. Invoke before a Claude or Fable orchestrator spawns any subagent or workflow, chooses a model, or starts delegable bulk or parallel work.
-disable-codex-model-invocation: true
+disable-model-invocation: true
 ---
 
 # Model Routing — fleet economics and delegation policy

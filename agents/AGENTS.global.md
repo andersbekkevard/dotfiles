@@ -15,15 +15,11 @@ Use repo artifacts, not chat, as durable context for readers who lack this conve
 
 ## Delegation
 
-Use only Sol or Luna. Sol uses `medium` reasoning effort for routine ownership, coordination, integration, and final verification, and `high` for architecture, difficult judgment, and hard debugging. Luna always uses `high` reasoning effort for bounded exploration, everyday implementation, and repetitive, mechanically verifiable work.
+Choose delegation by the active harness, not by the model provider. A GPT-backed model running inside Claude Code uses Claude Code's native subagent mechanism; a model running inside Codex uses Codex's native subagent mechanism.
 
-Use subagents as context firewalls. At execution break-even, delegate independent low-signal work to preserve clean Sol context and reduce drift. Give each lane one terminal deliverable; serialize shared files, decisions, and prerequisites.
+For Claude Code subagents, always omit the Agent tool's `model` field. The harness owns worker-model routing. Do not use `fork` for worker delegation because it inherits the parent model. Use Fable counsel when a Claude-model opinion is needed.
 
-Every GPT worker turn is typed: use `spawn_agent` with explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and a compact handoff. Steer ongoing turns with `send_message`; continue any ended worker lane with a fresh typed `spawn_agent` using an explicit model and reasoning effort. `followup_task` resumes the worker as parent Sol, wasting scarce, higher-usage Sol tokens on work deliberately routed to a worker model.
-
-The turn trace is authoritative. If it shows model drift, orchestration has failed: stop the lane and correct the dispatch or continuation pattern before retrying.
-
-Codex delegates natively; Claude and Fable route model choice through `model-routing`.
+Use the harness-configured effort and concurrency defaults. Use subagents as context firewalls: delegate independent low-signal work, give each worker one terminal deliverable, and serialize shared files, decisions, and prerequisites. The lead agent owns coordination, integration, and final verification.
 
 ## Shell & Checkout Hygiene
 
