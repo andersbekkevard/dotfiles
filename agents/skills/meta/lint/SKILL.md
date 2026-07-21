@@ -224,7 +224,9 @@ speculative architecture ideas, or "nice to have" cleanup as lint failures.
 
 ### 7. Report In Chat
 
-Return a compact numbered list. Include severity (error/warning/note),
+Return a compact numbered list. Number findings in one monotonically increasing
+sequence across every report section; do not restart at `1` for Docs-Lint,
+Findings, or Ubiquitous Language. Include severity (error/warning/note),
 category, title, evidence path:line, cited rule path:line, and a proposed fix
 direction. Use this shape:
 
@@ -240,13 +242,13 @@ Governance read: ...
    Proposed fix: ...
 
 ## Findings
-1. [warning][doc drift] Title
+2. [warning][doc drift] Title
    Evidence: path:line ...
    Rule: path:line ...
    Proposed fix: ...
 
 ## Ubiquitous Language
-1. [warning][language drift] Title
+3. [warning][language drift] Title
    Evidence: path:line ...
    Rule: glossary path:line ...
    Proposed fix: ...
