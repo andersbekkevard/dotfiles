@@ -188,8 +188,8 @@ bash "$DREAM" status   # last_run, discovered / processed / pending sessions, op
   its primary input (see `../reflect/PRINCIPLES.md`).
 - Findings that are not doc-fixable (model limits, one-offs, Anders changing his
   mind) are still logged but excluded from proposals — they remain useful signal.
-- Keep the docs lean. Every run should look for what to delete or merge, not just
-  what to add. A bloated CLAUDE.md aligns the agent less, not more.
+- Every run should look for what to delete or merge, not just what to add. A
+  bloated CLAUDE.md aligns the agent less, not more.
 - Keep committed Dream state portable. `state.json` stores durable run state such
   as `last_run` and processed session IDs; absolute filesystem paths and local
   model/token settings belong only in ignored `.agents/dreams/config.local.json`.

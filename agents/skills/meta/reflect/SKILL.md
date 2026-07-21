@@ -32,7 +32,7 @@ promote a lesson without re-mining the transcript.
 3. Choose a short 2-4 word kebab-case slug from the gist of the session.
 4. Write a markdown file named `<YYYY-MM-DD>-<slug>.md` under
    `.agents/reflections/`.
-5. Keep the reflection honest, specific, and concise. Skip empty sections.
+5. Skip empty sections.
 
 ## Output Template
 
@@ -94,10 +94,8 @@ repeatable patterns:
 ## Guidelines
 
 - Focus on process, not implementation output.
-- Prefer concrete examples over generic praise or critique.
 - Make each lesson actionable for a future session.
 - Include failures, delays, and awkward turns when they teach something useful.
-- Keep the reflection short enough to be reread later.
 - Do not create reusable artifacts unless the pattern clearly recurs across
   contexts.
 - If the session is too small for a useful reflection, say so and write only the

@@ -1,32 +1,41 @@
 ---
 name: personal-edge
-description: Operate bekkevard.me on demand. Use when exposing or removing a local HTTP port at a bekkevard.me hostname, receiving email or attachments at a bekkevard.me address, or sending an automated email from bekkevard.me.
+description: Share local HTTP services and operate bekkevard.me. Use when accessing or previewing a local app, explicitly publishing it to the web or making a durable URL, removing a public hostname, receiving email or attachments at a bekkevard.me address, or sending automated email from bekkevard.me.
 ---
 
 # Personal Edge
 
-Treat publishing, inbound mail, and outbound mail as separate native lanes.
-Provider state is the control plane; application code, mail consumers, and
-schedulers stay in their owning projects.
+Treat private forwarding, public publishing, inbound mail, and outbound mail as
+separate native lanes. Private SSH forwarding is the default for HTTP access.
+Use public DNS only when the user explicitly asks to publish to the web or make
+a durable URL.
 
 ## Run
 
-1. Read [authentication](references/authentication.md) before a provider write,
-   then load only the chosen lane:
-   - local URL or cleanup: [publishing](references/publishing.md)
+1. Load only the chosen lane:
+   - access, preview, or ordinary sharing of a local HTTP service:
+     [SSH port forwarding](references/port-forwarding.md)
+   - explicit public publication, durable URL, or public-hostname cleanup:
+     read [authentication](references/authentication.md) before a provider
+     write, then [publishing](references/publishing.md)
    - receive or consume mail: [inbound mail](references/inbound-mail.md)
    - send mail: [outbound mail](references/outbound-mail.md)
 
-   Complete when the required credentials validate and every live resource the
-   change may touch has been inspected.
+   Complete when ordinary access is routed to private SSH, an explicit public
+   request is routed to publication, and every live endpoint or provider
+   resource the change may touch has been inspected.
 
-2. Reconcile the requested state with provider-native, idempotent
+2. For SSH forwarding, connect the origin and consumer through loopback-bound
+   forwarding. For provider lanes, use provider-native, idempotent
    read-modify-write operations. Complete when the requested state exists and
-   unrelated routes, records, tunnels, Workers, and buckets are unchanged.
+   unrelated listeners, routes, records, tunnels, Workers, and buckets are
+   unchanged.
 
 3. Prove the chosen lane end to end:
-   - publish: connected tunnel, intended DNS and ingress, valid HTTPS, expected
-     local application response;
+   - forward: live SSH process, intended loopback listener, expected local
+     application response on the consumer machine;
+   - publish: connected Cloudflare tunnel, intended DNS and ingress, valid
+     HTTPS, expected local application response;
    - cleanup: owned exact DNS record and requested ingress absent, public
      hostname no longer reaches the local origin, wildcard fallback inspected
      and reported, unrelated routes intact;

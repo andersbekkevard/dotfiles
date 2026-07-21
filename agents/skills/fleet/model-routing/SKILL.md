@@ -64,9 +64,9 @@ analytical prose, API/schema design, code quality, UI/UX.
 |---------------|------|--------------|-------|
 | gpt-5.6-luna  | 10   | 5            | 3     |
 | gpt-5.6-terra | 9    | 7            | 4     |
-| gpt-5.6-sol   | 8    | 8            | 5     |
-| sonnet-5      | 5    | 5            | 7     |
-| opus-4.8      | 4    | 7            | 8     |
+| gpt-5.6-sol   | 8    | 9            | 7     |
+| sonnet-5      | 5    | 5            | 6     |
+| opus-4.8      | 4    | 6            | 7     |
 | fable-5       | 2    | 9            | 9     |
 
 How to apply:
