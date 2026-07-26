@@ -15,21 +15,24 @@ profile_layers() {
   esac
 }
 
+# Profiles compose additively: each wider profile emits the narrower profile's
+# list plus its own extras, so a package or command is declared exactly once.
 profile_packages() {
-  local profile="$1"
-
-  case "$profile" in
+  case "$1" in
     minimal)
       printf '%s\n' shell git nvim tmux scripts fd btop
       ;;
     full)
-      printf '%s\n' shell git nvim tmux scripts fd btop lazygit wt lsd
+      profile_packages minimal
+      printf '%s\n' lazygit wt lsd
       ;;
     macos)
-      printf '%s\n' shell git nvim tmux scripts fd btop lazygit wt lsd terminals macos
+      profile_packages full
+      printf '%s\n' terminals macos
       ;;
     linux-desktop)
-      printf '%s\n' shell git nvim tmux scripts fd btop lazygit wt lsd terminals linux-desktop
+      profile_packages full
+      printf '%s\n' terminals linux-desktop
       ;;
   esac
 }
@@ -37,16 +40,19 @@ profile_packages() {
 profile_commands() {
   case "$1" in
     minimal)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum trufflehog forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc
       ;;
     full)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server
+      profile_commands minimal
+      printf '%s\n' claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server
       ;;
     macos)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql brew typescript-language-server
+      profile_commands full
+      printf '%s\n' brew
       ;;
     linux-desktop)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server i3 rofi polybar alacritty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      profile_commands full
+      printf '%s\n' i3 rofi polybar alacritty kitty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }

@@ -2,7 +2,7 @@
 
 ## `minimal`
 
-Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, links the global agent surface (`agents/` — skills + instructions for Claude Code and Codex; see `docs/architecture.md`), and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `cloudflared`, `delta`, `sesh`, `gum`, `forward-to-me`, `forward-from-me`, `git-clone-subdir`, `git-credential-gh-safe`, and `git-loc`).
+Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, links the global agent surface (`agents/` — skills + instructions for Claude Code and Codex; see `docs/architecture.md`), and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `cloudflared`, `delta`, `sesh`, `gum`, `trufflehog`, `forward-to-me`, `forward-from-me`, `git-clone-subdir`, `git-credential-gh-safe`, and `git-loc`).
 
 ## `full`
 
@@ -14,7 +14,7 @@ Adds macOS-only packages and config on top of `full`. This includes the `termina
 
 ## `linux-desktop`
 
-Adds Linux desktop packages and window-manager config on top of `full`. This includes the `terminals` and `linux-desktop` stow packages plus the verified desktop command set (`i3`, `rofi`, `polybar`, `alacritty`, `dex`, `feh`, `greenclip`, `i3lock`, `maim`, `nm-applet`, `pactl`, `picom`, `setxkbmap`, `xclip`, `xdotool`, `xinput`, `xrandr`, `xss-lock`, and `xcape`).
+Adds Linux desktop packages and window-manager config on top of `full`. This includes the `terminals` and `linux-desktop` stow packages plus the verified desktop command set (`i3`, `rofi`, `polybar`, `alacritty`, `kitty`, `dex`, `feh`, `greenclip`, `i3lock`, `maim`, `nm-applet`, `pactl`, `picom`, `setxkbmap`, `xclip`, `xdotool`, `xinput`, `xrandr`, `xss-lock`, and `xcape`).
 
 ## Selection rule
 

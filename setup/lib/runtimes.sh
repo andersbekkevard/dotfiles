@@ -156,8 +156,16 @@ sha256_file() {
   fi
 }
 
+sha256_stdin() {
+  if command_exists sha256sum; then
+    sha256sum | awk '{print $1}'
+  else
+    shasum -a 256 | awk '{print $1}'
+  fi
+}
+
 ensure_cliproxyapi_config() {
-  local config_dir config_file env_file api_key
+  local config_dir config_file env_file api_key previous_umask
   config_dir="${XDG_CONFIG_HOME:-"$HOME/.config"}/cliproxyapi"
   config_file="$config_dir/config.yaml"
   env_file="$config_dir/claudex.env"
@@ -175,10 +183,16 @@ ensure_cliproxyapi_config() {
     return 0
   fi
 
+  # The private umask covers the window between creating the config files and
+  # chmod'ing them. It is process-global, so it must be restored on every exit
+  # path; otherwise the rest of the run (pnpm home, global installs, stow) keeps
+  # creating 0700 directories.
+  previous_umask="$(umask)"
   umask 077
   mkdir -p "$config_dir"
   api_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
   if [[ -z "$api_key" ]]; then
+    umask "$previous_umask"
     record_error "Could not generate CLIProxyAPI local API key"
     return 0
   fi
@@ -201,6 +215,7 @@ EOF
 CLIPROXY_BASE_URL='http://127.0.0.1:8317'
 CLIPROXY_API_KEY='$api_key'
 EOF
+  umask "$previous_umask"
   chmod 0600 "$config_file" "$env_file"
   log_info "Created localhost-only CLIProxyAPI configuration in $config_dir"
 }
@@ -326,8 +341,15 @@ install_go_linux() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping Go install; sudo/root unavailable."
+    return 0
+  fi
+
+  # Resolve the version only for real runs; a dry run must not depend on the
+  # network or record an error when go.dev is unreachable.
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install latest stable Go (linux-${ARCH_GO})"
     return 0
   fi
 
@@ -340,11 +362,6 @@ install_go_linux() {
 
   local archive="go${version}.linux-${ARCH_GO}.tar.gz"
   local url="https://go.dev/dl/${archive}"
-
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    log_info "[dry-run] Install Go ${version}"
-    return 0
-  fi
 
   local tmp_dir
   tmp_dir="$(mktemp -d)"

@@ -181,6 +181,35 @@ path_is_in_base_system() {
   return 1
 }
 
+fnm_default_alias_bin_dir() {
+  printf '%s\n' "${FNM_DIR:-$HOME/.local/share/fnm}/aliases/default/bin"
+}
+
+# fnm activates Node through a per-shell directory under fnm_multishells/ that
+# belongs to the shell that created it. The clean-login probe therefore resolves
+# node/npm/npx inside a scratch directory owned by a subshell that exits
+# immediately after. Re-point those at the stable default-alias path so the
+# ~/.local/bin entrypoint follows `fnm default` instead of a dead shell.
+# Anything else passes through untouched.
+stabilize_runtime_entrypoint() {
+  local resolved="$1"
+  local cmd="$2"
+  local stable
+
+  case "$resolved" in
+    */fnm_multishells/*)
+      stable="$(fnm_default_alias_bin_dir)/$cmd"
+      # No default alias means there is nothing stable to pin. Skip rather than
+      # create a dangling entrypoint; the command contract check reports it.
+      [[ -x "$stable" ]] || return 1
+      printf '%s\n' "$stable"
+      ;;
+    *)
+      printf '%s\n' "$resolved"
+      ;;
+  esac
+}
+
 refresh_local_bin_entrypoints() {
   local profile="$1"
   local cmd resolved link_path wrapper_dir wrapper_path quoted_resolved
@@ -200,6 +229,7 @@ refresh_local_bin_entrypoints() {
     resolved="$(resolve_command_from_clean_login_shell_without_stable_path "$cmd")" || \
       resolved="$(resolve_command_from_clean_login_shell "$cmd")" || continue
     [[ "$resolved" = /* && -x "$resolved" ]] || continue
+    resolved="$(stabilize_runtime_entrypoint "$resolved" "$cmd")" || continue
     [[ "$resolved" == "$link_path" ]] && continue
     path_is_in_base_system "$resolved" && continue
 
@@ -475,6 +505,20 @@ as_root() {
   fi
 }
 
+# Guard predicate for privileged steps: "would this step be able to run?"
+# Dry runs never acquire sudo, so probing with `as_root true` would report every
+# apt/system step as skipped and print a plan the real run does not follow.
+# Answer from capability instead, without prompting for a password.
+can_use_root() {
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    [[ $EUID -eq 0 ]] && return 0
+    command_exists sudo
+    return $?
+  fi
+
+  as_root true >/dev/null 2>&1
+}
+
 run_layer() {
   local layer="$1"
 
@@ -499,15 +543,41 @@ run_layer() {
   COMPLETED_LAYERS+=("$layer")
 }
 
-check_required_commands() {
+# Emits one "<kind> <command>" line per failed check: kind is "login"
+# (missing in a clean login shell), "stable" (missing from the stable PATH
+# contract), or "exec" (present but does not execute). Both the end-of-setup
+# check and `--verify` consume this so the two can never drift apart.
+profile_command_failures() {
   local profile="$1"
-  local cmd missing_login=() missing_stable=()
+  local cmd
 
   while IFS= read -r cmd; do
     [[ -z "$cmd" ]] && continue
-    command_exists_in_clean_login_shell "$cmd" || missing_login+=("$cmd")
-    command_exists_in_stable_path_contract "$cmd" || missing_stable+=("$cmd")
+    command_exists_in_clean_login_shell "$cmd" || printf 'login %s\n' "$cmd"
+    command_exists_in_stable_path_contract "$cmd" || printf 'stable %s\n' "$cmd"
   done < <(profile_commands "$profile")
+
+  for cmd in pnpm codex; do
+    if profile_commands "$profile" | grep -Fxq "$cmd" && \
+       ! command_reports_version_in_stable_path_contract "$cmd"; then
+      printf 'exec %s\n' "$cmd"
+    fi
+  done
+}
+
+check_required_commands() {
+  local profile="$1"
+  local kind cmd missing_login=() missing_stable=()
+
+  while read -r kind cmd; do
+    case "$kind" in
+      login) missing_login+=("$cmd") ;;
+      stable) missing_stable+=("$cmd") ;;
+      exec)
+        record_error "Required command does not execute from stable PATH contract for profile $profile: $cmd"
+        ;;
+    esac
+  done < <(profile_command_failures "$profile")
 
   if [[ ${#missing_login[@]} -gt 0 ]]; then
     record_error "Required commands missing in clean login shell for profile $profile: ${missing_login[*]}"
@@ -515,13 +585,6 @@ check_required_commands() {
   if [[ ${#missing_stable[@]} -gt 0 ]]; then
     record_error "Required commands missing from stable PATH contract for profile $profile: ${missing_stable[*]}"
   fi
-
-  for cmd in pnpm codex; do
-    if profile_commands "$profile" | grep -Fxq "$cmd" && \
-       ! command_reports_version_in_stable_path_contract "$cmd"; then
-      record_error "Required command does not execute from stable PATH contract for profile $profile: $cmd"
-    fi
-  done
 }
 
 exit_with_summary() {
