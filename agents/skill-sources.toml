@@ -12,6 +12,7 @@ upstream = { type = "git", url = "https://github.com/openclaw/agent-skills.git",
 preserve = [
   "Thermonuclear review integration and rubric wiring are intentional local behavior.",
   "Codex remains the default review engine unless explicitly changed.",
+  "Keep the reviewed local hardening fixes and omit upstream-only AGENTS.md/CLAUDE.md maintainer constraints.",
 ]
 
 [skills.create-cli]
@@ -36,7 +37,7 @@ local_path = "agents/skills/desk/humanizer/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/blader/humanizer.git", ref = "main", path = "SKILL.md" }
 preserve = [
-  "Keep Anders-specific trigger phrasing if it remains more useful than upstream metadata.",
+  "Keep disable-model-invocation=true so humanizer remains user-invoked in this global skill surface.",
 ]
 
 [skills.obsidian-markdown]
@@ -169,6 +170,7 @@ notes = [
 ]
 preserve = [
   "Keep disable-model-invocation=true so visual-plan remains user-invoked in this global skill surface.",
+  "Keep installed local-files mode selection ahead of hosted connector discovery so a local-only install cannot upload plan content.",
 ]
 
 [skills.beads]

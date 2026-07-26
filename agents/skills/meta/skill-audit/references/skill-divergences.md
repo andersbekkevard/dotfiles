@@ -25,6 +25,28 @@ ignore, keep, or prefer a divergence.
 
 ## Accepted Divergences
 
+### autoreview
+
+Accepted 2026-07-25: keep the upstream autoreview runner, security hardening,
+engine-isolation rules, tests, and normal P0-only closeout default current.
+Preserve thermonuclear review as an Anders-facing mode by composing the local
+`thermo-nuclear-code-quality-review` rubric with the upstream helper and
+explicitly widening that mode to `--max-priority P3`. Keep the local hardening
+fixes that reject lexically repo-local output paths before symlink resolution
+and enforce `--require-finding` against the final priority-filtered report.
+Also inspect same-name secret-assignment call arguments before granting the
+self-reference exemption so literal arguments remain detectable without
+rejecting empty or reference-only calls. Retain these fixes until upstream
+incorporates equivalent behavior. Keep credentialed URI test fixtures split
+across source literals so the imported hardening corpus preserves its runtime
+coverage without blocking autoreview's own TruffleHog preflight.
+
+### visual-plan
+
+Accepted 2026-07-25: preserve the installed local-files mode signal and evaluate
+it before hosted connector discovery. A local-only installation must not upload
+plan content merely because the environment variable is absent.
+
 ### wayfinder
 
 Accepted 2026-07-06: keep the remote tracker-backed wayfinding concepts, but preserve the local/project rule that trackers hold coordination and short indexes, not fleshed-out ideas. For project/beads specifically, do not use upstream `wayfinder:*` labels; keep project's workstream label policy and store wayfinder type/mode as body fields. Long answers should live in linked repo artifacts, with concise bead comments and close reasons.

@@ -121,38 +121,30 @@ the default surface is hosted; choose the right Plan mode for the user's
 ownership, privacy, sharing, and branding needs.
 
 First determine the Plan mode. If `AGENT_NATIVE_PLANS_MODE=local-files` is set,
-the installed skill/config selected local files, or the user asks for local-only /
-no hosted writes, use **Local-Files Privacy Mode** immediately: author the local
-MDX folder and run `plan local check` / `plan local serve` / `plan local verify`.
-Do not discover, call, import into, or publish through hosted Plan tools for that
-plan; a shareable `/plans/<id>` URL means the wrong mode was used.
+the installed skill/config selected local files, or the user asks for local-only
+or no hosted writes, use **Local-Files Privacy Mode** immediately. Do not
+discover or call hosted Plan tools for that plan except the schema-only
+`get-plan-blocks` lookup permitted by `references/local-files.md`; never import
+into or publish through the hosted Plan service. A shareable `/plans/<id>` URL
+means the wrong mode was used.
 
-By default in hosted mode, create the plan via the Plan MCP connector and NEVER hand it over as
-inline chat content — no Markdown prose, ASCII sketch, table, or fenced
-wireframe. First determine the Plan mode. If `AGENT_NATIVE_PLANS_MODE=local-files` is set,
-the installed skill/config selected local files, or the user asks for local-only /
-no hosted writes, use **Local-Files Privacy Mode** immediately: author the local
-MDX folder and run `plan local check` / `plan local serve` / `plan local verify`.
-Do not discover, call, import into, or publish through hosted Plan tools for that
-plan; a shareable `/plans/<id>` URL means the wrong mode was used.
-
-If the `plan` (or legacy `agent-native-plans`) tools are not visible,
+By default in hosted mode, create the plan via the Plan MCP connector and NEVER
+hand it over as inline chat content — no Markdown prose, ASCII sketch, table, or
+fenced wireframe. If the `plan` (or legacy `agent-native-plans`) tools are not visible,
 discover them through the host's `tool_search` first; if they are still missing,
 STOP and give the user the client-specific reconnect step rather than improvising
 an inline plan. Before publishing, or whenever a connector or auth error appears,
 READ `references/connection.md` in this skill directory — it is the single source
 of truth for the never-inline rule, connector discovery, and the per-client
-reconnect steps. Local-files privacy mode is the exception.
+reconnect steps. Local-files privacy mode (after Tool Guidance) is the exception.
 
 ## Core Workflow
 
 This section describes the default hosted Plan MCP workflow. If
-`AGENT_NATIVE_PLANS_MODE=local-files` is set, the installed configuration selects
+`AGENT_NATIVE_PLANS_MODE=local-files` is set, the installed skill/config selects
 local files, or the user asks for fully local files/no hosted Plan writes, use
 **Local-Files Privacy Mode** instead; carry forward only the code-research and
-plan-composition guidance here. In local-files mode, success is a checked local
-MDX folder plus a localhost bridge URL; do not upload first and then mirror or
-export the hosted plan locally.
+plan-composition guidance here.
 
 1. Follow the host agent's normal planning flow: inspect the codebase, delegate
    wide exploration when useful, gather the info needed, and ask native
@@ -209,20 +201,32 @@ export the hosted plan locally.
    targeted `contentPatches`.
    Treat the top-level `content` payload as a full replacement, not a merge; do
    not send a partial `content` object to add a canvas or one block. If a full
-   replacement is unavoidable, first read the complete plan source/content, carry
-   forward every existing block and visual surface, and verify the source/export
-   afterward so the document body was not truncated. When the user wants
-   source-control friendly edits, use `patch-visual-plan-source` against the MDX
-   files instead of regenerating the plan.
-7. For hosted plans, export with `export-visual-plan` only when the user wants a
+   replacement or `replace-blocks` is unavoidable, call `get-visual-plan`
+   immediately before the write, pass its `plan.updatedAt` as
+   `expectedUpdatedAt`, and carry forward every existing block and visual
+   surface. Never reuse a revision from an earlier read or feedback payload.
+   For source-control friendly edits, use granular `patch-visual-plan-source`
+   operations against the MDX files instead of regenerating the plan;
+   `replace-file` is also destructive and requires the same fresh
+   `expectedUpdatedAt` fence.
+7. After every hosted-plan write, call `get-visual-plan` again and compare the
+   persisted text, block IDs/counts, canvas frames, and prototype with the
+   intended result. A successful mutation response is not proof that unrelated
+   content survived. If the edit addressed agent-targeted feedback, only after
+   this verification call `resolve-plan-comment` for the thread and
+   `consume-plan-feedback` for its comments; do both so addressed feedback is
+   neither visibly open nor returned as pending work.
+8. For hosted plans, export with `export-visual-plan` only when the user wants a
    shareable receipt or repo-check-in artifacts.
 
 ## Self-Review Before Handoff
 
-For high-stakes plans — architecture, backend, data-model, migration, multi-file,
-or otherwise risky work — run one adversarial self-review pass before treating the
-plan as final. Skip it for small, UI-only, or single-decision plans where the cost
-outweighs the value. Keep the pass cheap and non-blocking:
+This adversarial self-review pass is opt-in, not default: run it only for
+high-stakes plans — irreversible migrations, security-sensitive work, or when
+the user explicitly asks for extra rigor — and skip it otherwise. It roughly
+doubles the cost of plan generation, so the default for small, UI-only,
+single-decision, or ordinary plans is to skip it, not to run it. Keep the pass
+cheap and non-blocking when it does run:
 
 - **Surface the plan first, review concurrently.** Post the link and let the user
   start reading, then run the review in parallel — never make the user wait on it.
@@ -296,6 +300,8 @@ folding framework chrome into the product UI.
   needs to operate the behavior. Keep the static wireframes in
   `content.canvas`, add the aligned functional prototype in
   `content.prototype`, and rely on the top visual tabs to switch between them.
+  When both surfaces are present, open the Wireframes tab by default; the
+  prototype remains available as the interactive follow-up view.
 - **Prototype-first** when the user asks to operate the UI or when interaction is
   the main question. Use `create-prototype-plan`, which still preserves static
   mocks where useful.
@@ -304,6 +310,18 @@ For mixed canvas + prototype plans, reuse the same real labels, app statuses,
 and screen ids across both surfaces. The canvas is the inspectable static reference;
 the prototype is the interactive version of that same flow, not a separate
 design direction.
+
+Treat “higher fidelity,” “pixel-accurate,” “polished mockup,” “production-like,”
+“real design,” and “not a sketch/wireframe” as design-first language even when
+the request also says “mockup.” For a new plan, use `create-plan-design`. For
+an existing plan, keep the same plan id and call `update-visual-plan` with a
+`set-visual-render-mode` patch using `renderMode: "design"` plus the upgraded
+screen HTML/CSS in the same update. Ground the result in the real app shell,
+tokens, typography, spacing, and states, and add stable `data-design-id`
+targets. Put scoped styles in each screen's `css` field, never in a `<style>`
+tag. The viewer-local Clean toggle only changes one browser's wireframe
+preference; it is not a fidelity upgrade. Do not create a duplicate plan to
+handle a fidelity follow-up.
 
 ## Wireframe quality — read `references/wireframe.md`
 
@@ -353,7 +371,9 @@ directory before authoring a plan.
   visual surface, canvas only, or canvas + prototype.
 - `create-ui-plan`: start a UI-first plan when the work is primarily product UI.
 - `create-prototype-plan`: start a prototype-first plan with a functional top
-  review surface.
+  review surface. If the interaction itself must also be high fidelity, set each
+  screen's `renderMode` to `design` and pass scoped styles through `css`;
+  otherwise use `create-plan-design` for design-first review.
 - `create-plan-design`: start a full-fidelity branded Design-tab plan with an
   optional matching Prototype tab.
 - `convert-visual-plan-to-prototype`: convert an existing HTML wireframe canvas
@@ -361,14 +381,23 @@ directory before authoring a plan.
 - `create-visual-questions`: use only when the user explicitly asks for a visual
   intake questionnaire, not as `/visual-plan` preflight.
 - `update-visual-plan`: revise content, status, or comments with targeted
-  `contentPatches` (see Core Workflow step 6).
+  `contentPatches` (see Core Workflow steps 6-7). Use
+  `set-visual-render-mode` with `renderMode: "design"` when promoting an
+  existing plan to high fidelity, together with deliberate screen HTML/CSS;
+  render mode alone only removes sketch treatment. `replace-blocks` and full
+  `content` replacement require `expectedUpdatedAt` from a fresh
+  `get-visual-plan` call.
 - `read-visual-plan-source`: read the normalized plan as `plan.mdx`,
   optional `canvas.mdx`, optional `.plan-state.json`, and JSON.
 - `patch-visual-plan-source`: apply granular MDX AST patches by stable block,
-  artboard, annotation, component, or wireframe-node id.
+  artboard, annotation, component, or wireframe-node id. Prefer those targeted
+  operations; `replace-file` requires `expectedUpdatedAt` from a fresh
+  `get-visual-plan` call.
 - `import-visual-plan-source`: create or replace a plan from an MDX folder.
-- `get-visual-plan`: read the current structured plan, exported HTML, and
-  annotations; it also returns the MDX folder for source workflows.
+- `get-visual-plan`: read the current structured plan, exported HTML,
+  annotations, and `plan.updatedAt`; it also returns the MDX folder for source
+  workflows. Re-read immediately before a destructive write for its concurrency
+  fence and again after every write to verify persisted state.
 - `get-plan-feedback`: read unconsumed human feedback. Use it frequently; it
   returns grouped threads, exact anchor details, expected resolver, and recent
   review-event payloads so agents can act only on the comments meant for them.
@@ -383,15 +412,12 @@ skill — never hand-edit one stored plan. Turn feedback into better guidance.
 
 ## Local-Files Privacy Mode — read `references/local-files.md`
 
-When the user wants no hosted Plan database writes — no DB writes, no Plan MCP
-publish, fully local/offline/private planning, repo-owned source-controlled
-artifacts, or `AGENT_NATIVE_PLANS_MODE=local-files` — do not call any hosted Plan
-tool except the schema-only `get-plan-blocks` catalog lookup. Author a local MDX
-folder and
+When the installed skill/config selects local files, or the user wants no hosted
+Plan database writes — no DB writes, no Plan MCP publish, fully
+local/offline/private planning, repo-owned source-controlled artifacts, or
+`AGENT_NATIVE_PLANS_MODE=local-files` — do not call any hosted Plan tool except
+the schema-only `get-plan-blocks` catalog lookup. Author a local MDX folder and
 preview it with `plan local check` / `plan local serve` / `plan local verify`.
-Never call `create-visual-plan` / `create-ui-plan` and then export or link a
-hosted plan as a substitute for local-files mode; that uploads the content to the
-server and violates the local contract.
 Before using local-files mode, READ `references/local-files.md` in this skill
 directory — it is the single source of truth for the full contract (catalog
 lookup, MDX folder layout, the local bridge commands, and the hosted tools you
@@ -430,7 +456,10 @@ local bridge check/serve/verify command, and report the new local URL.
 - **Two-axis state.** Mark every ingested comment as consumed
   (`consumedCommentIds` on `update-visual-plan`). Set `status=resolved` only on
   agent-targeted comments you actually addressed; leave human-targeted comments
-  open.
+  open. When an edit addresses feedback, first re-read the persisted plan and
+  verify the requested change. Only then call `resolve-plan-comment` for the
+  addressed thread and `consume-plan-feedback` for its comments; never mark
+  addressed feedback along only one axis.
 
 ## Visibility & Sharing
 
@@ -486,5 +515,5 @@ If a Plans tool returns `needs auth`, `Unauthorized`, or `Session terminated`, d
 not keep retrying it — stop and give the user the per-client reconnect step from
 `references/connection.md`, then continue once the connector is available.
 
-Hosted default: connect `https://plan.agent-native.com/_agent-native/mcp`. Do
+Hosted default: connect `https://plan.agent-native.com/mcp`. Do
 not put shared secrets in skill files.
