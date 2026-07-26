@@ -105,7 +105,7 @@ command_exists() {
 }
 
 base_system_path() {
-  printf '%s\n' "/usr/bin:/bin:/usr/sbin:/sbin"
+  printf '%s\n' "/usr/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 }
 
 resolve_command_from_clean_login_shell() {
@@ -174,7 +174,7 @@ command_reports_version_in_stable_path_contract() {
 
 path_is_in_base_system() {
   case "$1" in
-    /usr/bin/*|/bin/*|/usr/sbin/*|/sbin/*)
+    /usr/bin/*|/bin/*|/usr/sbin/*|/sbin/*|/usr/local/bin/*|/usr/local/sbin/*)
       return 0
       ;;
   esac
