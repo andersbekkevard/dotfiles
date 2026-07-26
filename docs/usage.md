@@ -39,7 +39,7 @@ DOTFILES_ALLOW_PARTIAL=1 ./setup.sh linux-desktop
 
 Setup flags:
 
-- `--dry-run` prints the install/stow plan without changing the machine.
+- `--dry-run` prints the install/stow plan without changing the machine. It never acquires sudo and never prompts, but it does assume you can: on Linux the plan lists the apt/system steps a real run would perform instead of reporting them as skipped. When `sudo` is absent entirely, they are shown as skipped.
 - `--skip-install` skips package/runtime installers and only applies repo-managed setup work such as stow and local-template refreshes.
 - `--allow-partial` is the CLI equivalent of `DOTFILES_ALLOW_PARTIAL=1`; use it when you intentionally want Linux setup to continue without privileged apt/system steps.
 
@@ -68,20 +68,22 @@ tmux source-file ~/.tmux.conf
 
 `THEME_COLOR` is normalized through one shared palette map, so prompt, tmux, and tmux helper UIs all stay in sync. `./setup.sh` refreshes `~/.config/zsh/local.example.zsh` on every run so you can diff the latest template guidance without overwriting a customized `~/.zshrc.local`.
 
+Setup-written `~/.zshrc.local` files start with a `# dotfiles-managed: profile=... sha256=...` marker line hashing the rest of the file. While that hash still matches, the file counts as untouched and setup refreshes it in place (with a timestamped backup) when the template or profile changes. Any edit you make breaks the hash, and setup then preserves the file forever; keep or delete the marker line as you like.
+
 Machine-local runtime env and PATH overrides belong in `~/.profile.local`. Use `~/.zshrc.local` only for interactive shell behavior.
 
 Shell bootstrap verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" SHELL=/bin/zsh PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-  zsh -lc 'command -v git nvim ngrok cloudflared delta fnm node pnpm cargo bun tree-sitter psql typescript-language-server'
+  zsh -lc 'command -v git nvim ngrok cloudflared delta trufflehog fnm node pnpm cargo bun tree-sitter psql typescript-language-server'
 ```
 
 Stable non-login command contract verification:
 
 ```bash
 env -i HOME="$HOME" USER="$USER" PATH="$HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
-  sh -lc 'command -v git nvim ngrok cloudflared delta fnm node pnpm cargo bun tree-sitter psql typescript-language-server wt'
+  sh -lc 'command -v git nvim ngrok cloudflared delta trufflehog fnm node pnpm cargo bun tree-sitter psql typescript-language-server wt'
 ```
 
 Use the login-shell check to confirm shared bootstrap does not depend on interactive `~/.zshrc` state. Use the non-login check to confirm agents and scripts can resolve the same commands through the stable `~/.local/bin` contract.

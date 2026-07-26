@@ -27,6 +27,12 @@ minimal
      -> linux-desktop
 ```
 
+The minimal layer installs TruffleHog before linking the global agent surface,
+so the exported `autoreview` skill does not start with a missing hard
+dependency. macOS gets it from `Brewfile.minimal`; Linux gets the
+architecture-matched upstream release through
+`linux-binaries.minimal.txt`.
+
 ## Installation ordering
 
 Each layer script is a dependency-ordered sequence — every line assumes lines above it succeeded. On a blank machine, only base OS packages exist when `setup.sh` starts.

@@ -32,27 +32,16 @@ verify_package_links() {
 verify_commands() {
   local profile="$1"
   local failures=0
-  local cmd
+  local kind cmd
 
-  while IFS= read -r cmd; do
-    [[ -z "$cmd" ]] && continue
-    if ! command_exists_in_clean_login_shell "$cmd"; then
-      printf 'missing in clean login shell: %s\n' "$cmd"
-      failures=1
-    fi
-    if ! command_exists_in_stable_path_contract "$cmd"; then
-      printf 'missing in stable PATH contract: %s\n' "$cmd"
-      failures=1
-    fi
-  done < <(profile_commands "$profile")
-
-  for cmd in pnpm codex; do
-    if profile_commands "$profile" | grep -Fxq "$cmd" && \
-       ! command_reports_version_in_stable_path_contract "$cmd"; then
-      printf 'does not execute in stable PATH contract: %s\n' "$cmd"
-      failures=1
-    fi
-  done
+  while read -r kind cmd; do
+    case "$kind" in
+      login) printf 'missing in clean login shell: %s\n' "$cmd" ;;
+      stable) printf 'missing in stable PATH contract: %s\n' "$cmd" ;;
+      exec) printf 'does not execute in stable PATH contract: %s\n' "$cmd" ;;
+    esac
+    failures=1
+  done < <(profile_command_failures "$profile")
 
   return $failures
 }

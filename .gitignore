@@ -1,5 +1,6 @@
+# The root CLAUDE.md is a tracked symlink to AGENTS.md; it must survive a fresh
+# clone so repo instructions load on every machine. Do not ignore it here.
 .zshrc.local
-CLAUDE.md
 IMPROVEMENT.md
 git-crypt.key
 *.key

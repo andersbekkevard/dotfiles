@@ -227,7 +227,7 @@ apt_update_once() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping apt update; sudo/root unavailable."
     return 0
   fi
@@ -242,7 +242,7 @@ apt_install_manifest() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping apt install for $(basename "$manifest"); sudo/root unavailable."
     return 0
   fi
@@ -266,7 +266,7 @@ ensure_gh_apt_repo() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping GitHub CLI apt repository setup; sudo/root unavailable."
     return 0
   fi
@@ -299,7 +299,7 @@ ensure_ngrok_apt_repo() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping ngrok apt repository setup; sudo/root unavailable."
     return 0
   fi
@@ -338,7 +338,7 @@ ensure_cloudflared_apt_repo() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping Cloudflare package repository setup; sudo/root unavailable."
     return 0
   fi
@@ -396,7 +396,7 @@ install_git_delta_linux() {
     return 0
   fi
 
-  if ! as_root true >/dev/null 2>&1; then
+  if ! can_use_root; then
     log_warn "Skipping git-delta install; sudo/root unavailable."
     return 0
   fi
@@ -444,7 +444,9 @@ install_script_if_missing() {
   fi
 
   log_info "$description"
-  bash -lc "$install_cmd"
+  # Plain -c: a login shell would source whatever profile already exists on
+  # the machine, making installer behavior depend on pre-existing state.
+  bash -c "$install_cmd"
   local status=$?
   if [[ $status -ne 0 ]]; then
     record_error "$description failed (exit $status)"
@@ -570,6 +572,12 @@ install_greenclip() {
     return 0
   fi
 
+  # greenclip publishes a single x86_64 binary; there is no aarch64 release.
+  if [[ "$ARCH_SHORT" != "x86_64" ]]; then
+    record_error "greenclip has no upstream release for $ARCH_UNAME (x86_64 only)"
+    return 0
+  fi
+
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log_info "[dry-run] Install greenclip"
     return 0
@@ -593,7 +601,7 @@ install_ghostty_snap() {
 
   command_exists ghostty && return 0
   command_exists snap || return 0
-  as_root true >/dev/null 2>&1 || return 0
+  can_use_root || return 0
 
   run_cmd_allow_failure "Install Ghostty snap" as_root snap install ghostty --classic
 }

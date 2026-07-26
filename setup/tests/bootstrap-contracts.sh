@@ -12,6 +12,14 @@ assert_eq() {
   [[ "$1" == "$2" ]] || fail "expected '$2', got '$1'"
 }
 
+stat_mode() {
+  if [[ "$(uname -s)" == Darwin ]]; then
+    stat -f '%OLp' "$1"
+  else
+    stat -c '%a' "$1"
+  fi
+}
+
 test_runtime_path_defaults() {
   (
     HOME=/tmp/personal-edge-darwin
@@ -321,6 +329,117 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_cliproxyapi_umask_containment() {
+  local fake_home config_dir
+  fake_home="$(mktemp -d)"
+  config_dir="$fake_home/.config/cliproxyapi"
+
+  (
+    HOME="$fake_home"
+    PATH=/usr/bin:/bin
+    DOTFILES_DIR="$REPO_ROOT"
+    unset XDG_CONFIG_HOME
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    DRY_RUN=0
+    ERRORS=()
+    umask 022
+    previous_umask="$(umask)"
+    ensure_cliproxyapi_config
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "CLIProxyAPI config generation recorded an error"
+    assert_eq "$(umask)" "$previous_umask"
+    mkdir -p "$fake_home/later-in-the-run"
+    assert_eq "$(stat_mode "$fake_home/later-in-the-run")" "755"
+  )
+
+  assert_eq "$(stat_mode "$config_dir/config.yaml")" "600"
+  assert_eq "$(stat_mode "$config_dir/claudex.env")" "600"
+
+  rm -rf "$fake_home"
+}
+
+test_fnm_entrypoint_stability() {
+  local fake_home alias_bin multishell_bin
+  fake_home="$(mktemp -d)"
+  alias_bin="$fake_home/.local/share/fnm/aliases/default/bin"
+  multishell_bin="$fake_home/.local/state/fnm_multishells/4242_1700000000000/bin"
+  mkdir -p "$alias_bin" "$multishell_bin"
+  # Stand in for the real node binary: not a '#!' script, so the entrypoint is a
+  # direct symlink rather than a generated exec wrapper.
+  printf 'not-a-script\n' >"$alias_bin/node"
+  chmod +x "$alias_bin/node"
+  ln -s "$alias_bin/node" "$multishell_bin/node"
+
+  (
+    HOME="$fake_home"
+    DOTFILES_DIR="$REPO_ROOT"
+    unset FNM_DIR
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    profile_commands() { printf '%s\n' node; }
+    resolve_command_from_clean_login_shell_without_stable_path() {
+      printf '%s\n' "$multishell_bin/$1"
+    }
+    resolve_command_from_clean_login_shell() {
+      printf '%s\n' "$multishell_bin/$1"
+    }
+    DRY_RUN=0
+    refresh_local_bin_entrypoints full
+  )
+
+  assert_eq "$(readlink "$fake_home/.local/bin/node")" "$alias_bin/node"
+
+  # With no default alias there is nothing stable to pin, so no dangling link.
+  rm -rf "$fake_home/.local/share/fnm/aliases" "$fake_home/.local/bin/node"
+  (
+    HOME="$fake_home"
+    DOTFILES_DIR="$REPO_ROOT"
+    unset FNM_DIR
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    profile_commands() { printf '%s\n' node; }
+    resolve_command_from_clean_login_shell_without_stable_path() {
+      printf '%s\n' "$multishell_bin/$1"
+    }
+    resolve_command_from_clean_login_shell() {
+      printf '%s\n' "$multishell_bin/$1"
+    }
+    DRY_RUN=0
+    refresh_local_bin_entrypoints full
+  )
+
+  [[ ! -L "$fake_home/.local/bin/node" ]] ||
+    fail "entrypoint refresh pinned an ephemeral fnm multishell path"
+
+  rm -rf "$fake_home"
+}
+
+test_dry_run_privileged_plan() {
+  local output
+  output="$(
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    OS_FAMILY=linux
+    DRY_RUN=1
+    SKIP_INSTALL=0
+    APT_UPDATED=0
+    HAS_SUDO=0
+    ERRORS=()
+    apt_update_once
+  )"
+
+  grep -Fq 'Update apt package index' <<<"$output" ||
+    fail "dry run does not report the apt update it would perform"
+  grep -Fq 'sudo/root unavailable' <<<"$output" &&
+    fail "dry run reports privileged steps as skipped"
+
+  return 0
+}
+
 test_runtime_path_defaults
 test_profile_contract
 test_canonical_repo_path_contract
@@ -330,5 +449,8 @@ test_pnpm_setup_contract
 test_pnpm_dry_run
 test_codex_standalone_installer_contract
 test_cliproxyapi_config_contract
+test_cliproxyapi_umask_containment
+test_fnm_entrypoint_stability
+test_dry_run_privileged_plan
 test_claudex_environment_isolation
 printf 'bootstrap contracts: ok\n'
