@@ -557,7 +557,7 @@ profile_command_failures() {
     command_exists_in_stable_path_contract "$cmd" || printf 'stable %s\n' "$cmd"
   done < <(profile_commands "$profile")
 
-  for cmd in pnpm codex; do
+  for cmd in pnpm claude codex; do
     if profile_commands "$profile" | grep -Fxq "$cmd" && \
        ! command_reports_version_in_stable_path_contract "$cmd"; then
       printf 'exec %s\n' "$cmd"

@@ -275,6 +275,55 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_claude_standalone_installer_contract() {
+  local fake_home install_log
+  fake_home="$(mktemp -d)"
+  install_log="$fake_home/install.log"
+
+  (
+    HOME="$fake_home"
+    PATH=/usr/bin:/bin
+    DOTFILES_DIR="$REPO_ROOT"
+    INSTALL_LOG="$install_log"
+    export INSTALL_LOG
+    curl() {
+      local output="${@: -1}"
+      cat > "$output" <<'EOF'
+#!/bin/bash
+[[ -n "${BASH_VERSION:-}" ]] || exit 8
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) printf '%s\n' path-ok > "$INSTALL_LOG" ;;
+  *) exit 9 ;;
+esac
+EOF
+    }
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    DRY_RUN=0
+    SKIP_INSTALL=0
+    ERRORS=()
+    install_claude_cli
+    assert_eq "$(sed -n '1p' "$INSTALL_LOG")" "path-ok"
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "Claude standalone install recorded an error"
+  )
+  rm -rf "$fake_home"
+}
+
+test_agent_cli_profile_contract() {
+  # shellcheck source=../lib/profiles.sh
+  source "$REPO_ROOT/setup/lib/profiles.sh"
+
+  profile_commands full | grep -Fxq claude ||
+    fail "full profile does not require Claude Code"
+  profile_commands full | grep -Fxq codex ||
+    fail "full profile does not require Codex"
+  if profile_commands minimal | grep -Fxq claude; then
+    fail "minimal profile unexpectedly requires Claude Code"
+  fi
+}
+
 test_cliproxyapi_config_contract() {
   local fake_home config_file env_file config_key env_key
   fake_home="$(mktemp -d)"
@@ -541,6 +590,8 @@ test_homebrew_activation
 test_homebrew_dry_run
 test_pnpm_setup_contract
 test_pnpm_dry_run
+test_agent_cli_profile_contract
+test_claude_standalone_installer_contract
 test_codex_standalone_installer_contract
 test_cliproxyapi_config_contract
 test_cliproxyapi_umask_containment
