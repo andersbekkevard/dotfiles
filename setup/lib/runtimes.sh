@@ -148,6 +148,42 @@ install_codex_cli() {
   fi
 }
 
+install_claude_cli() {
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install Claude Code with the official standalone installer"
+    return 0
+  fi
+
+  if ! command_exists curl; then
+    record_error "curl not available; Claude Code not installed"
+    return 0
+  fi
+
+  local tmp_dir installer status
+  tmp_dir="$(mktemp -d)"
+  installer="$tmp_dir/install.sh"
+
+  curl -fsSL https://claude.ai/install.sh -o "$installer"
+  status=$?
+  if [[ $status -ne 0 || ! -s "$installer" ]]; then
+    rm -rf "$tmp_dir"
+    record_error "Download Claude Code installer failed (exit $status)"
+    return 0
+  fi
+
+  log_info "Install Claude Code with the official standalone installer"
+  PATH="$HOME/.local/bin:$PATH" bash "$installer"
+  status=$?
+  rm -rf "$tmp_dir"
+  if [[ $status -ne 0 ]]; then
+    record_error "Install Claude Code failed (exit $status)"
+  fi
+}
+
 sha256_file() {
   if command_exists sha256sum; then
     sha256sum "$1" | awk '{print $1}'
@@ -327,6 +363,7 @@ install_shared_runtimes() {
     record_error "cargo not on PATH after rustup install; tree-sitter CLI skipped"
   fi
   install_fnm_node_stack
+  install_claude_cli
   install_codex_cli
   install_cliproxyapi
   install_typescript_language_tools

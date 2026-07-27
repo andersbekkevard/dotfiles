@@ -23,7 +23,7 @@ Choose the exact profile you want:
 
 On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./setup.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
 
-The shared base layer installs the same core CLI set on every machine, including `cloudflared`, `ngrok`, `git-delta`, TruffleHog secret scanning, and the `git-loc` remote repository line-count helper. `cloudflared` is the canonical path for publishing local services on Anders' Cloudflare-managed domains; the global `personal-edge` skill owns the agent workflow. TruffleHog is the fail-closed preflight used by the global `autoreview` skill. The full profile adds the Codex CLI, CLIProxyAPI, the isolated `claudex` Claude-Code-with-Codex entrypoint, `git-crypt`, and developer tools including the PostgreSQL client (`psql`) required by Neovim Dadbod for PostgreSQL connections.
+The shared base layer installs the same core CLI set on every machine, including `cloudflared`, `ngrok`, `git-delta`, TruffleHog secret scanning, and the `git-loc` remote repository line-count helper. `cloudflared` is the canonical path for publishing local services on Anders' Cloudflare-managed domains; the global `personal-edge` skill owns the agent workflow. TruffleHog is the fail-closed preflight used by the global `autoreview` skill. The full profile adds the Claude Code and Codex CLIs, CLIProxyAPI, the isolated `claudex` Claude-Code-with-Codex entrypoint, `git-crypt`, and developer tools including the PostgreSQL client (`psql`) required by Neovim Dadbod for PostgreSQL connections.
 
 ## Architecture support
 
