@@ -71,6 +71,13 @@ ensure_tpm() {
 
 ensure_default_shell_zsh() {
   if ! command_exists zsh; then
+    # Same reasoning as ensure_stow_available: the package step that installs
+    # zsh is part of the plan a dry run is printing, so report the intent rather
+    # than an error. The path is unknown until zsh exists, so name the command.
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      log_info "[dry-run] Change default shell to zsh"
+      return 0
+    fi
     record_error "zsh is not installed; cannot set default shell"
     return 0
   fi
@@ -145,12 +152,6 @@ if [[ -f /etc/tlp.d/01-server-mode.conf && -o interactive ]]; then
   fi
   unset _threshold
 fi
-
-if [[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]]; then
-  source "$HOME/.openclaw/completions/openclaw.zsh"
-fi
-
-command -v openclaw >/dev/null 2>&1 && alias tui="openclaw tui"
 EOF
         ;;
       *)

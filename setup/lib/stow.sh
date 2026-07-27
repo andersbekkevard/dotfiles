@@ -73,6 +73,15 @@ ensure_stow_available() {
     return 0
   fi
 
+  # A dry run prints the package step that installs stow, so stow being absent
+  # right now says nothing about whether the real run would succeed. Erroring
+  # here would make --dry-run contradict the plan it just printed, and fail on
+  # exactly the fresh machine the flag exists to preview. --skip-install is not
+  # exempt: nothing installs stow in that mode, so the error still stands.
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    return 0
+  fi
+
   record_error "GNU Stow is required but not installed."
   return 1
 }
