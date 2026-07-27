@@ -73,11 +73,35 @@ test_profile_contract() {
     assert_eq "$(command -v local-probe)" "$HOME/.local/bin/local-probe"
   )
 
-  if grep -q '/Users/andersbekkevard' \
-    "$REPO_ROOT/shell/.profile" "$REPO_ROOT/shell/.zprofile"; then
+  rm -rf "$fake_home"
+}
+
+# Every tracked file that a login or interactive shell sources must address the
+# user's home through $HOME. A literal /Users/<name> or /home/<name> works on
+# exactly one machine and fails silently everywhere else. /home/linuxbrew is the
+# one legitimate exception: it is Homebrew's fixed Linux prefix, not a home dir.
+test_no_machine_specific_home_paths() {
+  local startup_files=(
+    "$REPO_ROOT/shell/.profile"
+    "$REPO_ROOT/shell/.zprofile"
+    "$REPO_ROOT/shell/.zshenv"
+    "$REPO_ROOT/shell/.zshrc"
+  )
+  local zsh_module
+  for zsh_module in "$REPO_ROOT"/shell/.zsh/*.zsh; do
+    startup_files+=("$zsh_module")
+  done
+
+  local offenders
+  offenders="$(
+    grep -nE '/(Users|home)/[A-Za-z0-9._-]+' "${startup_files[@]}" |
+      grep -v '/home/linuxbrew' || true
+  )"
+
+  if [[ -n "$offenders" ]]; then
+    printf '%s\n' "$offenders" >&2
     fail "tracked startup files contain a machine-specific home path"
   fi
-  rm -rf "$fake_home"
 }
 
 test_canonical_repo_path_contract() {
@@ -416,6 +440,75 @@ test_fnm_entrypoint_stability() {
   rm -rf "$fake_home"
 }
 
+# A dry run on a machine that has none of the tools yet is the case --dry-run
+# exists for. Steps whose tool the same run would install must report intent,
+# not error. Regression guard: this once exited 1 with 13 errors on a bare
+# Ubuntu image because stow and zsh were checked before the dry-run branch.
+test_dry_run_on_toolless_machine() {
+  local fake_home
+  fake_home="$(mktemp -d)"
+
+  local output
+  output="$(
+    HOME="$fake_home"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/stow.sh
+    source "$REPO_ROOT/setup/lib/stow.sh"
+    # shellcheck source=../lib/shell-setup.sh
+    source "$REPO_ROOT/setup/lib/shell-setup.sh"
+    DOTFILES_DIR="$REPO_ROOT"
+    RUN_ID=test
+    DRY_RUN=1
+    SKIP_INSTALL=0
+    ERRORS=()
+    # Stand in for a machine where the package step has not run yet.
+    command_exists() {
+      [[ "$1" == stow || "$1" == zsh ]] && return 1
+      command -v "$1" >/dev/null 2>&1
+    }
+    stow_package btop
+    ensure_default_shell_zsh
+    printf 'errors=%d\n' "${#ERRORS[@]}"
+    if [[ ${#ERRORS[@]} -gt 0 ]]; then printf '%s\n' "${ERRORS[@]}"; fi
+  )"
+
+  grep -Fxq 'errors=0' <<<"$output" ||
+    fail "dry run on a toolless machine recorded errors: $output"
+
+  # The guard must not weaken the real run: with no installer step to follow,
+  # missing stow and zsh are still hard errors.
+  local real_output
+  real_output="$(
+    HOME="$fake_home"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/stow.sh
+    source "$REPO_ROOT/setup/lib/stow.sh"
+    # shellcheck source=../lib/shell-setup.sh
+    source "$REPO_ROOT/setup/lib/shell-setup.sh"
+    DOTFILES_DIR="$REPO_ROOT"
+    RUN_ID=test
+    DRY_RUN=0
+    SKIP_INSTALL=1
+    ERRORS=()
+    command_exists() {
+      [[ "$1" == stow || "$1" == zsh ]] && return 1
+      command -v "$1" >/dev/null 2>&1
+    }
+    stow_package btop
+    ensure_default_shell_zsh
+    if [[ ${#ERRORS[@]} -gt 0 ]]; then printf '%s\n' "${ERRORS[@]}"; fi
+  )"
+
+  grep -Fq 'GNU Stow is required but not installed.' <<<"$real_output" ||
+    fail "real run stopped reporting missing stow"
+  grep -Fq 'zsh is not installed; cannot set default shell' <<<"$real_output" ||
+    fail "real run stopped reporting missing zsh"
+
+  rm -rf "$fake_home"
+}
+
 test_dry_run_privileged_plan() {
   local output
   output="$(
@@ -442,6 +535,7 @@ test_dry_run_privileged_plan() {
 
 test_runtime_path_defaults
 test_profile_contract
+test_no_machine_specific_home_paths
 test_canonical_repo_path_contract
 test_homebrew_activation
 test_homebrew_dry_run
@@ -452,5 +546,6 @@ test_cliproxyapi_config_contract
 test_cliproxyapi_umask_containment
 test_fnm_entrypoint_stability
 test_dry_run_privileged_plan
+test_dry_run_on_toolless_machine
 test_claudex_environment_isolation
 printf 'bootstrap contracts: ok\n'

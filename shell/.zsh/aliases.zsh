@@ -58,6 +58,7 @@ alias ogr='openclaw gateway restart'
 alias ogs='openclaw gateway status'
 alias olf='openclaw logs --follow'
 
+command -v openclaw >/dev/null 2>&1 && alias tui='openclaw tui'
 command -v bat >/dev/null 2>&1 && alias cat='bat'
 command -v gh >/dev/null 2>&1 && alias ghc='gh copilot'
 command -v cargo >/dev/null 2>&1 && alias cr='cargo run'
