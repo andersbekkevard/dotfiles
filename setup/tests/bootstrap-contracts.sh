@@ -324,6 +324,28 @@ test_agent_cli_profile_contract() {
   fi
 }
 
+test_restow_cli_contract() {
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args restow
+    assert_eq "$REQUESTED_PROFILE" "full"
+    assert_eq "$SKIP_INSTALL" "1"
+    assert_eq "$RESTOW_MODE" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "default restow arguments were rejected"
+  )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args restow linux-desktop
+    assert_eq "$REQUESTED_PROFILE" "linux-desktop"
+    assert_eq "$SKIP_INSTALL" "1"
+    assert_eq "$RESTOW_MODE" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "explicit restow profile was rejected"
+  )
+}
+
 test_cliproxyapi_config_contract() {
   local fake_home config_file env_file config_key env_key
   fake_home="$(mktemp -d)"
@@ -591,6 +613,7 @@ test_homebrew_dry_run
 test_pnpm_setup_contract
 test_pnpm_dry_run
 test_agent_cli_profile_contract
+test_restow_cli_contract
 test_claude_standalone_installer_contract
 test_codex_standalone_installer_contract
 test_cliproxyapi_config_contract

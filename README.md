@@ -39,6 +39,7 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 ## Useful commands
 
 ```bash
+./setup.sh restow
 ./setup.sh --verify macos
 ./setup.sh --layer full
 ./setup.sh --layer minimal --skip-install

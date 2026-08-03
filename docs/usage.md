@@ -26,6 +26,8 @@ Typical first-run examples:
 Common maintenance:
 
 ```bash
+./setup.sh restow
+./setup.sh restow linux-desktop
 ./setup.sh --verify macos
 ./setup.sh --layer linux-desktop
 ./setup.sh --layer minimal --skip-install
@@ -42,6 +44,8 @@ Setup flags:
 - `--dry-run` prints the install/stow plan without changing the machine. It never acquires sudo and never prompts, but it does assume you can: on Linux the plan lists the apt/system steps a real run would perform instead of reporting them as skipped. When `sudo` is absent entirely, they are shown as skipped.
 - `--skip-install` skips package/runtime installers and only applies repo-managed setup work such as stow and local-template refreshes.
 - `--allow-partial` is the CLI equivalent of `DOTFILES_ALLOW_PARTIAL=1`; use it when you intentionally want Linux setup to continue without privileged apt/system steps.
+
+`./setup.sh restow` is the idempotent repair shortcut for repo-managed setup work. It defaults to the additive `full` profile, implies `--skip-install`, and therefore restows the `minimal` and `full` packages, repairs the global agent surface, refreshes local templates, and refreshes stable command entrypoints without running package or runtime installers. Name another profile when the machine also needs its platform layer, for example `./setup.sh restow macos` or `./setup.sh restow linux-desktop`.
 
 For unattended Linux bootstrap, pre-authenticate with `sudo -v` before invoking `./setup.sh`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `--allow-partial` or `DOTFILES_ALLOW_PARTIAL=1`.
 
