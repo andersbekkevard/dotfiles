@@ -18,7 +18,7 @@ Adds Linux desktop packages and window-manager config on top of `full`. This inc
 
 ## Selection rule
 
-`./setup.sh` requires an explicit profile. It does not auto-detect one.
+Normal bootstrap with `./setup.sh` requires an explicit profile. It does not auto-detect one. The maintenance shortcut `./setup.sh restow` has a fixed `full` default; pass `macos` or `linux-desktop` explicitly when restowing a platform layer.
 
 There is no second root bootstrap script. Profile choice is part of the operator command, not something the repo guesses.
 
@@ -28,5 +28,11 @@ That keeps first-run bootstrap deterministic and makes the chosen machine contra
 - `./setup.sh linux-desktop`
 - `./setup.sh full`
 - `./setup.sh minimal`
+
+Idempotent repo-managed repair without package or runtime installation:
+
+- `./setup.sh restow` (defaults to `full`)
+- `./setup.sh restow macos`
+- `./setup.sh restow linux-desktop`
 
 `--layer <name>` is a maintenance mode that runs one layer in isolation; it does not expand to the full additive profile chain.

@@ -23,6 +23,7 @@ REQUESTED_PROFILE=""
 RUN_LAYER_ONLY=""
 STOW_ONLY_PACKAGE=""
 VERIFY_PROFILE=""
+RESTOW_MODE=0
 DRY_RUN=0
 SKIP_INSTALL=0
 ALLOW_PARTIAL="${DOTFILES_ALLOW_PARTIAL:-0}"
@@ -330,6 +331,7 @@ print_setup_help() {
   cat <<'EOF'
 Usage:
   ./setup.sh <profile> [--dry-run] [--skip-install] [--allow-partial]
+  ./setup.sh restow [profile] [--dry-run]
   ./setup.sh --verify <profile>
   ./setup.sh --layer <layer>
   ./setup.sh --stow <package>
@@ -343,11 +345,13 @@ Profiles:
 Examples:
   ./setup.sh macos
   ./setup.sh linux-desktop
+  ./setup.sh restow
+  ./setup.sh restow linux-desktop
   ./setup.sh --verify macos
   ./setup.sh --layer full
   ./setup.sh --stow shell
 
-No profile is chosen automatically. Pick the exact profile you want.
+Normal bootstrap never auto-detects a profile. The restow shortcut defaults to full.
 EOF
 }
 
@@ -370,6 +374,10 @@ parse_args() {
         ;;
       --allow-partial|--allow-without-sudo)
         ALLOW_PARTIAL=1
+        ;;
+      restow)
+        RESTOW_MODE=1
+        SKIP_INSTALL=1
         ;;
       --layer)
         shift
@@ -415,6 +423,10 @@ parse_args() {
 
   if [[ "$SHOW_HELP" -eq 1 || "${#ARG_ERRORS[@]}" -gt 0 ]]; then
     return 0
+  fi
+
+  if [[ "$RESTOW_MODE" -eq 1 && -z "$REQUESTED_PROFILE" ]]; then
+    REQUESTED_PROFILE=full
   fi
 
   if [[ -n "$RUN_LAYER_ONLY" || -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ]]; then
