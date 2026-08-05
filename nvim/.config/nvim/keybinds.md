@@ -134,7 +134,7 @@
 | Keybind | Action |
 |---------|--------|
 | `g?` | Show help |
-| `<CR>` | Open configured browser file types (HTML/PDF/images) in Comet/Chrome and Office files (DOC/XLS/PPT) in their default app, otherwise select and open file/directory |
+| `<CR>` | Open configured browser file types (HTML/PDF/images) in Comet/Chrome and MP4/Office files in their default app, otherwise select and open file/directory |
 | `<C-s>` | Open in vertical split |
 | `<C-h>` | Open in horizontal split |
 | `<C-t>` | Open in new tab |
