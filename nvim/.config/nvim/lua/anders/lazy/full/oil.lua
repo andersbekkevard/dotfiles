@@ -10,6 +10,7 @@ local oil_open_rules = {
 	default_app_extensions = {
 		doc = true,
 		docx = true,
+		mp4 = true,
 		ppt = true,
 		pptx = true,
 		xls = true,
