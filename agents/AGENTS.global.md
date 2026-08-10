@@ -17,11 +17,11 @@ Use repo artifacts, not chat, as durable context for readers who lack this conve
 
 ## Delegation
 
-Route each GPT worker by work shape: Luna with `high` reasoning effort for high-volume, routine, and trivial work; Terra with `high` for scoped implementation; Sol with `medium` for high-judgment work; and Sol with `high` for difficult high-judgment work. This keeps routing efficient by default and reserves maximum performance for when it is needed.
+If delegating, route the GPT workers by work shape: Luna with `high` reasoning effort for high-volume, routine, and trivial work; Terra with `high` for scoped implementation; Sol with `medium` for high-judgment work; and Sol with `high` for difficult high-judgment work. This keeps routing efficient by default and reserves maximum performance for when it is needed.
 
 Use your judgment to choose the model and reasoning effort when delegating to subagents.
 
-Use subagents as context firewalls. At execution break-even, delegate independent low-signal work to preserve clean Sol context and reduce drift. Give each lane one terminal deliverable; serialize shared files, decisions, and prerequisites.
+Use subagents as context firewalls where appropriate. At execution break-even, delegate independent low-signal work to preserve clean Sol context and reduce drift. Give each lane one terminal deliverable; serialize shared files, decisions, and prerequisites.
 
 Every GPT worker turn is typed: use `spawn_agent` with explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and a compact handoff. Steer ongoing turns with `send_message`; continue any ended worker lane with a fresh typed `spawn_agent` using an explicit model and reasoning effort. `followup_task` resumes the worker as parent Sol, wasting scarce, higher-usage Sol tokens on work deliberately routed to a worker model.
 
@@ -34,6 +34,6 @@ Codex delegates natively; Claude and Fable route model choice through `model-rou
 - Prefer `rg`/`fd` and `uv`/`pnpm` unless the repo requires otherwise.
 - Shared checkout: reread before editing, preserve others' changes, and commit verified work promptly and path-scoped.
 
-## Dev Servers
+## Dev Server where appropriates
 
 `.dev-server.md` in the project root is the ignored local source of truth. Read it before any server action. After starting, stopping, restarting, or discovering stale state, immediately update its status and `Updated` timestamp; taking the server down must set `Status: stopped`. Record the command, URL/port, PID, and log location when applicable, and ensure Git ignores the file.
