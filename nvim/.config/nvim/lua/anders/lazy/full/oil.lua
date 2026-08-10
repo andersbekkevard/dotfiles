@@ -14,6 +14,7 @@ local oil_open_rules = {
 		ppt = true,
 		pptx = true,
 		xls = true,
+		xlsb = true,
 		xlsm = true,
 		xlsx = true,
 	},
