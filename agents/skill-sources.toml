@@ -181,6 +181,10 @@ tracking = "local"
 local_path = "agents/skills/desk/bro"
 tracking = "local"
 
+[skills.talk]
+local_path = "agents/skills/desk/talk"
+tracking = "local"
+
 [skills.tufte-viz]
 local_path = "agents/skills/desk/tufte-viz"
 tracking = "local"
