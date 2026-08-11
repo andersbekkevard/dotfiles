@@ -177,10 +177,6 @@ preserve = [
 local_path = "agents/skills/flow/beads"
 tracking = "local"
 
-[skills.bro]
-local_path = "agents/skills/desk/bro"
-tracking = "local"
-
 [skills.talk]
 local_path = "agents/skills/desk/talk"
 tracking = "local"
