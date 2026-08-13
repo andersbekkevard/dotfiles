@@ -199,6 +199,13 @@ notes = [
   "Different skill shape (lane lifecycle vs routing); ported stdin prompt passing, -o sentinel, and the two-failed-resumes stop-loss from codex-first in 2026-07. Review upstream for new invocation mechanics, not for structure.",
 ]
 
+[skills.control-europa-desktop]
+local_path = "agents/skills/desk/control-europa-desktop"
+tracking = "local"
+notes = [
+  "Private on-demand VNC over supervised reverse SSH; persistent desktop substrate stays separate.",
+]
+
 [skills.cycle-codex-account]
 local_path = "agents/skills/fleet/cycle-codex-account"
 tracking = "local"
