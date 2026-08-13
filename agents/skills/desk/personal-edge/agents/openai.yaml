@@ -1,4 +1,4 @@
 interface:
   display_name: "Personal Edge"
-  short_description: "Share privately or publish expiring URLs"
-  default_prompt: "Use $personal-edge to share this app privately, publish a temporary URL with automatic expiry, or operate mail on bekkevard.me."
+  short_description: "Reach my Mac or publish expiring URLs"
+  default_prompt: "Use $personal-edge to reach my Mac, share this app privately, publish a temporary URL with automatic expiry, or operate mail on bekkevard.me."
