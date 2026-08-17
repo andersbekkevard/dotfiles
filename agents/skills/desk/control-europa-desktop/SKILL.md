@@ -14,6 +14,8 @@ temporary.
 
 Set the skill directory, then run exactly one operation:
 
+If this skill is invoked without a requested operation, default to `open`.
+
 ```bash
 SKILL_DIR="<this skill directory>"
 "$SKILL_DIR/scripts/control-europa-desktop" open
