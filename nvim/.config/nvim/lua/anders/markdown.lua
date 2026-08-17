@@ -101,7 +101,6 @@ function M.setup_buffer(bufnr)
 		silent = true,
 		desc = "Move up by visual Markdown row",
 	})
-	require("anders.table_lens").attach(bufnr)
 end
 
 return M
