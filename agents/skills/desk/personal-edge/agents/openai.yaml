@@ -1,4 +1,4 @@
 interface:
   display_name: "Personal Edge"
-  short_description: "Share apps privately or publish durable URLs"
-  default_prompt: "Use $personal-edge to share this app over SSH by default, publish it publicly only when explicitly requested, or operate mail on bekkevard.me."
+  short_description: "Share privately or publish expiring URLs"
+  default_prompt: "Use $personal-edge to share this app privately, publish a temporary URL with automatic expiry, or operate mail on bekkevard.me."
