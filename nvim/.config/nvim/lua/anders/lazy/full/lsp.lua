@@ -424,10 +424,9 @@ return {
 			},
 		},
 		opts = {
-			-- Neovim soft-wraps the complete source line after table extmarks are
-			-- positioned, which breaks column borders. A dedicated renderer below
-			-- wraps each cell independently instead.
-			pipe_table = { enabled = false },
+			-- Native RenderMarkdown tables are the default. <leader>mt switches the
+			-- current buffer to the wrapped table renderer below.
+			pipe_table = { enabled = true },
 		},
 	},
 	{
@@ -448,12 +447,33 @@ return {
 			max_col_width = 50,
 			row_separator = true,
 			render_all = true,
+			auto_preview = false,
 			-- Outside the focusable table lens, keep the complete table visible.
 			inline_viewport_scrolling = false,
 			highlight_preset = "render_markdown",
 		},
 		config = function(_, opts)
-			require("markdown-table-wrap").setup(opts)
+			local table_wrap = require("markdown-table-wrap")
+			table_wrap.setup(opts)
+
+			local function default_to_native_tables(bufnr)
+				if not vim.api.nvim_buf_is_valid(bufnr) then
+					return
+				end
+				vim.api.nvim_buf_call(bufnr, function()
+					table_wrap.disable_auto_preview()
+				end)
+			end
+
+			default_to_native_tables(vim.api.nvim_get_current_buf())
+			vim.api.nvim_create_autocmd("FileType", {
+				group = vim.api.nvim_create_augroup("AndersMarkdownTableDefaults", { clear = true }),
+				pattern = { "markdown", "md", "quarto", "rmarkdown" },
+				callback = function(args)
+					default_to_native_tables(args.buf)
+				end,
+			})
+
 			vim.api.nvim_create_user_command("MarkdownTablesToggle", function()
 				require("anders.table_lens").toggle()
 			end, { desc = "Toggle visual Markdown tables in the current buffer" })
