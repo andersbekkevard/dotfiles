@@ -253,6 +253,13 @@ tracking = "local"
 local_path = "agents/skills/meta/skill-audit"
 tracking = "local"
 
+[skills.reclaim-storage]
+local_path = "agents/skills/meta/reclaim-storage"
+tracking = "local"
+notes = [
+  "Machine-wide audit-only storage census with ignored per-machine paths and deterministic Codex transcript accounting.",
+]
+
 [skills.personal-edge]
 local_path = "agents/skills/desk/personal-edge"
 tracking = "local"
