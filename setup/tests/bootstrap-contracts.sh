@@ -324,6 +324,62 @@ test_agent_cli_profile_contract() {
   fi
 }
 
+test_agent_instruction_composition() {
+  local fake_home fake_sources shared_source codex_source claude_source
+  fake_home="$(mktemp -d)"
+  fake_sources="$(mktemp -d)"
+  shared_source="$fake_sources/SHARED.global.md"
+  codex_source="$fake_sources/AGENTS.global.md"
+  claude_source="$fake_sources/CLAUDE.global.md"
+  printf 'shared rule\n' > "$shared_source"
+  printf 'codex rule\n' > "$codex_source"
+  printf 'claude rule\n' > "$claude_source"
+  mkdir -p "$fake_home/.codex" "$fake_home/.claude"
+
+  (
+    HOME="$fake_home"
+    DOTFILES_DIR="$REPO_ROOT"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/stow.sh
+    source "$REPO_ROOT/setup/lib/stow.sh"
+    # shellcheck source=../agents.sh
+    source "$REPO_ROOT/setup/agents.sh"
+    RUN_ID=test-agent-composition
+    DRY_RUN=0
+    ERRORS=()
+
+    ln -s "$codex_source" "$HOME/.codex/AGENTS.md"
+    printf 'pre-existing Claude instructions\n' > "$HOME/.claude/CLAUDE.md"
+    compose_agent_file "$HOME/.codex/AGENTS.md" "$shared_source" "$codex_source" "$codex_source"
+    compose_agent_file "$HOME/.claude/CLAUDE.md" "$shared_source" "$claude_source" "$codex_source"
+
+    assert_eq "$(sed -n '2p' "$HOME/.codex/AGENTS.md")" "shared rule"
+    assert_eq "$(sed -n '4p' "$HOME/.codex/AGENTS.md")" "codex rule"
+    grep -Fxq 'shared rule' "$HOME/.codex/AGENTS.md" || fail "Codex instructions omit shared rules"
+    grep -Fxq 'codex rule' "$HOME/.codex/AGENTS.md" || fail "Codex instructions omit Codex rules"
+    if grep -Fq 'claude rule' "$HOME/.codex/AGENTS.md"; then
+      fail "Codex instructions include Claude rules"
+    fi
+    grep -Fxq 'shared rule' "$HOME/.claude/CLAUDE.md" || fail "Claude instructions omit shared rules"
+    grep -Fxq 'claude rule' "$HOME/.claude/CLAUDE.md" || fail "Claude instructions omit Claude rules"
+    if grep -Fq 'codex rule' "$HOME/.claude/CLAUDE.md"; then
+      fail "Claude instructions include Codex rules"
+    fi
+    grep -Fxq 'pre-existing Claude instructions' \
+      "$HOME/.dotfiles-backups/test-agent-composition/.claude/CLAUDE.md" ||
+      fail "pre-existing Claude instructions were not backed up"
+
+    printf 'updated codex rule\n' > "$codex_source"
+    compose_agent_file "$HOME/.codex/AGENTS.md" "$shared_source" "$codex_source" "$codex_source"
+    grep -Fxq 'updated codex rule' "$HOME/.codex/AGENTS.md" || fail "managed Codex instructions did not refresh"
+    [[ ! -e "$HOME/.dotfiles-backups/test-agent-composition/.codex/AGENTS.md" ]] ||
+      fail "managed Codex instructions were backed up during refresh"
+  )
+
+  rm -rf "$fake_home" "$fake_sources"
+}
+
 test_restow_cli_contract() {
   (
     # shellcheck source=../lib/core.sh
@@ -664,6 +720,7 @@ test_homebrew_dry_run
 test_pnpm_setup_contract
 test_pnpm_dry_run
 test_agent_cli_profile_contract
+test_agent_instruction_composition
 test_restow_cli_contract
 test_claude_standalone_installer_contract
 test_codex_standalone_installer_contract

@@ -33,7 +33,7 @@ If the task touches secrets, also read:
 | `docs/architecture.md` | Structural model | Stow layout, layering, ownership boundaries |
 | `docs/secrets.md` | Secrets handling | `git-crypt` unlock/export flow |
 | `docs/design-principles.md` | General engineering philosophy | Cross-project standards (not bootstrap behavior) |
-| `agents/README.md` | Global agent surface (skills, skillctl, wiring) | Skill invocation-state system and harness symlink contract |
+| `agents/README.md` | Global agent surface (skills, skillctl, wiring) | Skill invocation-state system and harness composition contract |
 
 ## Agent Surface Setup
 
@@ -47,23 +47,24 @@ agent instructions on the current machine, use setup, not direct `skillctl`:
 This is the narrow machine-repair path for the agent surface. It avoids package
 and runtime installers, but still runs the repo-managed setup work that matters:
 restow minimal dotfiles, refresh local templates, run `setup/agents.sh`, create
-or repair `~/.claude/skills/<name>`, `~/.claude/CLAUDE.md`,
-`~/.codex/AGENTS.md`, and invoke `agents/skillctl sync` for Codex-generated
-state.
+or repair `~/.claude/skills/<name>`, compose `~/.claude/CLAUDE.md` and
+`~/.codex/AGENTS.md` from the primary shared instructions plus their harness
+additions, and invoke `agents/skillctl sync` for Codex-generated state.
 
 Use the normal first-run profile command (`./setup.sh macos`,
 `./setup.sh linux-desktop`, `./setup.sh full`, or `./setup.sh minimal`) on a new
 machine that still needs packages/runtimes.
 
-Use direct `skillctl` only when the harness links already exist and the task is
-specifically to regenerate Codex dialect metadata from `SKILL.md` frontmatter:
+Use direct `skillctl` only when the machine-level harness surface already exists
+and the task is specifically to regenerate Codex dialect metadata from
+`SKILL.md` frontmatter:
 
 ```bash
 agents/skillctl sync
 ```
 
-Direct `skillctl sync` does not create Claude per-skill links or top-level
-harness instruction links; treating it as full agent setup is a bug.
+Direct `skillctl sync` does not create Claude per-skill links or compose
+top-level harness instructions; treating it as full agent setup is a bug.
 
 ## Update rules
 

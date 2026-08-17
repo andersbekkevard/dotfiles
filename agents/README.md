@@ -1,10 +1,14 @@
 # agents/ — global agent surface
 
-One copy of every cross-repo agent instruction artifact, for both Claude Code
-and Codex. Repo-specific skills stay in each repo's `.agents/skills/`.
+One source tree for every cross-repo agent instruction artifact, for both
+Claude Code and Codex. Repo-specific skills stay in each repo's
+`.agents/skills/`.
 
-- `AGENTS.global.md` — global working rules. Symlinked to `~/.claude/CLAUDE.md`
-  and `~/.codex/AGENTS.md` (one file, two harness names).
+- `SHARED.global.md` — primary global working rules for both harnesses.
+- `AGENTS.global.md` — Codex-only additions.
+- `CLAUDE.global.md` — Claude-only additions. Setup composes the shared file
+  first and the matching harness file second into `~/.codex/AGENTS.md` and
+  `~/.claude/CLAUDE.md`; edit the sources, not the composed files.
 - `skills/<category>/<name>/` — canonical global skills, grouped for overview:
   `flow/` (planning surface + beads substrate), `engineering/` (craft +
   review), `fleet/` (orchestration/delegation), `meta/` (the system that
@@ -35,12 +39,13 @@ Use setup for the machine-level agent surface:
 ```
 
 That command skips package/runtime installers but still runs `setup/agents.sh`,
-which creates or repairs `~/.claude/skills/<name>`, `~/.claude/CLAUDE.md`,
-`~/.codex/AGENTS.md`, and the categorized Codex-generated skill projection. On
-a fresh machine that still needs packages, run the normal explicit profile instead.
+which creates or repairs `~/.claude/skills/<name>`, composes
+`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, and refreshes the categorized
+Codex-generated skill projection. On a fresh machine that still needs packages,
+run the normal explicit profile instead.
 
 Do not use direct `agents/skillctl sync` as full agent setup. It does not create
-Claude per-skill symlinks or the top-level harness instruction symlinks.
+Claude per-skill symlinks or compose the top-level harness instructions.
 
 ## Main flow
 
