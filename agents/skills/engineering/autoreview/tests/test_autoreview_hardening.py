@@ -9,6 +9,7 @@ import os
 import re
 import runpy
 import shutil
+import signal
 import stat
 import subprocess
 import sys
@@ -1503,6 +1504,216 @@ class AutoreviewHardeningTests(unittest.TestCase):
                         "",
                         "",
                     )
+
+    def test_interrupted_review_resumes_after_last_completed_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            repo = init_repo(root)
+            prompts = ["review pass one", "review pass two", "review pass three"]
+            report = {
+                "findings": [],
+                "overall_correctness": "patch is correct",
+                "overall_explanation": "clean",
+                "overall_confidence": 0.9,
+            }
+            args = argparse.Namespace(
+                run_id="resume-test",
+                run_root=str(root / "runs"),
+                allow_partial_panel=False,
+                require_finding=[],
+            )
+            reviewer = argparse.Namespace(
+                engine="pi",
+                model="test-model",
+                fallback_model=None,
+                thinking="high",
+                tools=False,
+                web_search=False,
+                pi_bin=sys.executable,
+            )
+            reviewers = [reviewer]
+            store = self.helper["open_review_run_store"](
+                args,
+                repo,
+                reviewers,
+                prompts,
+                set(),
+            )
+            calls: list[str] = []
+
+            def interrupted(_reviewer, _repo, prompt, *_args):
+                calls.append(prompt)
+                if prompt == prompts[1]:
+                    raise self.helper["EngineInterrupted"](130)
+                return report
+
+            runner = self.helper["run_review_passes"]
+            with mock.patch.dict(
+                runner.__globals__,
+                {"run_reviewer": interrupted},
+            ):
+                with self.assertRaises(self.helper["EngineInterrupted"]):
+                    runner(args, reviewers, repo, prompts, set(), False, store)
+
+            self.assertEqual(calls, prompts[:2])
+            self.assertTrue((store.path / "pass-0001.json").is_file())
+            self.assertFalse((store.path / "pass-0002.json").exists())
+
+            calls.clear()
+
+            def resumed(_reviewer, _repo, prompt, *_args):
+                calls.append(prompt)
+                return report
+
+            reopened = self.helper["open_review_run_store"](
+                args,
+                repo,
+                reviewers,
+                prompts,
+                set(),
+            )
+            stdout = io.StringIO()
+            with (
+                mock.patch.dict(runner.__globals__, {"run_reviewer": resumed}),
+                contextlib.redirect_stdout(stdout),
+            ):
+                reports = runner(
+                    args,
+                    reviewers,
+                    repo,
+                    prompts,
+                    set(),
+                    False,
+                    reopened,
+                )
+
+            self.assertEqual(calls, prompts[1:])
+            self.assertEqual(len(reports), 3)
+            self.assertIn("1/3 completed passes loaded", stdout.getvalue())
+            self.assertIn("review pass: 1/3 (resumed)", stdout.getvalue())
+            self.assertTrue((store.path / "pass-0003.json").is_file())
+            if os.name != "nt":
+                self.assertEqual(stat.S_IMODE(store.path.stat().st_mode), 0o700)
+                self.assertEqual(
+                    stat.S_IMODE((store.path / "pass-0001.json").stat().st_mode),
+                    0o600,
+                )
+
+    def test_review_resume_refuses_changed_input_or_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            repo = init_repo(root)
+            args = argparse.Namespace(
+                run_id="identity-test",
+                run_root=str(root / "runs"),
+                allow_partial_panel=False,
+            )
+            reviewer = argparse.Namespace(
+                engine="pi",
+                model="model-a",
+                fallback_model=None,
+                thinking="high",
+                tools=False,
+                web_search=False,
+                pi_bin=sys.executable,
+            )
+            opener = self.helper["open_review_run_store"]
+            opener(args, repo, [reviewer], ["first prompt"], {"one.txt"})
+
+            with self.assertRaisesRegex(SystemExit, "identity does not match"):
+                opener(args, repo, [reviewer], ["changed prompt"], {"one.txt"})
+
+            reviewer.model = "model-b"
+            with self.assertRaisesRegex(SystemExit, "identity does not match"):
+                opener(args, repo, [reviewer], ["first prompt"], {"one.txt"})
+
+    def test_review_resume_refuses_changed_engine_binary(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            repo = init_repo(root)
+            reviewer_bin = root / "reviewer"
+            reviewer_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            reviewer_bin.chmod(0o700)
+            args = argparse.Namespace(
+                run_id="binary-identity-test",
+                run_root=str(root / "runs"),
+                allow_partial_panel=False,
+            )
+            reviewer = argparse.Namespace(
+                engine="pi",
+                model="test-model",
+                fallback_model=None,
+                thinking="high",
+                tools=False,
+                web_search=False,
+                pi_bin=str(reviewer_bin),
+            )
+            opener = self.helper["open_review_run_store"]
+            opener(args, repo, [reviewer], ["first prompt"], set())
+
+            reviewer_bin.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "identity does not match"):
+                opener(args, repo, [reviewer], ["first prompt"], set())
+
+    def test_review_checkpoints_refuse_native_windows(self) -> None:
+        args = argparse.Namespace(
+            run_id="windows-test",
+            run_root="unused",
+            allow_partial_panel=False,
+        )
+        with (
+            mock.patch.object(self.helper["os"], "name", "nt"),
+            self.assertRaisesRegex(SystemExit, "native Windows cannot attest"),
+        ):
+            self.helper["open_review_run_store"](
+                args,
+                Path("unused"),
+                [],
+                [],
+                set(),
+            )
+
+    def test_review_resume_rejects_tampered_or_noncontiguous_records(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            repo = init_repo(root)
+            args = argparse.Namespace(
+                run_id="integrity-test",
+                run_root=str(root / "runs"),
+                allow_partial_panel=False,
+            )
+            reviewer = argparse.Namespace(
+                engine="pi",
+                model="test-model",
+                fallback_model=None,
+                thinking="high",
+                tools=False,
+                web_search=False,
+                pi_bin=sys.executable,
+            )
+            store = self.helper["open_review_run_store"](
+                args, repo, [reviewer], ["one", "two"], set()
+            )
+            report = {
+                "findings": [],
+                "overall_correctness": "patch is correct",
+                "overall_explanation": "clean",
+                "overall_confidence": 0.9,
+            }
+            self.helper["save_review_run_pass"](store, 2, report)
+            with self.assertRaisesRegex(SystemExit, "contiguous completed prefix"):
+                self.helper["load_review_run_passes"](store, repo, set())
+
+            (store.path / "pass-0002.json").unlink()
+            self.helper["save_review_run_pass"](store, 1, report)
+            record_path = store.path / "pass-0001.json"
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["report"]["overall_explanation"] = "tampered"
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            if os.name != "nt":
+                record_path.chmod(0o600)
+            with self.assertRaisesRegex(SystemExit, "integrity validation"):
+                self.helper["load_review_run_passes"](store, repo, set())
 
     def test_review_patch_does_not_disclose_controls_in_omitted_paths(self) -> None:
         path = ".env.\x1b]52;c;VEVTVA==\x07\udc9b"
@@ -3181,18 +3392,54 @@ class AutoreviewHardeningTests(unittest.TestCase):
         self.assertTrue(
             self.helper["secret_text_risk"](declared_identifier_value)
         )
-        self.assertTrue(
+        self.assertFalse(
             self.helper["secret_text_risk"](
                 suffixed_reference,
                 javascript_dialect="typescript",
             )
         )
-        self.assertTrue(
+        self.assertFalse(
             self.helper["secret_text_risk"](
                 prefixed_reference,
                 javascript_dialect="typescript",
             )
         )
+
+    def test_secret_detector_allows_simple_javascript_secret_references(self) -> None:
+        secret_key = "api" + "Secret"
+        key_key = "api" + "Key"
+        references = (
+            f"signCloudinaryUploadParams({{ {secret_key}: signingPhrase }});",
+            f"return {{ {key_key}: ctx.cloudinary.{key_key} }};",
+            f"cloudinary: {{ {secret_key}: environment.cloudinaryApiSecret }}",
+        )
+
+        for dialect in ("javascript", "typescript"):
+            for content in references:
+                with self.subTest(dialect=dialect, content=content):
+                    self.assertFalse(
+                        self.helper["secret_text_risk"](
+                            content,
+                            javascript_dialect=dialect,
+                        )
+                    )
+
+        for content in references:
+            with self.subTest(non_code_content=content):
+                self.assertTrue(self.helper["secret_text_risk"](content))
+
+        synthetic_literal = realistic_secret_value()
+        for content in (
+            f'return {{ {secret_key}: "{synthetic_literal}" }};',
+            f'return {{ {secret_key}: ctx.cloudinary.{secret_key} ?? "{synthetic_literal}" }};',
+        ):
+            with self.subTest(literal_content=content):
+                self.assertTrue(
+                    self.helper["secret_text_risk"](
+                        content,
+                        javascript_dialect="typescript",
+                    )
+                )
 
     def test_secret_detector_allows_lifecycle_named_typescript_references(self) -> None:
         key_term = "Api" + "Key"
@@ -4278,6 +4525,34 @@ class AutoreviewHardeningTests(unittest.TestCase):
             )
         )
 
+    def test_branch_bundle_preserves_deleted_jinja_pem_marker_regex(self) -> None:
+        # Generic template regex delimiters are not private-key material. The
+        # branch boundary must keep a deleted template reviewable as-is.
+        with tempfile.TemporaryDirectory() as tempdir:
+            repo = init_repo(Path(tempdir))
+            template = repo / "origin-pem.j2"
+            template.write_text(
+                "-----BEGIN [A-Z ]+-----\n"
+                "{{ _body }}\n"
+                "-----END [A-Z ]+-----\n",
+                encoding="utf-8",
+            )
+            git(repo, "add", template.name)
+            git(repo, "commit", "-q", "-m", "add template")
+            base = git(repo, "rev-parse", "HEAD").strip()
+
+            template.unlink()
+            git(repo, "add", "-u")
+            git(repo, "commit", "-q", "-m", "delete template")
+
+            bundle, truncated = self.helper["branch_bundle"](repo, base)
+
+            self.assertIn("deleted file mode 100644", bundle)
+            self.assertIn("------BEGIN [A-Z ]+-----", bundle)
+            self.assertIn("-{{ _body }}", bundle)
+            self.assertIn("------END [A-Z ]+-----", bundle)
+            self.assertFalse(truncated)
+
     def test_review_patch_redacts_secret_only_in_entirely_deleted_file(self) -> None:
         value = realistic_secret_value()
         known_fragments: set[str] = set()
@@ -4506,20 +4781,6 @@ class AutoreviewHardeningTests(unittest.TestCase):
                 javascript_dialect="javascript",
             )
         )
-        for dialect in ("javascript", "typescript"):
-            with self.subTest(same_name_call_dialect=dialect):
-                self.assertFalse(
-                    self.helper["secret_text_risk"](
-                        "token = token()",
-                        javascript_dialect=dialect,
-                    )
-                )
-                self.assertTrue(
-                    self.helper["secret_text_risk"](
-                        'token = token("provider-unknown-secret")',
-                        javascript_dialect=dialect,
-                    )
-                )
         colon_assignment = self.helper["SECRET_ASSIGNMENT_PATTERN"].search(
             "pass" + "word: password"
         )
@@ -4574,6 +4835,23 @@ class AutoreviewHardeningTests(unittest.TestCase):
                         javascript_dialect="javascript",
                     )
                 )
+
+    def test_secret_detector_checks_same_name_call_arguments(self) -> None:
+        self.assertFalse(
+            self.helper["secret_text_risk"](
+                "pass" + "word = password()",
+                javascript_dialect="javascript",
+            )
+        )
+        self.assertTrue(
+            self.helper["secret_text_risk"](
+                "pass"
+                + 'word = password("'
+                + realistic_secret_value()
+                + '")',
+                javascript_dialect="javascript",
+            )
+        )
 
     def test_review_patch_preserves_redaction_placeholder_fallback(self) -> None:
         patch = (
@@ -5643,24 +5921,6 @@ class AutoreviewHardeningTests(unittest.TestCase):
                 ),
                 repo,
             )
-            repo_symlink = repo / "review-link.json"
-            try:
-                repo_symlink.symlink_to(outside)
-            except OSError as exc:
-                if os.name == "nt" and getattr(exc, "winerror", None) == 1314:
-                    return
-                raise
-            with self.assertRaisesRegex(
-                SystemExit,
-                "--json-output must point outside",
-            ):
-                self.helper["reject_repo_output_paths"](
-                    argparse.Namespace(
-                        json_output=str(repo_symlink),
-                        output=None,
-                    ),
-                    repo,
-                )
             alternate_repo = repo.with_name(repo.name.swapcase())
             with (
                 mock.patch.object(
@@ -5679,6 +5939,29 @@ class AutoreviewHardeningTests(unittest.TestCase):
                     argparse.Namespace(
                         json_output=str(alternate_repo / "review.json"),
                         output=None,
+                    ),
+                    repo,
+                )
+
+    def test_rejects_lexically_repo_local_output_symlink(self) -> None:
+        if os.name == "nt":
+            self.skipTest("symlink creation is not reliably available")
+        with tempfile.TemporaryDirectory() as tempdir:
+            root = Path(tempdir)
+            repo = init_repo(root)
+            outside = root / "outside"
+            outside.mkdir()
+            (repo / "linked-output").symlink_to(outside, target_is_directory=True)
+
+            with self.assertRaisesRegex(
+                SystemExit,
+                "--json-output must point outside",
+            ):
+                self.helper["reject_repo_output_paths"](
+                    argparse.Namespace(
+                        json_output=str(repo / "linked-output" / "review.json"),
+                        output=None,
+                        run_root=None,
                     ),
                     repo,
                 )
@@ -6235,8 +6518,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
                 self.assertTrue(self.helper["safe_proxy_url"](value))
 
         for value in (
-            "http:"
-            + "//review-user:review-password@proxy.example.invalid:8080",
+            "http:" + "//review-user:review-password@proxy.example.invalid:8080",
             "socks5:"
             + "//review-user:review-password@proxy.example.invalid:1080",
         ):
@@ -7213,6 +7495,116 @@ class AutoreviewHardeningTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("\ufffd", result.stdout)
+
+    def test_run_with_heartbeat_bounds_a_silent_reviewer_when_configured(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            result = self.helper["run_with_heartbeat"](
+                [sys.executable, "-c", "import time; time.sleep(2)"],
+                Path(tempdir),
+                label="silent-reviewer",
+                heartbeat_seconds=0.01,
+                max_runtime_seconds=0.05,
+            )
+
+        self.assertEqual(result.returncode, 124)
+        self.assertIn("silent-reviewer engine timed out after 0.05s", result.stderr)
+
+    def test_engine_timeout_accepts_only_positive_finite_seconds(self) -> None:
+        parser = self.helper["positive_float"]
+        self.assertEqual(parser("1800"), 1800)
+        for value in ("0", "-1", "nan", "inf", "soon"):
+            with self.subTest(value=value), self.assertRaises(argparse.ArgumentTypeError):
+                parser(value)
+
+    def test_reviewer_runtime_deadline_is_disabled_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            result = self.helper["run_with_heartbeat"](
+                [sys.executable, "-c", "import time; time.sleep(0.05)"],
+                Path(tempdir),
+                label="compatible-reviewer",
+                heartbeat_seconds=0.01,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    @unittest.skipUnless(os.name == "posix", "process groups require POSIX")
+    def test_streaming_deadline_kills_sigterm_resistant_continuous_output(self) -> None:
+        child = (
+            "import signal,time; "
+            "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+            "time.sleep(60)"
+        )
+        script = (
+            "import signal,subprocess,sys,time; "
+            "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+            f"child=subprocess.Popen([sys.executable, '-c', {child!r}]); "
+            "print(child.pid, flush=True); "
+            "\nwhile True: print('tick', flush=True); time.sleep(0.005)"
+        )
+        started = time.monotonic()
+        with tempfile.TemporaryDirectory() as tempdir:
+            result = self.helper["run_with_heartbeat"](
+                [sys.executable, "-c", script],
+                Path(tempdir),
+                label="streaming-reviewer",
+                heartbeat_seconds=0.01,
+                max_runtime_seconds=0.05,
+                stream_output=True,
+                stream_display=lambda _name, _line: None,
+            )
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(result.returncode, 124, result.stderr)
+        self.assertIn("tick", result.stdout)
+        self.assertIn("streaming-reviewer engine timed out after 0.05s", result.stderr)
+        self.assertLess(elapsed, 5)
+        child_pid = int(result.stdout.splitlines()[0])
+        with self.assertRaises(ProcessLookupError):
+            os.kill(child_pid, 0)
+
+    @unittest.skipUnless(os.name == "posix", "detached process groups require POSIX")
+    def test_deadline_bounds_drain_when_descendant_retains_pipe(self) -> None:
+        child = "import time; time.sleep(60)"
+        script = (
+            "import subprocess,sys; "
+            f"child=subprocess.Popen([sys.executable, '-c', {child!r}], start_new_session=True); "
+            "print(child.pid, flush=True)"
+        )
+        for stream_output in (False, True):
+            with self.subTest(stream_output=stream_output):
+                child_pid: int | None = None
+                started = time.monotonic()
+                try:
+                    with tempfile.TemporaryDirectory() as tempdir, mock.patch.dict(
+                        self.helper["EngineRuntimeDeadline"].terminate.__globals__,
+                        {
+                            "_TIMED_OUT_STREAM_DRAIN_SECONDS": 0.05,
+                            # Model Windows' documented best-effort cleanup: the
+                            # leader is reaped while its detached descendant and
+                            # inherited output handle survive.
+                            "terminate_process_group": lambda proc: proc.poll(),
+                        },
+                    ):
+                        result = self.helper["run_with_heartbeat"](
+                            [sys.executable, "-c", script],
+                            Path(tempdir),
+                            label="retained-pipe-reviewer",
+                            heartbeat_seconds=0.01,
+                            max_runtime_seconds=0.05,
+                            stream_output=stream_output,
+                            stream_display=lambda _name, _line: None,
+                        )
+                    child_pid = int(result.stdout.strip())
+                finally:
+                    if child_pid is not None:
+                        try:
+                            os.kill(child_pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+
+                self.assertEqual(result.returncode, 124, result.stderr)
+                self.assertIn("retained-pipe-reviewer engine timed out", result.stderr)
+                self.assertLess(time.monotonic() - started, 1)
 
     def test_large_repo_relative_evidence_file_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:

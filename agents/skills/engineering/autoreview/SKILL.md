@@ -1,6 +1,6 @@
 ---
 name: autoreview
-description: "Pre-commit/ship code review: Codex default; optional Claude, Pi, or Kimi."
+description: "Pre-commit/ship code review: Codex default; thermonuclear; optional Claude, Pi, or Kimi."
 disable-model-invocation: true
 ---
 
@@ -20,7 +20,8 @@ For user-visible behavior, pair autoreview with `behavior-validator`. Autoreview
 
 Use when:
 
-- user asks for Codex review / thermonuclear review / Claude review / Pi review / Kimi review / autoreview / second-model review
+- user asks for Codex review / Claude review / Pi review / Kimi review / autoreview / second-model review
+- user asks for thermonuclear review
 - after non-trivial code edits, before final/commit/ship
 - reviewing a local branch or PR branch after fixes
 
@@ -28,11 +29,10 @@ Do not require autoreview for a change whose entire diff is prose-only internal 
 
 ## Contract
 
-- Default output is P0 only: report issues worth blocking the current change
+- Default output is P0 only, except thermonuclear review uses P3: report issues worth blocking the current change
   because they materially break the normal flow, outcome, or safety boundary.
   Use `--max-priority P1`, `P2`, or `P3` only when the caller explicitly asks
-  for a wider review. Thermonuclear review is the intentional exception and
-  always passes `--max-priority P3`.
+  for a wider review.
 - Treat review output as advisory. Never blindly apply it.
 - Verify every finding by reading the real code path and adjacent files.
 - Read dependency docs/source/types when the finding depends on external behavior.
@@ -45,12 +45,13 @@ Do not require autoreview for a change whose entire diff is prose-only internal 
 - For security-audit suppression changes, verify accepted findings remain auditable: suppressed findings stay in structured output, active output keeps an unsuppressible suppression notice, and aggregate findings cannot hide unrelated active risk.
 - Never switch or override the requested review engine/model except for the documented Codex Sol-to-Terra account-access fallback. Capacity, rate-limit, and unrelated failures keep the same engine/model.
 - Be patient with large bundles. Structured review can take up to 30 minutes while the model call is active, especially with Codex tools or web search.
+- When an external automation needs a hard wall-clock bound, pass `--engine-timeout-seconds`; it is opt-in and applies separately to each reviewer process.
 - Treat heartbeat lines like `review still running: ... elapsed=... pid=...` as healthy progress, not a hang. Let the helper continue while heartbeats are advancing. Pass `--stream-engine-output` when live engine text is useful; Codex and Claude filter tool/file chatter, other runnable engines pass raw output through.
 - Do not kill a review just because it has been quiet for 2-5 minutes, or because it is still running under the 30-minute window. Inspect the process only after missing multiple expected heartbeats, after 30 minutes, or after an obviously failed subprocess; prefer letting the same helper command finish.
 - Tools are useful in review mode. Codex receives the validated bundle in an empty workspace so ignored files and linked-worktree metadata remain unreadable; web search stays available for dependency contracts and upstream docs.
 - Security perspective is always included, but it should not cripple legitimate functionality. Report security findings only when the change creates a concrete, actionable risk or removes an important safety check.
 - Reviewer subprocesses preserve engine authentication and non-credentialed proxy variables needed by headless or restricted-network environments while stripping process-injection, Git override, and credentialed proxy values.
-- Before engine invocation, autoreview runs TruffleHog over temporary snapshots of the exact added, modified, or deleted content under review. It intentionally matches TruffleHog's low-false-positive pre-commit policy (`verified,unknown`); it does not classify arbitrary password-like strings or rescan unchanged history. After that scan passes, locally recognized secret-like values are redacted in place only when they occur exclusively on deleted lines of an entirely removed file; if one of those deleted values also occurs in added, context, or mixed staged/unstaged content, the review fails closed. Install TruffleHog using its official platform-neutral instructions; autoreview fails with that link when the binary is unavailable and never auto-installs it. Repositories should also run TruffleHog in pull-request CI as a backup outside autoreview; repository-local Git hooks are optional. Review bundles still omit security-sensitive paths or files, and explicit prompt and dataset inputs remain checked before engine invocation. Safe large diffs are sent as one pass while they fit the aggregate prompt limit, then partitioned into complete bounded passes without truncation.
+- Before engine invocation, autoreview runs TruffleHog over temporary snapshots of the exact added, modified, or deleted content under review. It intentionally matches TruffleHog's low-false-positive pre-commit policy (`verified,unknown`); it does not classify arbitrary password-like strings or rescan unchanged history. After that scan passes, locally recognized secret-like values are redacted in place only when they occur exclusively on deleted lines of an entirely removed file; if one of those deleted values also occurs in added, context, or mixed staged/unstaged content, the review fails closed. In known JavaScript and TypeScript files, ordinary lower-case-rooted identifiers and dotted member expressions assigned to credential-named fields count as code references; quoted values, secret-shaped names, and literal fallbacks still fail closed. Install TruffleHog using its official platform-neutral instructions; autoreview fails with that link when the binary is unavailable and never auto-installs it. Repositories should also run TruffleHog in pull-request CI as a backup outside autoreview; repository-local Git hooks are optional. Review bundles still omit security-sensitive paths or files, and explicit prompt and dataset inputs remain checked before engine invocation. Safe large diffs are sent as one pass while they fit the aggregate prompt limit, then partitioned into complete bounded passes without truncation.
 - For regression provenance, keep roles separate: blamed code author, blamed PR author, PR merger/committer, current PR author, and PR/date. If no blamed PR is traceable, use the blamed commit as the provenance: commit SHA, date, and author username. Do not guess a merger or frame missing PR metadata as a separate finding.
 - If the blamed PR was merged by `clawsweeper[bot]` or another automation, identify the human trigger when practical. Check timeline/comments first; if rate-limited, use gitcrawl/cache or public PR HTML. Look for maintainer commands such as `@clawsweeper automerge`, `/landpr`, or labels/status comments that armed automerge. Report `automerge triggered by @login`; if not found, say trigger unknown.
 - Do not invoke built-in `codex review`, nested reviewers, or reviewer panels from inside the review. The helper builds one validated bundle, calls the selected engine once for normal inputs or once per complete bounded chunk for oversized inputs, validates the structured results, and stops.
@@ -205,8 +206,8 @@ with `--base`.
 
 ## Thermonuclear Review
 
-Use the same helper with the maximum-strictness maintainability rubric and the
-full priority range:
+Use the thermonuclear rubric when Anders asks for the broad, high-scrutiny
+review. Keep Codex as the review engine and include findings through P3:
 
 ```bash
 skills_root=$(dirname "$(dirname "$(dirname "$AUTOREVIEW")")")
@@ -216,10 +217,7 @@ thermonuclear_prompt=$(<"$skills_root/thermo-nuclear-code-quality-review/SKILL.m
   --max-priority P3
 ```
 
-The rubric is passed as text because `--prompt-file` intentionally accepts only
-files inside the repository under review, while the global skill normally lives
-outside it. It composes with any supported engine or panel. Its findings remain
-advisory and require verification before fixing.
+Use `--mode local` instead when the reviewed patch is uncommitted.
 
 ## Oversized Bundles
 
@@ -243,6 +241,34 @@ a coherent branch or PR shape whose semantic decision surface fits one pass.
 Removing verified non-authoritative generated noise remains useful, but never
 drop lockfiles, generated clients, policies, manifests, schemas, or other
 independently semantic artifacts merely to shrink the review.
+
+### Resume interrupted passes
+
+Checkpointing is explicit and caller-owned. For a review that may need several
+passes, choose a run id and a storage directory outside the reviewed repository:
+
+```bash
+"$AUTOREVIEW" --mode branch --base origin/main \
+  --run-id issue-123-review-1 \
+  --run-root /tmp/autoreview-runs
+```
+
+If the run is interrupted, rerun the exact command. Each validated pass is
+written atomically with owner-only permissions, and the helper resumes after
+the last contiguous completed pass. The checkpoint identity binds the exact
+review prompts, changed paths, reviewer set, models, thinking levels, tool and
+web-search settings, resolved engine binary paths and SHA-256 content hashes,
+and panel failure policy. A changed diff or reviewer configuration fails
+closed; use a new run id for the new review.
+
+Both flags are required together. There is no default checkpoint directory and
+no implicit reuse. Checkpoints can contain review findings and remain on disk
+after success, so choose a private caller-managed location and apply its normal
+retention policy.
+
+Checkpointing requires Linux, macOS, or Windows through WSL. Native Windows is
+refused because the helper cannot attest the owner-only POSIX permissions used
+for stored review data.
 
 ## Parallel Closeout
 
@@ -456,7 +482,7 @@ The helper:
 - scans safe Git patches in full, recognizes synthetic fixture values tied to their credential field, reviews them in one pass up to the aggregate prompt limit, and automatically uses complete bounded passes above it
 - should be left in `--mode auto` or forced to `--mode branch` for PR/branch work; do not force `--mode local` after committing
 - writes only to stdout unless `--output`, `--json-output`, or live streamed engine stderr is set
-- supports `--dry-run` (validates bundle construction and reviewer CLI binary resolution without contacting any engine; exits nonzero if either check fails), `--parallel-tests`, `--parallel-tests-shell`, `--prompt`, repo-relative `--prompt-file`, repo-relative `--dataset`, `--no-tools`, `--no-web-search`, repeatable Codex-only safe model/response tuning with `--codex-config key=value`, Codex-only `--codex-speed fast|flex|default`, and commit refs
+- supports `--dry-run` (validates bundle construction and reviewer CLI binary resolution without contacting any engine; exits nonzero if either check fails), explicit resumable pass checkpoints with `--run-id` plus `--run-root`, an opt-in per-reviewer wall-clock bound via `--engine-timeout-seconds`, `--parallel-tests`, `--parallel-tests-shell`, `--prompt`, repo-relative `--prompt-file`, repo-relative `--dataset`, `--no-tools`, `--no-web-search`, repeatable Codex-only safe model/response tuning with `--codex-config key=value`, Codex-only `--codex-speed fast|flex|default`, and commit refs
 - supports `--stream-engine-output` or `AUTOREVIEW_STREAM_ENGINE_OUTPUT=1` for live engine text while preserving structured validation; Codex and Claude hide tool/file event details, emit compact activity summaries, and report usage at turn completion
 - supports opt-in review panels with `--panel` / `--reviewers`, plus per-engine `--model`, `--thinking`, and Claude `--fallback-model`
 - uses built-in defaults `codex=gpt-5.6-sol` with `high` reasoning and an access-only `gpt-5.6-terra` retry, plus `claude=claude-fable-5`; honors `AUTOREVIEW_MODEL`, `AUTOREVIEW_THINKING`, `AUTOREVIEW_FALLBACK_MODEL`, and per-engine `AUTOREVIEW_<ENGINE>_MODEL` / `AUTOREVIEW_<ENGINE>_THINKING` environment overrides when CLI flags are omitted
