@@ -184,7 +184,7 @@ sync_claude_skill_links() {
   # Flatten the canonical skills/<category>/<name> structure for Claude Code.
   # Skill names are globally unique, while the categorized source tree remains
   # authoritative for humans and Codex.
-  for skill_dir in "$managed_skills_dir"/*/*; do
+  for skill_dir in "$managed_skills_dir"/*/* "$managed_skills_dir"/.local/*; do
     [[ -d "$skill_dir" ]] || continue
     [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
     link_claude_skill "$skill_dir" "$claude_skills_dir"

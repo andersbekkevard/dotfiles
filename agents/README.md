@@ -18,6 +18,10 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   so setup flattens the same skills to `~/.claude/skills/<name>`. Per-skill
   symlinks let root-level user and third-party skills plus Codex-managed
   `.system/` skills survive beside them.
+- `skills/.local/<name>/` — machine-specific global skills. Git ignores this
+  category, while setup projects it to `~/.claude/skills/<name>` and
+  `~/.codex/skills/.local/<name>`. `skillctl` and `skilltokens` include it;
+  `skillpull` excludes it because it is not repository provenance.
 - `archive/<name>/` — retired skills, kept whole but unlinked from every
   harness and excluded from all skill tooling. `archive/README.md` owns the
   archive/restore procedure.
@@ -140,3 +144,4 @@ agents/skillpull check humanizer --diff
 `skillpull` is read-only. A drift result means "review and port deliberately",
 not "replace the local skill". Preserve notes in `skill-sources.toml` identify
 intentional local behavior such as autoreview's thermonuclear review wiring.
+Machine-specific skills under `skills/.local/` do not belong in this manifest.
