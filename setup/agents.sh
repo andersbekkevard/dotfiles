@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Agent surface: global skills + instructions for Claude Code and Codex.
 #
-# Canonical content lives in agents/ (skills/, AGENTS.global.md, skillctl).
+# Canonical content lives in agents/ (skills/, SHARED.global.md,
+# AGENTS.global.md, CLAUDE.global.md, skillctl).
 # Claude Code reads flat ~/.claude/skills/<name> per-skill symlinks and
 # ~/.claude/CLAUDE.md. The canonical category hierarchy stays in the repo;
 # Claude Code does not discover skills nested below that extra directory.
@@ -18,20 +19,71 @@ agent_mkdir_p() {
   mkdir -p "$dir"
 }
 
-link_agent_file() {
-  local target="$1" dest="$2"
-  if [[ -L "$target" && "$(readlink "$target")" == "$dest" ]]; then
+render_agent_file() {
+  local shared_source="$1" harness_source="$2"
+
+  printf '%s\n' '<!-- dotfiles-managed: composed global agent instructions -->'
+  cat "$shared_source"
+  printf '\n'
+  cat "$harness_source"
+}
+
+compose_agent_file() {
+  local target="$1" shared_source="$2" harness_source="$3" legacy_source="$4"
+  local first_line temp_file
+
+  if [[ -f "$target" ]] && cmp -s "$target" <(render_agent_file "$shared_source" "$harness_source"); then
     return 0
   fi
-  if [[ -e "$target" && ! -L "$target" ]]; then
-    if [[ "$DRY_RUN" -eq 1 ]]; then
-      log_info "[dry-run] Backup pre-existing $target"
-    else
-      backup_path "$target"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Compose $target from $(basename "$shared_source") + $(basename "$harness_source")"
+    return 0
+  fi
+
+  temp_file="$(mktemp "${target}.tmp.XXXXXX")" || {
+    record_error "Could not create temporary file for $target"
+    return 1
+  }
+  if ! render_agent_file "$shared_source" "$harness_source" > "$temp_file"; then
+    rm -f "$temp_file"
+    record_error "Could not compose $target"
+    return 1
+  fi
+  if ! chmod 0644 "$temp_file"; then
+    rm -f "$temp_file"
+    record_error "Could not set permissions on composed agent file $target"
+    return 1
+  fi
+
+  if [[ -L "$target" && "$(readlink "$target")" == "$legacy_source" ]]; then
+    if ! rm "$target"; then
+      rm -f "$temp_file"
+      record_error "Could not replace legacy managed link $target"
+      return 1
+    fi
+    log_warn "replaced legacy managed link $target"
+  elif [[ -e "$target" || -L "$target" ]]; then
+    first_line=""
+    if [[ -f "$target" ]]; then
+      IFS= read -r first_line < "$target" || true
+    fi
+    if [[ "$first_line" != '<!-- dotfiles-managed: composed global agent instructions -->' ]]; then
+      if ! backup_path "$target"; then
+        rm -f "$temp_file"
+        record_error "Could not back up pre-existing $target"
+        return 1
+      fi
       log_warn "backed up pre-existing $target"
     fi
   fi
-  run_cmd "Link $target -> $dest" ln -sfn "$dest" "$target"
+
+  if ! mv "$temp_file" "$target"; then
+    rm -f "$temp_file"
+    record_error "Could not install composed agent file $target"
+    return 1
+  fi
+  log_info "Composed $target from $(basename "$shared_source") + $(basename "$harness_source")"
 }
 
 ensure_claude_skill_dir() {
@@ -142,8 +194,11 @@ sync_claude_skill_links() {
 ensure_agent_surface() {
   log_info "Agent surface: global skills + instructions"
   local agents_dir="$DOTFILES_DIR/agents"
+  local shared_source="$agents_dir/SHARED.global.md"
+  local codex_source="$agents_dir/AGENTS.global.md"
+  local claude_source="$agents_dir/CLAUDE.global.md"
 
-  if [[ ! -f "$agents_dir/AGENTS.global.md" || ! -x "$agents_dir/skillctl" || ! -d "$agents_dir/skills" ]]; then
+  if [[ ! -f "$shared_source" || ! -f "$codex_source" || ! -f "$claude_source" || ! -x "$agents_dir/skillctl" || ! -d "$agents_dir/skills" ]]; then
     record_error "Agent surface source is incomplete under $agents_dir"
     return 0
   fi
@@ -151,13 +206,13 @@ ensure_agent_surface() {
   agent_mkdir_p "$HOME/.claude"
   agent_mkdir_p "$HOME/.codex"
   sync_claude_skill_links "$agents_dir/skills"
-  link_agent_file "$HOME/.claude/CLAUDE.md" "$agents_dir/AGENTS.global.md"
-  link_agent_file "$HOME/.codex/AGENTS.md" "$agents_dir/AGENTS.global.md"
+  compose_agent_file "$HOME/.claude/CLAUDE.md" "$shared_source" "$claude_source" "$codex_source"
+  compose_agent_file "$HOME/.codex/AGENTS.md" "$shared_source" "$codex_source" "$codex_source"
 
   if command_exists python3; then
     run_cmd "Sync Codex skill links + yaml" python3 "$agents_dir/skillctl" sync
   else
     log_warn "python3 not found; skipping skillctl sync (Codex skill links + yaml)"
   fi
-  log_ok "agent surface linked"
+  log_ok "agent surface refreshed"
 }
