@@ -1,0 +1,28 @@
+version = 1
+machine = "example"
+
+[inventory]
+roots = ["$HOME", "/var", "/opt", "/srv", "/tmp", "/var/tmp"]
+min_report_bytes = 1073741824
+min_capacity_bytes = 16777216
+
+[cargo]
+search_roots = ["$HOME", "/tmp", "/var/tmp"]
+exclude_names = [".git", "node_modules", "site-packages", "Trash"]
+
+[codex]
+sessions_root = "$HOME/.codex/sessions"
+archive_root = "$HOME/.local/share/reclaim-storage/codex"
+retention_days = 7
+
+[[candidates]]
+id = "trash"
+path = "$HOME/.local/share/Trash/files"
+category = "trash"
+recreation = "May contain the last recovery copy; permanent emptying needs an explicit decision."
+
+[[candidates]]
+id = "xdg-cache"
+path = "$HOME/.cache"
+category = "network-cache"
+recreation = "Applications recreate it; some entries require downloads."
