@@ -158,7 +158,7 @@
 | Keybind | Mode | Action |
 |---------|------|--------|
 | `<leader>md` | Normal | Toggle Markdown rendering globally (`:RenderMarkdown toggle`) |
-| `<leader>mt` | Normal | Toggle custom visual tables in the current buffer; when off, RenderMarkdown uses its native tables (`:MarkdownTablesToggle`) |
+| `<leader>mt` | Normal | Toggle custom visual tables in the current buffer; they are off by default, with RenderMarkdown native tables active (`:MarkdownTablesToggle`) |
 | `<CR>` on heading | Normal | Toggle the heading section fold |
 | `<leader>mf` | Normal | Fold all Markdown heading sections |
 | `<leader>mu` | Normal | Unfold all Markdown heading sections |
