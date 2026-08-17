@@ -21,6 +21,7 @@ Use repo artifacts, not chat, as durable context for readers who lack this conve
 ## Shell & Checkout Hygiene
 
 - Prefer `rg`/`fd` and `uv`/`pnpm` unless the repo requires otherwise.
+- On Linux, keep agent-created files out of `/dev/shm`; use `/tmp` for temporary work. Reserve `/dev/shm` for application-managed shared memory.
 - Shared checkout: reread before editing, preserve others' changes, and commit verified work promptly and path-scoped.
 
 ## Dev Server where appropriates
