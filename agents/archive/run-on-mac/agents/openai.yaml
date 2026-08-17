@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run on Mac"
+  short_description: "Control Mac tasks and remote monolith desktops"
+  default_prompt: "Use $run-on-mac to run this on my Mac or open a monolith desktop there."

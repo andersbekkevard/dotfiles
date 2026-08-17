@@ -35,3 +35,6 @@ commit message that moves it.
 - `gemma-dev` — Google Gemma development guidance formerly installed directly
   in Codex. Archived by Anders 2026-07-13 while pruning the implicit skill
   surface.
+- `run-on-mac` — machine-local Mac SSH, file transfer, port-forwarding, and
+  loopback-only remote-desktop helpers. Archived by Anders 2026-08-17 as a
+  durable copy without projecting it into any agent harness.
