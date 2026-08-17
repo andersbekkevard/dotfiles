@@ -604,6 +604,57 @@ test_dry_run_privileged_plan() {
   return 0
 }
 
+test_control_europa_desktop_wrapper() {
+  local fake_home fake_bin capture helper_dir wrapper
+  fake_home="$(mktemp -d)"
+  fake_bin="$fake_home/bin"
+  capture="$fake_home/capture"
+  helper_dir="$fake_home/dotfiles/agents/skills/desk/control-europa-desktop/scripts"
+  wrapper="$REPO_ROOT/scripts/.local/bin/control-europa-desktop"
+  mkdir -p "$fake_bin" "$helper_dir"
+
+  cat >"$fake_bin/hostname" <<'EOF'
+#!/bin/sh
+printf 'mac-test\n'
+EOF
+  cat >"$fake_bin/ssh" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$@" >"$CAPTURE"
+EOF
+  chmod +x "$fake_bin/hostname" "$fake_bin/ssh"
+
+  HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    "$wrapper"
+  assert_eq "$(cat "$capture")" "$(printf '%s\n' \
+    -T \
+    -o BatchMode=yes \
+    -o ConnectTimeout=10 \
+    -o StrictHostKeyChecking=yes \
+    europa \
+    '/home/anders/.local/bin/control-europa-desktop open ')"
+
+  cat >"$fake_bin/hostname" <<'EOF'
+#!/bin/sh
+printf 'europa\n'
+EOF
+  cat >"$helper_dir/control-europa-desktop" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$1" >"$HELPER_CAPTURE"
+EOF
+  chmod +x "$fake_bin/hostname" "$helper_dir/control-europa-desktop"
+
+  HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" HELPER_CAPTURE="$capture" \
+    "$wrapper" close
+  assert_eq "$(cat "$capture")" close
+
+  if HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" \
+      "$wrapper" invalid >/dev/null 2>&1; then
+    fail "control-europa-desktop accepted an invalid operation"
+  fi
+
+  rm -rf "$fake_home"
+}
+
 test_runtime_path_defaults
 test_profile_contract
 test_no_machine_specific_home_paths
@@ -622,4 +673,5 @@ test_fnm_entrypoint_stability
 test_dry_run_privileged_plan
 test_dry_run_on_toolless_machine
 test_claudex_environment_isolation
+test_control_europa_desktop_wrapper
 printf 'bootstrap contracts: ok\n'
