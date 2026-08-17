@@ -587,16 +587,4 @@ function M.toggle()
 	vim.notify("Visual Markdown tables " .. (custom_enabled and "disabled" or "enabled"))
 end
 
-function M.attach(bufnr)
-	vim.api.nvim_create_autocmd("CursorMoved", {
-		buffer = bufnr,
-		callback = function()
-			if active or vim.api.nvim_get_current_buf() ~= bufnr or vim.api.nvim_get_mode().mode ~= "n" then
-				return
-			end
-			open(bufnr, vim.api.nvim_win_get_cursor(0)[1])
-		end,
-	})
-end
-
 return M

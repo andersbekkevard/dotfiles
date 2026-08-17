@@ -162,6 +162,7 @@
 | `<CR>` on heading | Normal | Toggle the heading section fold |
 | `<leader>mf` | Normal | Fold all Markdown heading sections |
 | `<leader>mu` | Normal | Unfold all Markdown heading sections |
+| `j` / `k` into a rendered table | Normal | Enter the read-only table lens and move by visual table row; other cursor movement stays in the editable Markdown source buffer |
 | `i` / `a` / `I` / `A` in table lens | Normal | Edit the source cell at the rendered cursor position; return to the lens on `InsertLeave` |
 | `q` / `<Esc>` in table lens | Normal | Leave the table lens above the source table |
 | `:w` / `:wq` in table lens | Command | Write the underlying Markdown file; `:wq` then closes Neovim normally |
