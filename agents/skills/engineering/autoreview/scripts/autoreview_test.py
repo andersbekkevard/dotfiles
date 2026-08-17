@@ -105,10 +105,7 @@ class AutoreviewCursorTests(unittest.TestCase):
 
 class AutoreviewPriorityTests(unittest.TestCase):
     def test_default_priority_is_p0(self) -> None:
-        with (
-            mock.patch.object(sys, "argv", ["autoreview"]),
-            mock.patch.dict(os.environ, {}, clear=True),
-        ):
+        with mock.patch.object(sys, "argv", ["autoreview"]):
             args = AUTOREVIEW.parse_args()
         self.assertEqual(args.max_priority, "P0")
 
@@ -120,25 +117,23 @@ class AutoreviewPriorityTests(unittest.TestCase):
         self.assertIn("below the requested P0", report["overall_explanation"])
 
     def test_required_finding_is_checked_after_priority_filtering(self) -> None:
-        args = argparse.Namespace(engine="codex", max_priority="P0")
-        with (
-            mock.patch.object(
-                AUTOREVIEW,
-                "run_engine",
-                return_value=json.dumps(DRAFT_REPORT),
-            ),
-            self.assertRaisesRegex(
-                SystemExit,
-                "required finding text not found",
-            ),
+        args = argparse.Namespace(
+            engine="codex",
+            max_priority="P0",
+        )
+        with mock.patch.object(
+            AUTOREVIEW,
+            "run_engine",
+            return_value=json.dumps(DRAFT_REPORT),
         ):
-            AUTOREVIEW.run_reviewer(
-                args,
-                Path.cwd(),
-                "prompt",
-                {"draft.js"},
-                ["Draft finding"],
-            )
+            with self.assertRaisesRegex(SystemExit, "required finding text not found"):
+                AUTOREVIEW.run_reviewer(
+                    args,
+                    Path.cwd(),
+                    "prompt",
+                    {"draft.js"},
+                    ["Draft finding"],
+                )
 
 
 class AutoreviewSecretScannerTests(unittest.TestCase):
