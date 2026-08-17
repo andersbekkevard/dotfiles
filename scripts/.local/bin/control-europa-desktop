@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly EUROPA_HOST="europa"
+readonly LOCAL_HELPER="$HOME/dotfiles/agents/skills/desk/control-europa-desktop/scripts/control-europa-desktop"
+readonly REMOTE_HELPER="/home/anders/.local/bin/control-europa-desktop"
+
+usage() {
+  printf 'usage: %s [open|status|close]\n' "${0##*/}" >&2
+}
+
+die() {
+  printf 'control-europa-desktop: %s\n' "$*" >&2
+  exit 1
+}
+
+if (( $# > 1 )); then
+  usage
+  exit 2
+fi
+
+case "${1:-open}" in
+  open|status|close) operation="${1:-open}" ;;
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+if [[ "$(hostname -s)" == "$EUROPA_HOST" ]]; then
+  [[ -x "$LOCAL_HELPER" ]] || die "Europa helper is missing: $LOCAL_HELPER"
+  exec "$LOCAL_HELPER" "$operation"
+fi
+
+command -v ssh >/dev/null 2>&1 || die "ssh is not installed"
+remote_command=$(printf '%q ' "$REMOTE_HELPER" "$operation")
+
+exec ssh \
+  -T \
+  -o BatchMode=yes \
+  -o ConnectTimeout=10 \
+  -o StrictHostKeyChecking=yes \
+  "$EUROPA_HOST" \
+  "$remote_command"
