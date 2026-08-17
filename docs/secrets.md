@@ -34,3 +34,10 @@ endpoint is not authoritative for this token type. Required permissions and the
 safe operating procedure live in the global `personal-edge` skill. Tunnel
 tokens and workload-specific, read-only R2 credentials are derived operational
 secrets and must never be committed or echoed.
+
+Temporary public-review URLs are recorded and expired by a persistent systemd
+user timer on Europa. The timer sources Europa's local `~/.secrets` at runtime;
+expiry state and receipts live under `~/.local/state/personal-edge/` and contain
+provider resource identifiers, never the API token itself. The tracked
+implementation and operating procedure live in the global `personal-edge`
+skill.

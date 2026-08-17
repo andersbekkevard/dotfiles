@@ -8,7 +8,8 @@ description: Share local HTTP services and operate bekkevard.me. Use when access
 Treat private forwarding, public publishing, inbound mail, and outbound mail as
 separate native lanes. Private SSH forwarding is the default for HTTP access.
 Use public DNS only when the user explicitly asks to publish to the web or make
-a durable URL.
+a URL. Public review URLs expire after 24 hours by default; skip expiry only
+when the user explicitly requests a durable or production endpoint.
 
 ## Run
 
@@ -35,7 +36,9 @@ a durable URL.
    - forward: live SSH process, intended loopback listener, expected local
      application response on the consumer machine;
    - publish: connected Cloudflare tunnel, intended DNS and ingress, valid
-     HTTPS, expected local application response;
+     HTTPS, expected local application response, and either a Europa-owned
+     expiry record with a healthy timer or an explicit durable/production
+     instruction;
    - cleanup: owned exact DNS record and requested ingress absent, public
      hostname no longer reaches the local origin, wildcard fallback inspected
      and reported, unrelated routes intact;
