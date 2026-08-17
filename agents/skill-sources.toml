@@ -40,6 +40,11 @@ preserve = [
   "Keep disable-model-invocation=true so humanizer remains user-invoked in this global skill surface.",
 ]
 
+[skills.show-me]
+local_path = "agents/skills/desk/show-me"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/humanlayer/skills.git", ref = "main", path = "plugins/show-me/skills/show-me" }
+
 [skills.obsidian-markdown]
 local_path = "agents/skills/desk/obsidian-markdown"
 tracking = "tracked"
