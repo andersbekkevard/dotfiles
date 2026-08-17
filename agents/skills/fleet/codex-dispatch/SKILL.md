@@ -1,7 +1,7 @@
 ---
 name: codex-dispatch
-description: Dispatch Codex from a Claude or Fable orchestrator. Invoke before every Claude/Fable `codex exec`, foreground or detached; when polling lane liveness; or when recovering a dead, hung, or quota-blocked lane.
-disable-codex-model-invocation: true
+description: Dispatch and supervise an explicitly requested Codex run from Claude or Fable.
+disable-model-invocation: true
 ---
 
 # Codex Dispatch — dispatching and supervising Codex runs
@@ -9,6 +9,18 @@ disable-codex-model-invocation: true
 `codex-dispatch` owns every Claude/Fable `codex exec`; GPT agents use native
 subagent tools. A **lane** is a detached run with a prompt file, log, and
 sentinel.
+
+## Choose the model
+
+- If Anders names a model, use it. If he omits the reasoning effort, use
+  `high`. This branch is complete: skip the routing reference.
+- Otherwise use `gpt-5.6-terra` with `high` reasoning effort. This is the safe
+  default for an ordinary bounded investigation, implementation, or review.
+- When Terra is not a clear fit, or the cost/quality tradeoff matters, read
+  [`references/model-routing.md`](references/model-routing.md) before
+  dispatching. The reference owns the extended routing rules.
+- Pass the selected model and effort explicitly on every invocation; never
+  inherit either from `~/.codex/config.toml`.
 
 ## Every dispatch — foreground or lane
 
@@ -27,10 +39,10 @@ sentinel.
 - After 3–5s, confirm the log has bytes (`wc -c`). A tiny dead log means
   the dispatch itself failed — read it before assuming the run is live.
 - Regular mode only: never fast mode, never priority service tier. Apply the
-  `model-routing` choice explicitly with `-m <model>` and
-  `-c model_reasoning_effort="<effort>"`; never inherit model or effort from
-  `~/.codex/config.toml`. For reviews, use `codex exec review` so the same
-  explicit model, effort, and `-o` sentinel contract remains available.
+  chosen model with `-m <model>` and
+  `-c model_reasoning_effort="<effort>"`. For reviews, use
+  `codex exec review` so the same explicit model, effort, and `-o` sentinel
+  contract remains available.
 - Foreground runs may add `2>/dev/null` — codex's thinking stream bloats
   context, and the result lives in the `-o` file. Drop the suppression only
   to debug a failing dispatch.
@@ -73,8 +85,8 @@ verbatim.
    always-available floor:
 
 ```bash
-CODEX_MODEL=gpt-5.6-terra # replace with the model selected by model-routing
-CODEX_EFFORT=high         # replace with its selected effort
+CODEX_MODEL=gpt-5.6-terra # replace when Anders or the routing reference selects another model
+CODEX_EFFORT=high
 
 if command -v setsid >/dev/null 2>&1; then
   setsid codex exec -m "$CODEX_MODEL" -c "model_reasoning_effort=\"$CODEX_EFFORT\"" \

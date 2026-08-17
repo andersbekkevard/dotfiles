@@ -8,26 +8,15 @@ Write user-facing explanations in clear, concise language without reducing techn
 
 For design questions, discuss the shape first; implement only when asked.
 
+Work in the current session by default. Use subagents or external model
+dispatch only when Anders explicitly requests delegation.
+
 When Anders says “open in Comet,” use the CLI only: `open -a "Comet" <url>`.
 
 
 ## Repo as Shared Memory
 
 Use repo artifacts, not chat, as durable context for readers who lack this conversation. Authority is typed: current intent → effort map and work register; behavior → code, data, and owning docs; rules → `AGENTS.md`; rationale → ADRs. Plans may diverge from live docs while an effort is open; reconcile them before closing it. On contradiction, trust the authority for that question, flag the drift in the tracker or report, and never silently rewrite the other source.
-
-## Delegation
-
-If delegating, route the GPT workers by work shape: Luna with `high` reasoning effort for high-volume, routine, and trivial work; Terra with `high` for scoped implementation; Sol with `medium` for high-judgment work; and Sol with `high` for difficult high-judgment work. This keeps routing efficient by default and reserves maximum performance for when it is needed.
-
-Use your judgment to choose the model and reasoning effort when delegating to subagents.
-
-Use subagents as context firewalls where appropriate. At execution break-even, delegate independent low-signal work to preserve clean Sol context and reduce drift. Give each lane one terminal deliverable; serialize shared files, decisions, and prerequisites.
-
-Every GPT worker turn is typed: use `spawn_agent` with explicit `model`, `reasoning_effort`, `fork_turns: "none"`, and a compact handoff. Steer ongoing turns with `send_message`; continue any ended worker lane with a fresh typed `spawn_agent` using an explicit model and reasoning effort. `followup_task` resumes the worker as parent Sol, wasting scarce, higher-usage Sol tokens on work deliberately routed to a worker model.
-
-The turn trace is authoritative. If it shows model drift, orchestration has failed: stop the lane and correct the dispatch or continuation pattern before retrying.
-
-Codex delegates natively; Claude and Fable route model choice through `model-routing`.
 
 ## Shell & Checkout Hygiene
 

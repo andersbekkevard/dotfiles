@@ -230,10 +230,6 @@ tracking = "local"
 local_path = "agents/skills/meta/lint"
 tracking = "local"
 
-[skills.model-routing]
-local_path = "agents/skills/fleet/model-routing"
-tracking = "local"
-
 [skills.pro-brief]
 local_path = "agents/skills/fleet/pro-brief"
 tracking = "local"
