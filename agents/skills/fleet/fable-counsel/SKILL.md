@@ -134,12 +134,34 @@ uv run "$SKILL_DIR/scripts/counsel.py" "$COUNSEL_DIR" \
 
 Pass the selected mode explicitly as `--mode propose` or `--mode challenge`;
 the runner has no mode default. Repeat evidence flags as needed. `high` effort
-is the default; use `--effort low|medium|high|xhigh|max` when warranted. The
-runner reports token telemetry without printing packet contents, requires
-Claude Code subscription authentication, strips API and cloud-provider routing,
-and invokes Fable from an isolated neutral directory with tools disabled. The
-packet is complete when every item earns its fidelity and Fable can form an
-informed view without repository access.
+is the default; use `--effort low|medium|high|xhigh|max` when warranted.
+
+Open execution is an explicit Anders-only authorization. Pass `--open` only
+when Anders directly says `open`, `allow tool calls`, `use tools freely`, or
+equivalent language that clearly authorizes unrestricted tool use. Never infer
+open execution from task size, ambiguity, a request to investigate, missing
+evidence, or the likely quality benefit. The explicit form is:
+
+```sh
+uv run "$SKILL_DIR/scripts/counsel.py" "$COUNSEL_DIR" \
+  --root . \
+  --mode propose \
+  --open
+```
+
+With `--open`, the runner keeps Claude Code safe mode, disables MCP tools and
+customizations, runs from `--root`, enables the default built-in tools, and
+passes `--dangerously-skip-permissions`. It imposes no tool-call or turn limit;
+Fable decides how many calls the judgment needs. Provider, runtime, context,
+and interruption limits still apply. Without `--open`, the runner preserves the
+default packet contract: it invokes Fable from an isolated neutral directory
+with tools disabled.
+
+In both forms, the runner reports access and token telemetry without printing
+packet contents, requires Claude Code subscription authentication, and strips
+API and cloud-provider routing. The packet is complete when every item earns
+its fidelity and Fable can form an informed view; open execution may verify or
+extend that evidence with tools.
 
 When both views could materially change a consequential decision, freeze the
 shared evidence and run two consultations in separate work directories. Keep
@@ -150,8 +172,9 @@ consultations, not a third mode.
 Read the note and verify that Fable reconstructed the user's decision before
 comparing Sol, stated its own preferred direction, tested the causal case,
 considered a credible missing alternative, and labeled each material factual
-premise as `[packet-grounded]`, `[inference]`, or `[model-prior]`. Treat a missing
-element as an explicit limitation rather than silently upgrading the counsel.
+premise as `[packet-grounded]`, `[inference]`, or `[model-prior]`; open execution
+also uses `[tool-grounded]` for direct tool observations. Treat a missing element
+as an explicit limitation rather than silently upgrading the counsel.
 Reconsider the direction and continue with the best view. End the response by
 reproducing the runner's `Fable Council mode` line verbatim. When counsel
 contradicts a fact you directly observed, recheck the source and keep factual

@@ -382,7 +382,8 @@ print(response, end="")
             result.stdout,
             (
                 f"Counsel: {self.counsel.resolve()}\n"
-                f"Fable Council mode: challenge | prompt: {prompt_tokens:,} tokens\n"
+                "Fable Council mode: challenge | access: packet | "
+                f"prompt: {prompt_tokens:,} tokens\n"
             ).replace(",", " "),
         )
         calls = [json.loads(line) for line in log.read_text().splitlines()]
@@ -398,8 +399,36 @@ print(response, end="")
         self.assertIn("--strict-mcp-config", invocation)
         self.assertNotIn("--setting-sources", invocation)
         self.assertEqual(invocation[invocation.index("--tools") + 1], "")
+        self.assertNotIn("--dangerously-skip-permissions", invocation)
         self.assertEqual(invocation[invocation.index("--model") + 1], "claude-fable-5")
         self.assertEqual(invocation[invocation.index("--effort") + 1], "high")
+
+    def test_open_runner_uses_repo_root_and_unrestricted_builtin_tools(self) -> None:
+        environment, log = self.fake_claude_environment()
+        result = self.run_packet("--open", dry_run=False, env=environment)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.counsel.read_text(), "intercepted counsel")
+        self.assertIn("Access: open", self.output.read_text())
+        self.assertIn("as many tool calls", self.output.read_text())
+        self.assertIn("[tool-grounded]", self.output.read_text())
+
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0]["cwd"], str(self.root.resolve()))
+        self.assertEqual(calls[1]["cwd"], str(self.root.resolve()))
+        invocation = calls[1]["args"]
+        self.assertIn("--safe-mode", invocation)
+        self.assertIn("--strict-mcp-config", invocation)
+        self.assertIn("--disallowedTools", invocation)
+        self.assertEqual(invocation[invocation.index("--tools") + 1], "default")
+        self.assertIn("--dangerously-skip-permissions", invocation)
+        self.assertNotIn("--permission-mode", invocation)
+        self.assertIn("Fable Council mode: challenge | access: open |", result.stdout)
+
+        manifest = json.loads(
+            (self.archive_dirs()[0] / "manifest.json").read_text()
+        )
+        self.assertEqual(manifest["access"], "open")
 
     def test_completed_run_is_privately_archived_with_codex_attribution(self) -> None:
         environment, _ = self.fake_claude_environment()
@@ -431,9 +460,10 @@ print(response, end="")
             tiktoken.get_encoding("o200k_base").encode(self.output.read_text())
         )
 
-        self.assertEqual(manifest["schema_version"], 3)
+        self.assertEqual(manifest["schema_version"], 4)
         self.assertEqual(manifest["status"], "completed")
         self.assertEqual(manifest["mode"], "challenge")
+        self.assertEqual(manifest["access"], "packet")
         self.assertEqual(manifest["effort"], "high")
         self.assertEqual(manifest["prompt_tokens"], prompt_tokens)
         self.assertEqual(
@@ -553,7 +583,9 @@ print(response, end="")
         for mode, process in processes:
             stdout, stderr = process.communicate()
             self.assertEqual(process.returncode, 0, stderr)
-            self.assertIn(f"Fable Council mode: {mode} | prompt: ", stdout)
+            self.assertIn(
+                f"Fable Council mode: {mode} | access: packet | prompt: ", stdout
+            )
 
         archives = self.archive_dirs()
         self.assertEqual(len(archives), 2)
@@ -592,6 +624,7 @@ print(response, end="")
             "--redacted",
             "--digest",
             "--effort",
+            "--open",
             "--dry-run",
             "repo-model.md",
         ):
@@ -607,6 +640,19 @@ print(response, end="")
         self.assertIn(
             "reproducing the runner's `Fable Council mode` line verbatim", skill
         )
+
+    def test_skill_requires_explicit_anders_authorization_for_open_access(self) -> None:
+        skill = SKILL.read_text()
+        for contract in (
+            "Open execution is an explicit Anders-only authorization",
+            "Pass `--open` only",
+            "`allow tool calls`",
+            "Never infer",
+            "open execution from task size",
+            "`--dangerously-skip-permissions`",
+            "no tool-call or turn limit",
+        ):
+            self.assertIn(contract, skill)
 
     def test_skill_requires_decision_local_model_and_causal_challenge(self) -> None:
         skill = SKILL.read_text()

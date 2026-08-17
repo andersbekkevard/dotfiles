@@ -37,8 +37,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         usage="%(prog)s WORK_DIR [options]",
         description=(
-            "WORK_DIR: brief.md; optional intent, anchors, repo-model.md; "
-            "writes prompt.md and fable.md. Evidence flags repeat."
+            "WORK_DIR: brief.md plus optional intent/anchors/repo-model.md; "
+            "writes prompt.md and fable.md."
         ),
         add_help=False,
     )
@@ -46,16 +46,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "work_dir",
         metavar="WORK_DIR",
-        help="Counsel work directory.",
+        help="Input/output directory.",
     )
     parser.add_argument(
-        "--root", default=".", metavar="DIR", help="Repository root (cwd)."
+        "--root", default=".", metavar="DIR", help="Repository root."
     )
     parser.add_argument(
         "--mode",
         choices=MODES,
         required=True,
-        help="Counsel mode.",
+        help="propose or challenge.",
     )
     parser.add_argument(
         "--doc",
@@ -90,12 +90,17 @@ def parse_args() -> argparse.Namespace:
         choices=EFFORTS,
         default="high",
         metavar="LEVEL",
-        help="low|medium|high|xhigh|max (high).",
+        help="Reasoning effort (high).",
+    )
+    parser.add_argument(
+        "--open",
+        action="store_true",
+        help="Enable unrestricted repository tools.",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Write prompt.md without Claude.",
+        help="Compose only; do not invoke Claude.",
     )
     return parser.parse_args()
 
@@ -233,12 +238,13 @@ def begin_archive(
     run_dir.mkdir(mode=0o700)
     copy_private(prompt, run_dir / "prompt.md")
     manifest: dict[str, object] = {
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": run_id,
         "created_at": created_at,
         "finished_at": None,
         "status": "running",
         "mode": args.mode,
+        "access": "open" if args.open else "packet",
         "effort": args.effort,
         "prompt_tokens": packet["prompt_tokens"],
         "prompt_sections": packet["prompt_sections"],
@@ -289,6 +295,8 @@ def compose(
     ):
         for value in values:
             command.extend((flag, value))
+    if args.open:
+        command.append("--open")
     result = subprocess.run(command, text=True, capture_output=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stderr)
@@ -359,19 +367,24 @@ def invoke(
     effort: str,
     environment: dict[str, str],
     cwd: Path,
+    open_access: bool,
 ) -> None:
     fd, temp_name = tempfile.mkstemp(prefix=f".{output.name}.", dir=output.parent)
     try:
         with prompt.open("rb") as prompt_handle, os.fdopen(fd, "wb") as output_handle:
-            result = subprocess.run(
+            command = [
+                "claude",
+                "--safe-mode",
+                "--strict-mcp-config",
+                "--disallowedTools",
+                "mcp__*",
+                "--tools",
+                "default" if open_access else "",
+            ]
+            if open_access:
+                command.append("--dangerously-skip-permissions")
+            command.extend(
                 [
-                    "claude",
-                    "--safe-mode",
-                    "--strict-mcp-config",
-                    "--disallowedTools",
-                    "mcp__*",
-                    "--tools",
-                    "",
                     "--print",
                     "--no-session-persistence",
                     "--output-format",
@@ -380,7 +393,10 @@ def invoke(
                     "claude-fable-5",
                     "--effort",
                     effort,
-                ],
+                ]
+            )
+            result = subprocess.run(
+                command,
                 cwd=cwd,
                 env=environment,
                 stdin=prompt_handle,
@@ -419,10 +435,15 @@ def main() -> int:
 
     try:
         environment = sanitized_environment()
-        with tempfile.TemporaryDirectory(prefix="fable-counsel-run.") as neutral:
-            neutral_dir = Path(neutral)
-            verify_subscription(environment, neutral_dir)
-            invoke(prompt, output, args.effort, environment, neutral_dir)
+        if args.open:
+            run_cwd = Path(args.root).expanduser().resolve()
+            verify_subscription(environment, run_cwd)
+            invoke(prompt, output, args.effort, environment, run_cwd, True)
+        else:
+            with tempfile.TemporaryDirectory(prefix="fable-counsel-run.") as neutral:
+                run_cwd = Path(neutral)
+                verify_subscription(environment, run_cwd)
+                invoke(prompt, output, args.effort, environment, run_cwd, False)
         copy_private(output, run_dir / "fable.md")
     except BaseException as exc:
         manifest.update(
@@ -448,6 +469,7 @@ def main() -> int:
     print(f"Counsel: {output}")
     print(
         f"Fable Council mode: {args.mode} | "
+        f"access: {'open' if args.open else 'packet'} | "
         f"prompt: {format_int(packet['prompt_tokens'])} tokens"
     )
     return 0
