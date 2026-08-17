@@ -38,3 +38,6 @@ commit message that moves it.
 - `run-on-mac` — machine-local Mac SSH, file transfer, port-forwarding, and
   loopback-only remote-desktop helpers. Archived by Anders 2026-08-17 as a
   durable copy without projecting it into any agent harness.
+- `model-routing` — Claude/Fable fleet-routing policy. Archived 2026-08-17
+  after its simplified Codex rules moved behind progressive disclosure in the
+  user-invoked `codex-dispatch` skill.
