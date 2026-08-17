@@ -263,3 +263,10 @@ notes = [
 [skills.personal-edge]
 local_path = "agents/skills/desk/personal-edge"
 tracking = "local"
+
+[skills.refund-chatgpt-subscriptions]
+local_path = "agents/skills/desk/refund-chatgpt-subscriptions"
+tracking = "local"
+notes = [
+  "Private machine-local skill contents are intentionally gitignored; the tracked placeholder preserves the catalog slot.",
+]
