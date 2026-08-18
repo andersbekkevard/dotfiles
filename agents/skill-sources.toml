@@ -117,6 +117,7 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
 preserve = [
   "Minimal-delta rewrite of upstream (2026-07-11). Intentional deltas: Markdown-only map and investigation tickets in the repo planning home; model-invoked with a land-a-conversation trigger and invocation mode (with done-when criterion); one-ticket-per-session scoped to fog-heavy exploration (record-on-map is the guard); Decisions-so-far append-only with supersession; tickets only for questions that must wait (Land step 3, Work step 5); type/mode/status/claim/blockers live in ticket metadata; /prototype and /setup-matt-pocock-skills references removed; closing When-the-way-is-clear section hands off to /to-spec then /to-tickets for claimable execution.",
+  "Conversation-register delta (2026-08-18, desired divergence — proven in the Seatankers arcana-dogfood session): new Conversation section (skill binds the artifacts, never the dialogue; natural prose; agent as thinking partner; land continuously; sweep unlanded residue before stopping); /grilling and /domain-modeling choreography removed from Chart steps 1-2, Work step 3, and the Grilling ticket type (type/mode system unchanged); one-ticket-per-session pacing superseded by conversation-led pacing (record-on-map remains the guard). Do not reintroduce interview scripts or session pacing from upstream.",
 ]
 
 [skills.writing-for-agents]

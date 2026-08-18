@@ -11,6 +11,10 @@ The destination varies per effort, and naming it is the first act of charting �
 
 Wayfinder is **planning** by default: each ticket resolves a decision, and the map is done when the way is clear — nothing left to decide before someone goes and does the thing. The pull to just do the work is usually the signal you've reached the edge of the map and it's time to hand off. An effort can override this in its **Notes** — carrying execution into the map itself — but absent that, produce decisions, not deliverables.
 
+## Conversation
+
+Wayfinder binds the artifacts, never the dialogue. Sessions are natural flowing prose conversation — the agent is a thinking partner who reflects, pushes back, and sharpens. The procedure lives entirely in the landing: settled decision → map line + ticket, discovered fact → asset, committed as it happens. Before stopping, sweep the conversation for unlanded residue.
+
 ## Refer by name
 
 Every map and ticket has a **name** — its title. In everything the human reads — narration, the map's Decisions-so-far — refer to it by that name as a Markdown link, never by a bare path or slug.
@@ -81,7 +85,7 @@ Every ticket is either **HITL** — human in the loop, worked *with* a human who
 
 - **Research** (AFK): Reading documentation, third-party APIs, or local resources like knowledge bases. Creates a markdown summary as a linked asset. Use when knowledge outside the current working directory is required.
 - **Prototype** (HITL): Raise the fidelity of the discussion by making a cheap, rough, concrete artifact to react to — an outline, a rough take, a stub, or UI/logic code. Links the prototype as an asset. Use when "how should it look" or "how should it behave" is the key question.
-- **Grilling** (HITL): Conversation via the /grilling and /domain-modeling skills, one question at a time. The default case.
+- **Grilling** (HITL): Resolved in live conversation with the human. The default case.
 - **Task** (HITL or AFK): Manual work that must happen before a *decision* can be made — nothing to decide, prototype, or research, but the discussion is blocked until it's done. Signing up for a service so its API can be judged, provisioning access, moving data so its shape can be seen. This is the one type that *does* rather than decides — and it earns its place by unblocking a decision, not by delivering the destination. The agent drives it alone where it can (AFK); otherwise it hands the human a precise checklist (HITL). Resolved when the work is done; the answer records what was done and any resulting facts (credentials location, new URLs, row counts) later tickets depend on.
 
 ## Fog of war
@@ -107,7 +111,7 @@ Ruling something out of scope is a scoping act, not a step on the route. When a 
 
 ## Invocation
 
-Three modes. In fog-heavy exploration, default to one ticket per session; a deadline-driven or handoff-targeted effort may resolve many per sitting once the fog is thin — the guard is recording each resolution on the map, not the pacing.
+Three modes. Resolve as much per sitting as the conversation genuinely settles — the guard is recording each resolution on the map, not the pacing.
 
 ### Land a conversation
 
@@ -123,8 +127,8 @@ Done when a stranger could read the map and know the destination, what is settle
 
 User invokes with a loose idea.
 
-1. **Name the destination.** Run a `/grilling` and `/domain-modeling` session to pin down what this map is finding its way to — the spec, decision, or change. The destination fixes the scope, so it's settled first.
-2. **Map the frontier.** Grill again, **breadth-first** this time: fan out across the whole space rather than deep on any one thread, surfacing the open decisions and the first steps takeable now. **If this surfaces no fog** — the way to the destination is already clear, the whole journey small enough for one session — you don't need a map. Stop and ask the user how they'd like to proceed.
+1. **Name the destination.** Talk it out until it's pinned — the spec, decision, or change this map is finding its way to. The destination fixes the scope, so it's settled first.
+2. **Map the frontier.** Go **breadth-first**: fan out across the whole space rather than deep on any one thread, surfacing the open decisions and the first steps takeable now. **If this surfaces no fog** — the way to the destination is already clear, the whole journey small enough for one session — you don't need a map. Stop and ask the user how they'd like to proceed.
 3. **Create the map**: Destination and Notes filled in, Decisions-so-far empty, the fog sketched into **Not yet specified**.
 4. **Create the tickets you can specify now** as Markdown files, then add their `Blocked by:` links. This sorts them into the frontier and the blocked; everything you can't yet specify stays in the fog — the **Not yet specified** section.
 5. Stop — charting the map is one session's work; do not also resolve tickets.
@@ -135,7 +139,7 @@ User invokes with a map path. A ticket is **optional** — without one, you pick
 
 1. Load the **map** — the low-res view, not every ticket body.
 2. Choose the ticket. If the user named one, use it. Otherwise take the first frontier ticket in order. **Claim it** in the ticket metadata before any work.
-3. Resolve it — **zoom as needed**: read the full body of any related or resolved ticket on demand; invoke the skills the `## Notes` block names. If in doubt, use `/grilling` and `/domain-modeling`.
+3. Resolve it — **zoom as needed**: read the full body of any related or resolved ticket on demand; invoke the skills the `## Notes` block names.
 4. Record the resolution: write its `## Answer`, mark it resolved, and **append a context pointer** to the map's Decisions-so-far.
 5. Add newly-surfaced Markdown tickets and their blocker links — but a surfaced question you can already answer in this session is answered and recorded as a decision line, not ticketed; ticket only what must wait. Graduate any fog the answer has made specifiable, clearing each graduated patch from **Not yet specified** so it lives only as its new ticket. If the answer reveals a ticket — this one or another — sits beyond the destination, **rule it out of scope** rather than resolving it on the route. If the decision invalidates other parts of the map, update or delete those tickets.
 
