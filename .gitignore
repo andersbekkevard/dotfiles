@@ -6,6 +6,9 @@ git-crypt.key
 *.key
 .claude/
 
+# Machine-specific agent skills projected by setup but never committed.
+agents/skills/.local/
+
 # Private local skill: contains Anders's subscription email candidates.
 agents/skills/desk/refund-chatgpt-subscriptions/*
 !agents/skills/desk/refund-chatgpt-subscriptions/.gitkeep

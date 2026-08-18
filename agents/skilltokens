@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 SKILLS = ROOT / "skills"
 DEFAULT_ENCODING = "o200k_base"
+LOCAL_CATEGORY = ".local"
 
 
 def ensure_tiktoken():
@@ -124,7 +125,8 @@ def collect(encoding, harness: str) -> list[SkillStats]:
         (
             d
             for cat in SKILLS.iterdir()
-            if cat.is_dir() and not cat.name.startswith(".")
+            if cat.is_dir()
+            and (not cat.name.startswith(".") or cat.name == LOCAL_CATEGORY)
             for d in cat.iterdir()
             if d.is_dir() and not d.name.startswith(".")
         ),

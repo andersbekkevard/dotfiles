@@ -23,6 +23,11 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         (self.skill / "SKILL.md").write_text(
             "---\nname: sample\ndescription: Sample skill.\n---\n\n# Sample\n"
         )
+        self.local_skill = self.root / "skills" / ".local" / "private"
+        self.local_skill.mkdir(parents=True)
+        (self.local_skill / "SKILL.md").write_text(
+            "---\nname: private\ndescription: Private skill.\n---\n\n# Private\n"
+        )
 
     def tearDown(self):
         self.temp.cleanup()
@@ -78,6 +83,28 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.assertEqual(nested_link.resolve(), self.skill.resolve())
         self.assertFalse(flat_link.exists())
         self.assertTrue(unrelated.is_dir())
+        local_link = codex_skills / ".local" / "private"
+        self.assertTrue(local_link.is_symlink())
+        self.assertEqual(local_link.resolve(), self.local_skill.resolve())
+
+    def test_local_skills_share_the_global_name_namespace(self):
+        duplicate = self.root / "skills" / ".local" / "sample"
+        duplicate.mkdir()
+        (duplicate / "SKILL.md").write_text(
+            "---\nname: sample\ndescription: Duplicate.\n---\n"
+        )
+
+        env = os.environ.copy()
+        env["HOME"] = str(self.home)
+        result = subprocess.run(
+            [str(self.skillctl), "list"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate skill names", result.stderr)
 
 
 class ClaudeSkillProjectionTest(unittest.TestCase):
@@ -91,6 +118,11 @@ class ClaudeSkillProjectionTest(unittest.TestCase):
         self.skill.mkdir(parents=True)
         (self.skill / "SKILL.md").write_text(
             "---\nname: sample\ndescription: Sample skill.\n---\n"
+        )
+        self.local_skill = self.skills / ".local" / "private"
+        self.local_skill.mkdir(parents=True)
+        (self.local_skill / "SKILL.md").write_text(
+            "---\nname: private\ndescription: Private skill.\n---\n"
         )
 
     def tearDown(self):
@@ -123,6 +155,9 @@ sync_claude_skill_links {shlex.quote(str(self.skills))}
         self.assertFalse(nested_link.exists())
         self.assertFalse(nested_link.parent.exists())
         self.assertTrue(unrelated.is_dir())
+        local_link = claude_skills / "private"
+        self.assertTrue(local_link.is_symlink())
+        self.assertEqual(local_link.resolve(), self.local_skill.resolve())
 
 
 if __name__ == "__main__":
