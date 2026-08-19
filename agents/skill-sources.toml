@@ -71,6 +71,17 @@ preserve = [
   "Local description may stay terser when the skill is user-invoked.",
 ]
 
+[skills.unslop]
+local_path = "agents/skills/engineering/unslop"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/unslop" }
+notes = [
+  "Imported from pinned commit 60c641e4fad674784b30abcf9f8915dea39df38d on 2026-08-19; main is the live drift target.",
+]
+preserve = [
+  "Keep unslop model-invoked in both Claude and Codex.",
+]
+
 [skills.codebase-design]
 local_path = "agents/skills/engineering/codebase-design"
 tracking = "tracked"
