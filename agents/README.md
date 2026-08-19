@@ -9,6 +9,10 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
 - `CLAUDE.global.md` — Claude-only additions. Setup composes the shared file
   first and the matching harness file second into `~/.codex/AGENTS.md` and
   `~/.claude/CLAUDE.md`; edit the sources, not the composed files.
+- `.local/SHARED.md`, `.local/AGENTS.md`, `.local/CLAUDE.md`: optional,
+  Git-ignored machine instructions. Setup appends shared local rules and then
+  harness-local rules after the tracked global sources. Removing an overlay
+  removes its content on the next setup run.
 - `skills/<category>/<name>/` — canonical global skills, grouped for overview:
   `flow/` (planning surface + beads substrate), `engineering/` (craft +
   review), `fleet/` (orchestration/delegation), `meta/` (the system that
@@ -47,6 +51,18 @@ which creates or repairs `~/.claude/skills/<name>`, composes
 `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, and refreshes the categorized
 Codex-generated skill projection. On a fresh machine that still needs packages,
 run the normal explicit profile instead.
+
+Machine-local instruction overlays use these optional paths:
+
+```text
+agents/.local/SHARED.md
+agents/.local/AGENTS.md
+agents/.local/CLAUDE.md
+```
+
+Run `./setup.sh restow` after adding, changing, or removing an overlay. The
+composition order is tracked shared, tracked harness, local shared, local
+harness. Later files can therefore specialize earlier rules for one machine.
 
 Do not use direct `agents/skillctl sync` as full agent setup. It does not create
 Claude per-skill symlinks or compose the top-level harness instructions.
