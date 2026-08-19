@@ -27,3 +27,12 @@ fi
 [[ -r "$HOME/.zsh/tools.zsh" ]] && source "$HOME/.zsh/tools.zsh"
 [[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 [[ -r "$HOME/.zsh/theme.zsh" ]] && source "$HOME/.zsh/theme.zsh"
+
+# Keep zoxide last so later shell configuration cannot replace its chpwd hook.
+# The interactive guard also avoids diagnostics in agent/CLI subprocesses that
+# explicitly source ~/.zshrc.
+if [[ -o interactive ]] && command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh --cmd cd)"
+  alias zi='cdi'
+  alias za='zoxide add'
+fi
