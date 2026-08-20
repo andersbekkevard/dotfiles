@@ -17,14 +17,13 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   `flow/` (planning surface + beads substrate), `engineering/` (craft +
   review), `fleet/` (orchestration/delegation), `meta/` (the system that
   maintains the system), `desk/` (personal utilities + format references).
-  Skill names are globally unique. Codex mirrors the canonical categories at
-  `~/.codex/skills/<category>/<name>`. Claude Code requires immediate children,
-  so setup flattens the same skills to `~/.claude/skills/<name>`. Per-skill
-  symlinks let root-level user and third-party skills plus Codex-managed
-  `.system/` skills survive beside them.
+  Skill names are globally unique. Setup flattens the categorized source tree
+  into immediate children at `~/.claude/skills/<name>` and
+  `~/.codex/skills/<name>`. Per-skill symlinks let root-level user and
+  third-party skills plus Codex-managed `.system/` skills survive beside them.
 - `skills/.local/<name>/` — machine-specific global skills. Git ignores this
   category, while setup projects it to `~/.claude/skills/<name>` and
-  `~/.codex/skills/.local/<name>`. `skillctl` and `skilltokens` include it;
+  `~/.codex/skills/<name>`. `skillctl` and `skilltokens` include it;
   `skillpull` excludes it because it is not repository provenance.
 - `archive/<name>/` — retired skills, kept whole but unlinked from every
   harness and excluded from all skill tooling. `archive/README.md` owns the
@@ -48,8 +47,8 @@ Use setup for the machine-level agent surface:
 
 That command skips package/runtime installers but still runs `setup/agents.sh`,
 which creates or repairs `~/.claude/skills/<name>`, composes
-`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, and refreshes the categorized
-Codex-generated skill projection. On a fresh machine that still needs packages,
+`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, and refreshes the flat Codex
+skill projection. On a fresh machine that still needs packages,
 run the normal explicit profile instead.
 
 Machine-local instruction overlays use these optional paths:

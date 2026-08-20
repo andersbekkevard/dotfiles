@@ -69,23 +69,29 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.assertNotIn("disable-codex-model-invocation", self.frontmatter())
         self.assertIn("sample: claude=model codex=model", output)
 
-    def test_sync_preserves_category_path_and_migrates_flat_link(self):
+    def test_sync_flattens_category_path_and_migrates_nested_links(self):
         codex_skills = self.home / ".codex" / "skills"
-        codex_skills.mkdir(parents=True)
-        flat_link = codex_skills / "sample"
-        flat_link.symlink_to(self.skill)
+        nested_link = codex_skills / "test" / "sample"
+        nested_link.parent.mkdir(parents=True)
+        nested_link.symlink_to(self.skill)
+        nested_local_link = codex_skills / ".local" / "private"
+        nested_local_link.parent.mkdir(parents=True)
+        nested_local_link.symlink_to(self.local_skill)
         unrelated = codex_skills / "run-on-mac"
         unrelated.mkdir()
 
         self.run_skillctl("sync")
-        nested_link = codex_skills / "test" / "sample"
-        self.assertTrue(nested_link.is_symlink())
-        self.assertEqual(nested_link.resolve(), self.skill.resolve())
-        self.assertFalse(flat_link.exists())
+        flat_link = codex_skills / "sample"
+        self.assertTrue(flat_link.is_symlink())
+        self.assertEqual(flat_link.resolve(), self.skill.resolve())
+        self.assertFalse(nested_link.exists())
+        self.assertFalse(nested_link.parent.exists())
         self.assertTrue(unrelated.is_dir())
-        local_link = codex_skills / ".local" / "private"
+        local_link = codex_skills / "private"
         self.assertTrue(local_link.is_symlink())
         self.assertEqual(local_link.resolve(), self.local_skill.resolve())
+        self.assertFalse(nested_local_link.exists())
+        self.assertFalse(nested_local_link.parent.exists())
 
     def test_local_skills_share_the_global_name_namespace(self):
         duplicate = self.root / "skills" / ".local" / "sample"

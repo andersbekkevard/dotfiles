@@ -5,7 +5,7 @@ Frontmatter in each skill's SKILL.md is the editable source of truth.
 `disable-model-invocation` controls Claude; `disable-codex-model-invocation`
 optionally overrides Codex.
 `sync` projects it into the Codex dialect (agents/openai.yaml policy blocks)
-and maintains categorized per-skill symlinks in ~/.codex/skills. Idempotent.
+and maintains flat per-skill symlinks in ~/.codex/skills. Idempotent.
 
 Modes per harness:
   model — model-invoked: description loads into every session turn.
@@ -196,7 +196,7 @@ def cmd_sync():
     changed = 0
     CODEX_SKILLS.mkdir(parents=True, exist_ok=True)
     dirs = skill_dirs()
-    desired = {CODEX_SKILLS / d.relative_to(SKILLS): d for d in dirs}
+    desired = {CODEX_SKILLS / d.name: d for d in dirs}
     skills_root = SKILLS.resolve()
 
     # Prune obsolete managed links without touching independent root entries
@@ -211,8 +211,15 @@ def cmd_sync():
             continue
         expected = desired.get(link)
         if expected is None or target != expected.resolve():
+            parent = link.parent
             link.unlink()
             changed += 1
+            while parent != CODEX_SKILLS:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
 
     for d in dirs:
         modes, _ = modes_of(d)
@@ -220,17 +227,7 @@ def cmd_sync():
             continue
         if sync_yaml(d, modes["codex"]):
             changed += 1
-        category_dir = CODEX_SKILLS / d.parent.name
-        if category_dir.is_symlink() or (
-            category_dir.exists() and not category_dir.is_dir()
-        ):
-            print(
-                f"warning: {category_dir} is not a real directory; "
-                f"skipping {d.relative_to(SKILLS)}"
-            )
-            continue
-        category_dir.mkdir(parents=True, exist_ok=True)
-        link = category_dir / d.name
+        link = CODEX_SKILLS / d.name
         if link.is_symlink():
             if link.resolve() == d.resolve():
                 continue

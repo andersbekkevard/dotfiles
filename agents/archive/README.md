@@ -7,12 +7,12 @@ under this folder is linked into `~/.claude/skills` or `~/.codex/skills`, and
 
 To archive a skill:
 
-1. `git mv agents/skills/<name> agents/archive/<name>`
+1. `git mv agents/skills/<category>/<name> agents/archive/<name>`
 2. Remove its entry from `agents/skill-sources.toml` (`skillpull validate`
    requires the manifest to match `agents/skills/` exactly).
 3. Fix any references to it in other skills' descriptions or bodies.
 4. Run `./setup.sh --layer minimal --skip-install` (or remove the two dangling
-   `~/.claude/skills/<name>` / `~/.codex/skills/<category>/<name>` links and run
+   `~/.claude/skills/<name>` / `~/.codex/skills/<name>` links and run
    `agents/skillctl sync`) so the harness links are pruned.
 
 To restore, reverse the same steps. Record why a skill was archived in the
