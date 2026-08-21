@@ -50,9 +50,7 @@ changes over time, distinguish worker inference from Anders' words, and report
 coverage gaps. A repeated quote inherited through forks counts as one piece of
 evidence.
 
-Return the reduced answer to the requesting conversation. When Anders requests
-a durable result, write only `report.md` and `manifest.json` to the agreed
-destination. Label the report as derived evidence, not project authority. Keep
+Return the reduced answer to the requesting conversation. Keep
 raw extracts and shard outputs temporary and regenerable.
 
 Done when every session in scope is accounted for and every material conclusion
