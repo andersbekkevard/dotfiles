@@ -142,6 +142,13 @@ notes = [
   "Experimental shared procedure for answering a question across scoped Codex and Claude session history.",
 ]
 
+[skills.reconstruct-sessions]
+local_path = "agents/in-progress/reconstruct-sessions"
+tracking = "local"
+notes = [
+  "Experimental reconstruction question over the shared mine-sessions corpus procedure.",
+]
+
 [skills.workflow-audit]
 local_path = "agents/in-progress/workflow-audit"
 tracking = "local"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reconstruct sessions"
+  short_description: "Rebuild what happened across sessions"
+  default_prompt: "Use $reconstruct-sessions to reconstruct what happened in this repository over the past seven days."

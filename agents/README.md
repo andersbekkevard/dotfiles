@@ -92,8 +92,8 @@ Planning is conversation-first; artifacts exist for readers, not for stages.
 `/handoff` bridges sessions anywhere. The `beads` skill is the substrate
 reference (CLI + concurrency invariants) the flow skills point at; label
 taxonomy and sync rules stay repo-owned. `/lint` is the scheduled garbage
-collector of the repo's shared memory; `/reflect` + `/dream` are the learning
-loop that proposes instruction-surface edits from observed behavior.
+collector of the repo's shared memory; `/dream` proposes instruction-surface
+edits from observed historical behavior.
 
 ## Invocation modes
 
