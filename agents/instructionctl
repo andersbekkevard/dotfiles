@@ -17,7 +17,7 @@ Inspect the tracked and machine-local inputs for global agent instructions.
   status  Show each harness, generated target, and source state. This is the default.
   verify  Show the same report and fail when a generated target is missing or stale.
 
-Repair generated targets with ./setup.sh agents.
+Repair generated targets with ./dotfiles.sh agents sync.
 EOF
 }
 
@@ -99,7 +99,7 @@ main() {
     "$AGENTS_DIR/CLAUDE.global.md" "$AGENTS_DIR/.local/CLAUDE.md" || failures=$((failures + 1))
 
   if [[ "$command" == "verify" && "$failures" -gt 0 ]]; then
-    printf '\nrepair: ./setup.sh agents\n' >&2
+    printf '\nrepair: ./dotfiles.sh agents sync\n' >&2
     return 1
   fi
   return 0

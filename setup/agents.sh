@@ -211,6 +211,103 @@ sync_claude_skill_links() {
   done
 }
 
+agent_skill_dirs() {
+  local managed_skills_dir="$DOTFILES_DIR/agents/skills"
+  local skill_dir
+
+  for skill_dir in "$managed_skills_dir"/* "$managed_skills_dir"/.local/*; do
+    [[ -d "$skill_dir" ]] || continue
+    [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
+    printf '%s\n' "$skill_dir"
+  done
+}
+
+verify_agent_skill_links() {
+  local failures=0 harness skill_dir name link target
+  local managed_skills_dir="$DOTFILES_DIR/agents/skills"
+
+  while IFS= read -r skill_dir; do
+    [[ -n "$skill_dir" ]] || continue
+    name="$(basename "$skill_dir")"
+    for harness in claude codex; do
+      link="$HOME/.$harness/skills/$name"
+      if [[ ! -L "$link" ]]; then
+        printf 'missing %s skill link: %s\n' "$harness" "$link"
+        failures=1
+        continue
+      fi
+      target="$(readlink "$link")"
+      if [[ "$target" != "$skill_dir" ]]; then
+        printf 'wrong %s skill link: %s -> %s (expected %s)\n' \
+          "$harness" "$link" "$target" "$skill_dir"
+        failures=1
+      fi
+    done
+  done < <(agent_skill_dirs)
+
+  for harness in claude codex; do
+    [[ -d "$HOME/.$harness/skills" ]] || continue
+    while IFS= read -r -d '' link; do
+      target="$(readlink "$link")"
+      case "$target" in
+        "$managed_skills_dir"/*)
+          name="$(basename "$target")"
+          if [[ "$link" != "$HOME/.$harness/skills/$name" || ! -d "$target" ]] ||
+             [[ ! -f "$target/SKILL.md" && ! -f "$target/SKILL.off.md" ]]; then
+            printf 'stale managed %s skill link: %s -> %s\n' "$harness" "$link" "$target"
+            failures=1
+          fi
+          ;;
+      esac
+    done < <(find "$HOME/.$harness/skills" -type l -print0 2>/dev/null)
+  done
+
+  return $failures
+}
+
+verify_agent_surface() {
+  local agents_dir="$DOTFILES_DIR/agents"
+  local failures=0
+
+  verify_agent_skill_links || failures=1
+
+  if [[ -x "$agents_dir/instructionctl" ]]; then
+    "$agents_dir/instructionctl" verify || failures=1
+  else
+    printf 'missing executable: %s\n' "$agents_dir/instructionctl"
+    failures=1
+  fi
+
+  if command_exists python3; then
+    python3 "$agents_dir/skillctl" verify || failures=1
+    python3 "$agents_dir/skillpull" validate || failures=1
+  else
+    printf 'python3 not found; cannot validate the skill source manifest\n'
+    failures=1
+  fi
+
+  if [[ $failures -eq 0 ]]; then
+    printf 'agents verify: ok\n'
+    return 0
+  fi
+
+  printf 'agents verify: failed\n'
+  return 1
+}
+
+status_agent_surface() {
+  local agents_dir="$DOTFILES_DIR/agents"
+
+  "$agents_dir/instructionctl" status
+  printf '\n'
+  if command_exists python3; then
+    python3 "$agents_dir/skillctl" list
+  else
+    printf 'python3 not found; cannot inspect skill invocation state\n' >&2
+    return 1
+  fi
+}
+
 ensure_agent_surface() {
   log_info "Agent surface: global skills + instructions"
   local agents_dir="$DOTFILES_DIR/agents"

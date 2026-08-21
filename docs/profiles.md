@@ -18,29 +18,34 @@ Adds Linux desktop packages and window-manager config on top of `full`. This inc
 
 ## Selection rule
 
-Normal bootstrap with `./setup.sh` requires an explicit profile. It does not auto-detect one. The maintenance shortcut `./setup.sh restow` has a fixed `full` default; pass `macos` or `linux-desktop` explicitly when restowing a platform layer.
+`./dotfiles.sh install` and `./dotfiles.sh verify` require an explicit profile;
+neither auto-detects one. `./dotfiles.sh refresh` has a fixed `full` default;
+pass `macos` or `linux-desktop` explicitly when platform configuration belongs
+in the refresh.
 
 There is no second root bootstrap script. Profile choice is part of the operator command, not something the repo guesses.
 
 That keeps first-run bootstrap deterministic and makes the chosen machine contract obvious from the command line:
 
-- `./setup.sh macos`
-- `./setup.sh linux-desktop`
-- `./setup.sh full`
-- `./setup.sh minimal`
+- `./dotfiles.sh install macos`
+- `./dotfiles.sh install linux-desktop`
+- `./dotfiles.sh install full`
+- `./dotfiles.sh install minimal`
 
 Idempotent repo-managed repair without package or runtime installation:
 
-- `./setup.sh restow` (defaults to `full`)
-- `./setup.sh restow macos`
-- `./setup.sh restow linux-desktop`
+- `./dotfiles.sh refresh` (defaults to `full`)
+- `./dotfiles.sh refresh macos`
+- `./dotfiles.sh refresh linux-desktop`
 
 Agent-only repair on an already working machine:
 
-- `./setup.sh agents`
+- `./dotfiles.sh agents sync`
 
 This maintenance mode refreshes the global skills and instructions under
 `~/.claude` and `~/.codex`. It does not run a profile layer or touch unrelated
 dotfiles.
 
-`--layer <name>` is a maintenance mode that runs one layer in isolation; it does not expand to the full additive profile chain.
+Individual layers are internal implementation details. The public CLI always
+expands a profile through its complete additive chain so dependency ordering is
+not bypassed.

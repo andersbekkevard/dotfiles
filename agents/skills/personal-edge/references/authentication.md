@@ -2,10 +2,10 @@
 
 ## Fresh machine
 
-Use `./setup.sh full` on a headless machine, or the `macos` / `linux-desktop`
-profile for those environments. These profiles install Codex and `git-crypt`;
-bare `./setup.sh` selects nothing. `minimal` requires Codex and `git-crypt` to be
-provisioned separately.
+Use `./dotfiles.sh install full` on a headless machine, or the `macos` /
+`linux-desktop` profile for those environments. These profiles install Codex
+and `git-crypt`; bare `./dotfiles.sh` selects nothing. `minimal` requires Codex
+and `git-crypt` to be provisioned separately.
 
 Unlock the repository before expecting `~/.secrets` to contain provider
 credentials:

@@ -18,6 +18,7 @@ Commands:
   skillctl disable-model <skill> [claude|codex|all]
   skillctl off <skill> | on <skill>
   skillctl sync
+  skillctl verify
 """
 
 import re
@@ -174,9 +175,7 @@ def set_off(name, off):
     cmd_sync()
 
 
-def sync_yaml(d, mode):
-    yaml_path = d / "agents" / "openai.yaml"
-    existing = yaml_path.read_text() if yaml_path.exists() else ""
+def desired_yaml(existing, mode):
     # Strip any policy block we own (header comment + top-level policy: + indented lines).
     kept = re.sub(
         rf"(?:^{re.escape(POLICY_HEADER)}\n)?^policy:\n(?:[ \t]+.*\n?)*",
@@ -187,7 +186,13 @@ def sync_yaml(d, mode):
     parts = [kept] if kept else []
     if mode == "user":
         parts.append(POLICY_BLOCK.rstrip("\n"))
-    new = ("\n".join(parts) + "\n") if parts else ""
+    return ("\n".join(parts) + "\n") if parts else ""
+
+
+def sync_yaml(d, mode):
+    yaml_path = d / "agents" / "openai.yaml"
+    existing = yaml_path.read_text() if yaml_path.exists() else ""
+    new = desired_yaml(existing, mode)
     if new == existing:
         return False
     if new:
@@ -250,6 +255,45 @@ def cmd_sync():
     print(f"sync: {'no changes' if changed == 0 else f'{changed} change(s)'}")
 
 
+def cmd_verify():
+    failures = 0
+    dirs = skill_dirs()
+    desired_links = {CODEX_SKILLS / d.name: d for d in dirs}
+    skills_root = SKILLS.resolve()
+
+    for d in dirs:
+        modes, _ = modes_of(d)
+        yaml_path = d / "agents" / "openai.yaml"
+        existing = yaml_path.read_text() if yaml_path.exists() else ""
+        if desired_yaml(existing, modes["codex"]) != existing:
+            print(f"stale generated Codex policy: {yaml_path}")
+            failures += 1
+
+        link = CODEX_SKILLS / d.name
+        if not link.is_symlink() or link.resolve(strict=False) != d.resolve():
+            print(f"missing or wrong Codex skill link: {link} (expected {d})")
+            failures += 1
+
+    if CODEX_SKILLS.is_dir():
+        for link in CODEX_SKILLS.glob("**/*"):
+            if not link.is_symlink():
+                continue
+            target = link.resolve(strict=False)
+            try:
+                target.relative_to(skills_root)
+            except ValueError:
+                continue
+            expected = desired_links.get(link)
+            if expected is None or target != expected.resolve():
+                print(f"stale managed Codex skill link: {link} -> {target}")
+                failures += 1
+
+    if failures:
+        print(f"verify: failed ({failures} generated-state issue(s))")
+        raise SystemExit(1)
+    print("verify: ok (Codex generated skill state)")
+
+
 def main():
     args = sys.argv[1:]
     if not args or args[0] in ("-h", "--help"):
@@ -260,6 +304,8 @@ def main():
         cmd_list()
     elif cmd == "sync":
         cmd_sync()
+    elif cmd == "verify" and not rest:
+        cmd_verify()
     elif cmd in ("enable-model", "disable-model") and len(rest) in (1, 2):
         harness = rest[1] if len(rest) == 2 else "all"
         if harness not in ("claude", "codex", "all"):

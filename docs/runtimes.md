@@ -13,7 +13,7 @@
 - TypeScript LSP: global `typescript` plus `typescript-language-server` for Neovim `ts_ls`
 - Bun: official install script
 - Go: Homebrew on macOS, official tarball on Linux
-- PostgreSQL client: Homebrew `libpq` on macOS, `postgresql-client` on Linux. On macOS, `setup.sh` exposes Homebrew's keg-only `psql` through `~/.local/bin/psql` for Dadbod and non-interactive command resolution.
+- PostgreSQL client: Homebrew `libpq` on macOS, `postgresql-client` on Linux. On macOS, profile-wide `dotfiles.sh install` and `refresh` operations expose Homebrew's keg-only `psql` through `~/.local/bin/psql` for Dadbod and non-interactive command resolution.
 
 Why these choices:
 
@@ -32,6 +32,6 @@ Why these choices:
 - The full layer installs CLIProxyAPI only after the minimal layer has provided `curl` and `jq`. The release checksum is verified before extraction. `claudex` scopes `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, model, effort, Claude Code context-compaction boundary, and tool settings to its own process and explicitly removes `ANTHROPIC_API_KEY`, so ordinary `claude` keeps its existing authentication and settings. Its 272,000-token calculation window and 88% auto-compaction threshold keep the proxied session just below 240,000 tokens without relying on `~/.codex/config.toml`, which the Claude Code harness does not read.
 - Runtime-critical PATH/bootstrap for `fnm`, `node`, `pnpm`, `bun`, Go user binaries, repo scripts, and related CLI entrypoints lives in `shell/.profile`. The shared pnpm default is defined once in `shell/.local/lib/dotfiles/runtime-paths.sh` and consumed by both setup and shell startup. zsh login shells inherit that through `shell/.zprofile`, and interactive non-login zsh shells backfill by sourcing `~/.profile` from `shell/.zshrc` when needed. When an upstream command is a launcher script that depends on its own `$0`, the stable `~/.local/bin` entrypoint targets a generated exec wrapper rather than symlinking that launcher directly.
 - Interactive-only hooks such as `fnm --use-on-cd`, completions, and prompt/theme behavior stay in `shell/.zshrc`.
-- `./setup.sh` refreshes `~/.local/bin` symlinks for commands that resolve outside the base system PATH so agents and non-login shells can rely on the same stable command layer.
-- The runtime contract is explicit-profile only: `./setup.sh` installs the profile you name and does not auto-select one from the environment.
+- Profile-wide `./dotfiles.sh install` and `refresh` operations update `~/.local/bin` symlinks for commands that resolve outside the base system PATH so agents and non-login shells can rely on the same stable command layer.
+- The runtime contract is explicit-profile only: `./dotfiles.sh install` installs the profile you name and does not auto-select one from the environment.
 - Interactive zsh shells reject project-level `npm install` / `npm i` loudly; use `pnpm install` or `pnpm add` instead. Global installs via `npm ... -g` are allowed, though `pnpm add -g` remains the preferred default. The bootstrap may still invoke raw `npm install -g pnpm` internally as a non-interactive fallback when `corepack` is unavailable.

@@ -48,6 +48,17 @@ class SkillctlHarnessModesTest(unittest.TestCase):
             env=env,
         ).stdout
 
+    def run_skillctl_result(self, *args):
+        env = os.environ.copy()
+        env["HOME"] = str(self.home)
+        return subprocess.run(
+            [str(self.skillctl), *args],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
     def frontmatter(self):
         return (self.skill / "SKILL.md").read_text().split("---", 2)[1]
 
@@ -104,6 +115,19 @@ class SkillctlHarnessModesTest(unittest.TestCase):
 
         self.run_skillctl("sync")
         self.assertFalse((self.home / ".codex" / "skills" / "candidate").exists())
+
+    def test_verify_is_read_only_and_detects_generated_policy_drift(self):
+        self.run_skillctl("disable-model", "sample", "codex")
+        self.assertIn("verify: ok", self.run_skillctl("verify"))
+
+        yaml_path = self.skill / "agents" / "openai.yaml"
+        yaml_path.write_text("policy:\n  allow_implicit_invocation: true\n")
+        before = yaml_path.read_text()
+        result = self.run_skillctl_result("verify")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("stale generated Codex policy", result.stdout)
+        self.assertEqual(yaml_path.read_text(), before)
 
     def test_local_skills_share_the_global_name_namespace(self):
         duplicate = self.root / "skills" / ".local" / "sample"

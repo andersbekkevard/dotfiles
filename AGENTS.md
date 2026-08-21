@@ -4,9 +4,9 @@ This file is the navigation map for coding agents working in this repo.
 
 ## Mission
 
-Maintain a one-hit, idempotent, cross-platform dotfiles bootstrap (`setup.sh`) with predictable profile behavior and verifiable outcomes.
+Maintain a durable cross-platform dotfiles management CLI (`dotfiles.sh`) with explicit mutation boundaries, predictable profile behavior, and verifiable outcomes.
 
-Operator invariant: `./setup.sh` is the only root bootstrap entrypoint. Files under `setup/` are internal implementation files or maintenance helpers unless a doc explicitly says otherwise.
+Operator invariant: `./dotfiles.sh` is the only root management entrypoint. Files under `setup/` are internal implementation files or maintenance helpers unless a doc explicitly says otherwise.
 
 ## Mandatory read order (before editing code)
 
@@ -42,7 +42,7 @@ If a task asks to set up, repair, or refresh global agent skills or global
 agent instructions on the current machine, use setup, not direct `skillctl`:
 
 ```bash
-./setup.sh agents
+./dotfiles.sh agents sync
 ```
 
 This is the narrow machine-repair path for the agent surface. It runs
@@ -52,9 +52,12 @@ template refreshes, or stable command-entrypoint updates. It creates or repairs
 `~/.codex/AGENTS.md` from the primary shared instructions plus their harness
 additions, and invokes `agents/skillctl sync` for Codex-generated state.
 
-Use the normal first-run profile command (`./setup.sh macos`,
-`./setup.sh linux-desktop`, `./setup.sh full`, or `./setup.sh minimal`) on a new
-machine that still needs packages/runtimes.
+Use the normal first-run profile command (`./dotfiles.sh install macos`,
+`./dotfiles.sh install linux-desktop`, `./dotfiles.sh install full`, or
+`./dotfiles.sh install minimal`) on a new machine that still needs packages or
+runtimes. Installation requires confirmation because third-party installer
+idempotence cannot be proven; pass `--yes` only when unattended mutation is
+intended.
 
 Use direct `skillctl` only when the machine-level harness surface already exists
 and the task is specifically to regenerate Codex dialect metadata from
@@ -71,7 +74,7 @@ top-level harness instructions; treating it as full agent setup is a bug.
 
 When behavior changes, update docs in the same commit:
 
-- **CLI flow changes** (`setup.sh` flags, verify behavior) → update `docs/usage.md`
+- **CLI flow changes** (`dotfiles.sh` commands, flags, verify behavior) → update `docs/usage.md`
 - **Tool usage docs** for tmux, Neovim, `wt`, and other installed software do **not** belong in `docs/usage.md`; keep that file focused on operating the dotfiles repo itself
 - **Profile selection changes** → update `docs/profiles.md`
 - **Runtime install/version policy changes** → update `docs/runtimes.md`

@@ -83,14 +83,14 @@ These files are optional, untracked, and machine-owned.
 |---|---|---|
 | `~/.profile.local` | Login shells, automation-visible bootstrap | Machine-specific env vars, PATH additions, installer-added lines moved out of tracked files |
 | `~/.zshrc.local` | Interactive zsh only | Aliases, prompt tweaks, completions, experiments, interactive helpers |
-| `agents/.local/SHARED.md` | Global Claude and Codex instructions after `./setup.sh agents` | Machine paths, installed applications, host capabilities, local access rules shared by both harnesses |
-| `agents/.local/AGENTS.md` | Global Codex instructions after `./setup.sh agents` | Codex-only machine rules |
-| `agents/.local/CLAUDE.md` | Global Claude instructions after `./setup.sh agents` | Claude-only machine rules |
+| `agents/.local/SHARED.md` | Global Claude and Codex instructions after `./dotfiles.sh agents sync` | Machine paths, installed applications, host capabilities, local access rules shared by both harnesses |
+| `agents/.local/AGENTS.md` | Global Codex instructions after `./dotfiles.sh agents sync` | Codex-only machine rules |
+| `agents/.local/CLAUDE.md` | Global Claude instructions after `./dotfiles.sh agents sync` | Claude-only machine rules |
 
 ## Machine-local agent instructions
 
 Copy only the required starter from `agents/templates/local-instructions/`,
-replace its comment, and run `./setup.sh agents`. Setup writes the composed
+replace its comment, and run `./dotfiles.sh agents sync`. The command writes the composed
 outputs to `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md` atomically. Direct
 edits to those generated files are replaced on the next refresh.
 

@@ -53,7 +53,7 @@ Stop on an SSH-alias collision or evidence belonging to another target.
 - Europe/Oslo, unattended security upgrades, Snapper retention, monthly Btrfs
   scrub, weekly TRIM, SMART monitoring, and mdadm monitoring.
 - `~/dotfiles` on the requested revision (default: repository HEAD), with
-  `./setup.sh full` and `./setup.sh --verify full` both successful.
+  `./dotfiles.sh install full --yes` and `./dotfiles.sh verify full` both successful.
 - Official Claude Code, Codex, and `claudex` installed; machine-local logins
   complete.
 - Baseline and post-dotfiles root snapshots plus read-only home snapshots.
@@ -149,10 +149,10 @@ disabled.
 Inside remote tmux as the administrator:
 
 1. Clone `https://github.com/andersbekkevard/dotfiles.git` to `~/dotfiles`.
-2. Record the commit and run `./setup.sh full`, preserving its full log and exit
-   status. Retry only idempotent transient failures; repair a reproducible
+2. Record the commit and run `./dotfiles.sh install full --yes`, preserving its
+   full log and exit status. Retry only understood transient failures; repair a reproducible
    dotfiles defect at its source rather than weakening verification.
-3. Run `./setup.sh --verify full` in a clean session.
+3. Run `./dotfiles.sh verify full` in a clean session.
 4. Install Claude Code from Anthropic's current official Linux instructions;
    the dotfiles `full` profile installs Codex and `claudex`, not ordinary
    `claude`.

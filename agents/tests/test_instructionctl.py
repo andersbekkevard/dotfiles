@@ -85,7 +85,7 @@ class InstructionctlTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("codex   stale", result.stdout)
         self.assertIn("claude  missing", result.stdout)
-        self.assertIn("repair: ./setup.sh agents", result.stderr)
+        self.assertIn("repair: ./dotfiles.sh agents sync", result.stderr)
 
     def test_status_reports_drift_without_failing(self):
         result = self.run_ctl("status")

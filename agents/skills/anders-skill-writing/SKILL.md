@@ -162,4 +162,4 @@ For the global collection in the dotfiles repo, register provenance in
 `agents/skill-sources.toml`, validate with `agents/skillpull validate`, inspect
 effective invocation with `agents/skillctl list`, check context cost with
 `agents/skilltokens`, and refresh the installed agent context with
-`./setup.sh agents`.
+`./dotfiles.sh agents sync`.

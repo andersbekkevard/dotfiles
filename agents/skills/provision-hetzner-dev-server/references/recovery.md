@@ -76,10 +76,11 @@ backup solve different failures.
 ## Dotfiles or runtime setup fails
 
 Keep the remote tmux session and full log. Rerun only after distinguishing a
-transient download failure from a reproducible setup defect. The setup is
-idempotent; the acceptance gate remains `./setup.sh full` followed by
-`./setup.sh --verify full`, both exiting zero. Fix a reproducible defect in the
-dotfiles source and rerun rather than suppressing a required command.
+transient download failure from a reproducible setup defect. Third-party
+installer idempotence cannot be proven, so rerun only with explicit intent; the
+acceptance gate remains `./dotfiles.sh install full --yes` followed by
+`./dotfiles.sh verify full`, both exiting zero. Fix a reproducible defect in the
+dotfiles source rather than suppressing a required command.
 
 ## OAuth is pending
 

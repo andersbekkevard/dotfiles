@@ -8,7 +8,7 @@ Secrets are tracked with `git-crypt` in `shell/.secrets`, which stows to `~/.sec
 git-crypt unlock <keyfile>
 ```
 
-`setup.sh` does not fail if the repository is still locked. It prints a reminder and continues with non-secret setup.
+`dotfiles.sh` does not fail if the repository is still locked. It prints a reminder and continues with non-secret work.
 
 `shell/.zshrc` only sources `~/.secrets` when the file exists and looks like readable text.
 

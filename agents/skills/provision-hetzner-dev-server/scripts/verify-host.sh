@@ -82,8 +82,8 @@ sudo -n snapper -c root list || fail snapper-root
 
 printf '%s\n' '=== DEVELOPMENT ==='
 [[ -d "$HOME/dotfiles/.git" ]] && pass dotfiles-clone || fail dotfiles-clone
-if [[ -x "$HOME/dotfiles/setup.sh" ]]; then
-  (cd "$HOME/dotfiles" && ./setup.sh --verify full) && pass dotfiles-full-verify || fail dotfiles-full-verify
+if [[ -x "$HOME/dotfiles/dotfiles.sh" ]]; then
+  (cd "$HOME/dotfiles" && ./dotfiles.sh verify full) && pass dotfiles-full-verify || fail dotfiles-full-verify
 else
   fail dotfiles-full-verify
 fi

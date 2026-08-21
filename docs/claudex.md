@@ -7,7 +7,7 @@
 The full profile installs Claude Code and the correct CLIProxyAPI release, creates a localhost-only configuration and private local API key, and stows the wrapper commands. Authenticate Codex once, then run a safe smoke test:
 
 ```bash
-./setup.sh full
+./dotfiles.sh install full
 claudex-proxy login
 claudex --safe-mode
 ```

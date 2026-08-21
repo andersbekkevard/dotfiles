@@ -12,7 +12,7 @@ Use this page as the map for the `docs/` directory.
 
 Operator invariant:
 
-- The only root bootstrap entrypoint is `./setup.sh`.
+- The only root management entrypoint is `./dotfiles.sh`.
 - Files under `setup/` are internal helpers, manifests, and maintenance tools unless a doc explicitly says otherwise.
 
 ## Topic map

@@ -34,7 +34,7 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   Codex-generated projection.
 - `instructionctl`: read-only status and verification for composed global
   instructions. It reports source presence without printing private local
-  content. `setup.sh agents` remains the only writer.
+  content. `dotfiles.sh agents sync` remains the only writer.
 - `skilltokens` — exact tiktoken report for skill descriptions and `SKILL.md`
   bodies, used to prune context load and sprawl.
 - `skill-sources.toml` + `skillpull` — source/provenance map and read-only
@@ -46,7 +46,7 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
 Use setup for the machine-level agent surface:
 
 ```bash
-./setup.sh agents
+./dotfiles.sh agents sync
 ```
 
 That command runs only `setup/agents.sh`. It creates or repairs
@@ -79,8 +79,8 @@ mkdir -p agents/.local
 cp agents/templates/local-instructions/SHARED.md agents/.local/SHARED.md
 # Or copy AGENTS.md or CLAUDE.md for one harness only.
 $EDITOR agents/.local/SHARED.md
-./setup.sh agents
-agents/instructionctl verify
+./dotfiles.sh agents sync
+./dotfiles.sh agents verify
 ```
 
 Setup composes tracked shared, tracked harness, local shared, then local
@@ -91,7 +91,7 @@ Git-ignored and has no tracked placeholder.
 
 Use `agents/instructionctl status` to inspect source state without checking the
 private files into Git or printing their contents. `verify` exits nonzero when
-either generated target is missing or stale. Repair it with `./setup.sh agents`.
+either generated target is missing or stale. Repair it with `./dotfiles.sh agents sync`.
 
 [OpenAI's AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md/)
 states that Codex gives `~/.codex/AGENTS.override.md` precedence over
@@ -142,6 +142,7 @@ agents/skillctl enable-model <s> claude
 agents/skillctl disable-model <s>     # defaults to all harnesses
 agents/skillctl off <s> / on <s>      # renames SKILL.md ↔ SKILL.off.md (invisible everywhere)
 agents/skillctl sync                  # regenerate yaml + Codex symlinks only; idempotent
+agents/skillctl verify                # read-only generated Codex policy/link check
 ```
 
 `off` renames the file, not the directory: a dir rename can still leave a

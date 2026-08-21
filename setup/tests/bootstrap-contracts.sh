@@ -418,45 +418,111 @@ test_agent_instruction_composition() {
   rm -rf "$fake_home" "$fake_sources"
 }
 
-test_restow_cli_contract() {
+test_dotfiles_cli_contract() {
   (
     # shellcheck source=../lib/core.sh
     source "$REPO_ROOT/setup/lib/core.sh"
-    parse_args restow
-    assert_eq "$REQUESTED_PROFILE" "full"
-    assert_eq "$SKIP_INSTALL" "1"
-    assert_eq "$RESTOW_MODE" "1"
-    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "default restow arguments were rejected"
+    parse_args install minimal --yes
+    assert_eq "$CLI_COMMAND" "install"
+    assert_eq "$REQUESTED_PROFILE" "minimal"
+    assert_eq "$SKIP_INSTALL" "0"
+    assert_eq "$ASSUME_YES" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "install arguments were rejected"
   )
 
   (
     # shellcheck source=../lib/core.sh
     source "$REPO_ROOT/setup/lib/core.sh"
-    parse_args restow linux-desktop
+    parse_args refresh
+    assert_eq "$CLI_COMMAND" "refresh"
+    assert_eq "$REQUESTED_PROFILE" "full"
+    assert_eq "$SKIP_INSTALL" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "default refresh arguments were rejected"
+  )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args refresh linux-desktop -n
     assert_eq "$REQUESTED_PROFILE" "linux-desktop"
     assert_eq "$SKIP_INSTALL" "1"
-    assert_eq "$RESTOW_MODE" "1"
-    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "explicit restow profile was rejected"
+    assert_eq "$DRY_RUN" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "explicit refresh profile was rejected"
   )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args stow shell nvim --dry-run
+    assert_eq "$CLI_COMMAND" "stow"
+    assert_eq "${STOW_PACKAGES[*]}" "shell nvim"
+    assert_eq "$DRY_RUN" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "multi-package stow arguments were rejected"
+  )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args verify macos
+    assert_eq "$CLI_COMMAND" "verify"
+    assert_eq "$VERIFY_PROFILE" "macos"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "verify arguments were rejected"
+  )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args minimal
+    [[ ${#ARG_ERRORS[@]} -gt 0 ]] || fail "legacy direct-profile syntax was accepted"
+  )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    NO_INPUT=1
+    if confirm_unproven_install >/dev/null 2>&1; then
+      fail "unconfirmed non-interactive install was accepted"
+    fi
+    ASSUME_YES=1
+    confirm_unproven_install >/dev/null 2>&1 || fail "--yes did not confirm install"
+  )
+
+  local help_output install_output install_status
+  help_output="$(bash "$REPO_ROOT/dotfiles.sh" --help)"
+  printf '%s\n' "$help_output" | grep -Fq './dotfiles.sh stow <package>...' ||
+    fail "dotfiles help omits multi-package stow"
+  printf '%s\n' "$help_output" | grep -Fq "We can't prove this is idempotent" ||
+    fail "dotfiles help omits the install idempotence warning"
+
+  set +e
+  install_output="$(bash "$REPO_ROOT/dotfiles.sh" install minimal --no-input 2>&1)"
+  install_status=$?
+  set -e
+  assert_eq "$install_status" "2"
+  printf '%s\n' "$install_output" | grep -Fq "We can't prove this is idempotent" ||
+    fail "unconfirmed install omitted the idempotence warning"
 }
 
 test_agents_cli_contract() {
-  local fake_home fake_bin python_capture dry_home help_output
+  local fake_home fake_bin python_capture dry_home verify_home help_output real_python
   fake_home="$(mktemp -d)"
   fake_bin="$fake_home/bin"
   python_capture="$fake_home/python-capture"
+  real_python="$(command -v python3)"
   mkdir -p "$fake_bin"
   cat > "$fake_bin/python3" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$*" > "$PYTHON_CAPTURE"
+exec "$REAL_PYTHON" "$@"
 EOF
   chmod +x "$fake_bin/python3"
 
   (
     # shellcheck source=../lib/core.sh
     source "$REPO_ROOT/setup/lib/core.sh"
-    parse_args agents
-    assert_eq "$AGENTS_ONLY" "1"
+    parse_args agents sync
+    assert_eq "$CLI_COMMAND" "agents"
+    assert_eq "$AGENTS_ACTION" "sync"
     assert_eq "$SKIP_INSTALL" "1"
     assert_eq "$REQUESTED_PROFILE" ""
     [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "agents arguments were rejected"
@@ -465,12 +531,13 @@ EOF
   HOME="$fake_home" \
     PATH="$fake_bin:/usr/bin:/bin" \
     PYTHON_CAPTURE="$python_capture" \
-    bash "$REPO_ROOT/setup.sh" agents >/dev/null
+    REAL_PYTHON="$real_python" \
+    bash "$REPO_ROOT/dotfiles.sh" agents sync >/dev/null
 
   [[ -f "$fake_home/.claude/CLAUDE.md" ]] || fail "agents mode did not compose Claude instructions"
   [[ -f "$fake_home/.codex/AGENTS.md" ]] || fail "agents mode did not compose Codex instructions"
   [[ -L "$fake_home/.claude/skills/unslop" ]] || fail "agents mode did not link Claude skills"
-  assert_eq "$(cat "$python_capture")" "$REPO_ROOT/agents/skillctl sync"
+  assert_eq "$(cat "$python_capture")" "$REPO_ROOT/agents/skillpull validate"
   [[ ! -e "$fake_home/.zshrc" ]] || fail "agents mode touched shell dotfiles"
   [[ ! -e "$fake_home/.config/zsh/local.example.zsh" ]] || fail "agents mode refreshed unrelated templates"
   [[ ! -e "$fake_home/.local/bin" ]] || fail "agents mode refreshed stable command entrypoints"
@@ -479,26 +546,43 @@ EOF
   HOME="$dry_home" \
     PATH="$fake_bin:/usr/bin:/bin" \
     PYTHON_CAPTURE="$python_capture" \
-    bash "$REPO_ROOT/setup.sh" agents --dry-run >/dev/null
+    REAL_PYTHON="$real_python" \
+    bash "$REPO_ROOT/dotfiles.sh" agents sync --dry-run >/dev/null
   if find "$dry_home" -mindepth 1 -print -quit | grep -q .; then
     fail "agents dry-run mutated HOME"
   fi
 
-  help_output="$(bash "$REPO_ROOT/setup.sh" agents --help)"
-  printf '%s\n' "$help_output" | grep -Fq './setup.sh agents [--dry-run]' ||
-    fail "setup help omits agents mode"
+  help_output="$(bash "$REPO_ROOT/dotfiles.sh" agents --help)"
+  printf '%s\n' "$help_output" | grep -Fq './dotfiles.sh agents sync [-n|--dry-run]' ||
+    fail "dotfiles help omits agents mode"
 
-  if bash "$REPO_ROOT/setup.sh" agents minimal >/dev/null 2>&1; then
-    fail "agents mode accepted a profile"
+  HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" PYTHON_CAPTURE="$python_capture" \
+    REAL_PYTHON="$real_python" bash "$REPO_ROOT/dotfiles.sh" agents verify >/dev/null ||
+    fail "agents verify rejected a synced isolated HOME"
+  HOME="$fake_home" PATH="$fake_bin:/usr/bin:/bin" PYTHON_CAPTURE="$python_capture" \
+    REAL_PYTHON="$real_python" bash "$REPO_ROOT/dotfiles.sh" agents status >/dev/null ||
+    fail "agents status rejected a synced isolated HOME"
+
+  if bash "$REPO_ROOT/dotfiles.sh" agents minimal >/dev/null 2>&1; then
+    fail "agents accepted an unknown action"
   fi
-  if bash "$REPO_ROOT/setup.sh" agents agents >/dev/null 2>&1; then
-    fail "agents mode accepted a duplicate command"
+  if bash "$REPO_ROOT/dotfiles.sh" agents sync sync >/dev/null 2>&1; then
+    fail "agents sync accepted a duplicate action"
   fi
-  if bash "$REPO_ROOT/setup.sh" agents --skip-install >/dev/null 2>&1; then
-    fail "agents mode accepted an unrelated flag"
+  if bash "$REPO_ROOT/dotfiles.sh" agents sync --yes >/dev/null 2>&1; then
+    fail "agents sync accepted an install-only flag"
   fi
 
-  rm -rf "$fake_home" "$dry_home"
+  verify_home="$(mktemp -d)"
+  if HOME="$verify_home" PATH="$fake_bin:/usr/bin:/bin" PYTHON_CAPTURE="$python_capture" \
+      REAL_PYTHON="$real_python" bash "$REPO_ROOT/dotfiles.sh" agents verify >/dev/null 2>&1; then
+    fail "agents verify accepted a missing agent surface"
+  fi
+  if find "$verify_home" -mindepth 1 -print -quit | grep -q .; then
+    fail "agents verify mutated HOME"
+  fi
+
+  rm -rf "$fake_home" "$dry_home" "$verify_home"
 }
 
 test_cliproxyapi_config_contract() {
@@ -820,7 +904,7 @@ test_pnpm_setup_contract
 test_pnpm_dry_run
 test_agent_cli_profile_contract
 test_agent_instruction_composition
-test_restow_cli_contract
+test_dotfiles_cli_contract
 test_agents_cli_contract
 test_claude_standalone_installer_contract
 test_codex_standalone_installer_contract

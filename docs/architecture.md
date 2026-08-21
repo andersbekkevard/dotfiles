@@ -3,18 +3,27 @@
 The repository is split into three categories:
 
 1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, `tmux/`, `terminals/`, `wt/`, and `linux-desktop/`. A package may materialize more than one target subtree under `$HOME`; for example, the `scripts/` package owns both interactive helper files under `~/.scripts/` and stable executable entrypoints under `~/.local/bin/`.
-2. Setup logic under `setup/`, with library modules in `setup/lib/` (core, profiles, packages, runtimes, shell-setup, stow, verify), driven by `setup.sh`.
+2. Setup logic under `setup/`, with library modules in `setup/lib/` (core, profiles, packages, runtimes, shell-setup, stow, verify), driven by the root `dotfiles.sh` entrypoint.
 3. Documentation under `docs/`.
 4. The global agent surface under `agents/` contains canonical active skills in the flat `agents/skills/<name>` namespace, candidates under `agents/in-progress/<name>`, and retired skills under `agents/archive/<name>`. It also contains primary shared global instructions in `agents/SHARED.global.md`, harness additions in `agents/AGENTS.global.md` and `agents/CLAUDE.global.md`, and optional Git-ignored machine overlays under `agents/.local/`. This is not a stow package. `setup/agents.sh` owns machine-level wiring, composes tracked shared and harness instructions followed by local shared and harness overlays into `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`, and projects only active skills as flat per-skill symlinks for both harnesses. `agents/instructionctl` inspects and verifies those composed files without writing them. The `skillctl sync` call inside setup refreshes Codex links without touching Codex-managed entries such as `.system/`. Existing same-name skills are not overwritten. See `agents/README.md`.
 5. Retired configs and scripts under `archive/`.
 
 The `claudex` integration follows the same tracked/runtime split: `scripts/.local/bin/claudex` and `claudex-proxy` are portable stowed commands; setup installs the versioned CLIProxyAPI binary. The generated proxy configuration, local API key, OAuth credentials, PID, and logs are machine state and never live in the repository. The proxy binds to `127.0.0.1`, and only the `claudex` process receives its endpoint and token.
 
-For normal bootstrap, `setup.sh` requires an explicit profile, expands it into an additive layer chain, installs the required packages for each layer, backs up first-run conflicts, and stows the corresponding packages with `stow --no-folding`. The `restow` maintenance mode has a fixed `full` default and skips installers; it does not infer a profile from the machine. The `agents` maintenance mode calls only `ensure_agent_surface`, so it refreshes global agent skills and instructions without running a profile layer, restowing dotfiles, refreshing shell templates, or updating command entrypoints.
+`dotfiles.sh install` requires an explicit profile, expands it into an additive
+layer chain, installs the required packages for each layer, backs up first-run
+conflicts, and stows the corresponding packages with `stow --no-folding`.
+Because not every third-party installer can be proven idempotent, installation
+requires interactive confirmation or `--yes`. `refresh` traverses the same
+profile chain with installers disabled and has a fixed `full` default. `agents
+sync` calls only `ensure_agent_surface`, so it refreshes global skills and
+instructions without running a profile layer, restowing dotfiles, refreshing
+shell templates, or updating command entrypoints. `stow`, `agents status`,
+`agents verify`, and `verify` expose focused maintenance and read-only paths.
 
 Operator entrypoint rule:
 
-- `./setup.sh` is the only root bootstrap command.
+- `./dotfiles.sh` is the only root management command.
 - Files under `setup/` are implementation details, manifests, or maintenance helpers.
 - The repo does not offer a second install entrypoint or an implicit auto-profile mode.
 
@@ -42,7 +51,7 @@ one and never require a tracked placeholder.
 
 ## Installation ordering
 
-Each layer script is a dependency-ordered sequence — every line assumes lines above it succeeded. On a blank machine, only base OS packages exist when `setup.sh` starts.
+Each layer script is a dependency-ordered sequence — every line assumes lines above it succeeded. On a blank machine, only base OS packages exist when `dotfiles.sh install` starts.
 
 Rules:
 - Steps that download (`curl`, `wget`) must come after those tools are installed via the package manager.
@@ -62,7 +71,7 @@ Shell startup is split by responsibility:
 - `shell/.zshrc` owns interactive zsh behavior, backfills `~/.profile` for interactive non-login zsh when needed, and delegates to focused files under `shell/.zsh/`.
 - `shell/.zshenv` is kept minimal for zsh-wide XDG defaults only.
 
-Machine-specific runtime behavior belongs in `~/.profile.local`; interactive-only shell behavior belongs in `~/.zshrc.local`. `./setup.sh` refreshes the latest reference template into `~/.config/zsh/local.example.zsh` and only rewrites `~/.zshrc.local` when it still exactly matches a managed template.
+Machine-specific runtime behavior belongs in `~/.profile.local`; interactive-only shell behavior belongs in `~/.zshrc.local`. Profile-wide `install` and `refresh` operations update the latest reference template in `~/.config/zsh/local.example.zsh` and only rewrite `~/.zshrc.local` when it still exactly matches a managed template.
 
 For the full contract on machine-local shell tweaks vs automation-visible command overrides, see `docs/local-overrides.md`.
 

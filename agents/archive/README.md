@@ -12,7 +12,7 @@ To archive a skill:
 2. Remove its entry from `agents/skill-sources.toml` (`skillpull validate`
    requires the manifest to match active and in-progress skills exactly).
 3. Fix any references to it in other skills' descriptions or bodies.
-4. Run `./setup.sh agents` (or remove the two dangling
+4. Run `./dotfiles.sh agents sync` (or remove the two dangling
    `~/.claude/skills/<name>` / `~/.codex/skills/<name>` links and run
    `agents/skillctl sync`) so the harness links are pruned.
 

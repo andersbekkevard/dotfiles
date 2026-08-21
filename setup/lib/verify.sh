@@ -61,7 +61,7 @@ verify_profile() {
 
   if command_exists nvim; then
     if ! nvim_version_at_least "0.11"; then
-      printf 'neovim too old: %s (need >= 0.11). Run ./setup.sh <profile> to upgrade.\n' \
+      printf 'neovim too old: %s (need >= 0.11). Run ./dotfiles.sh install <profile> to upgrade.\n' \
         "$(nvim --version 2>/dev/null | head -1 | sed 's/^NVIM v//')"
       failures=1
     fi

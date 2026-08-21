@@ -7,21 +7,26 @@ Unified cross-platform dotfiles for macOS, Ubuntu desktop, and Ubuntu headless.
 ```bash
 git clone <repo-url> ~/dotfiles
 cd ~/dotfiles
-./setup.sh macos
+./dotfiles.sh install macos
 ```
 
 Choose the exact profile you want:
 
 ```bash
-./setup.sh minimal
-./setup.sh full
-./setup.sh macos
-./setup.sh linux-desktop
+./dotfiles.sh install minimal
+./dotfiles.sh install full
+./dotfiles.sh install macos
+./dotfiles.sh install linux-desktop
 ```
 
-`./setup.sh` is the only root bootstrap entrypoint.
+`./dotfiles.sh` is the only root management entrypoint. It separates installing
+software from refreshing, stowing, and verifying repo-managed state.
 
-On Linux, unattended runs now require working root access up front. If stdin is non-interactive and `sudo` is not already cached, `./setup.sh` exits with an error instead of silently skipping apt/system bootstrap. Use `sudo -v` first, or set `DOTFILES_ALLOW_PARTIAL=1` to opt into explicit degraded mode.
+An install asks for confirmation because third-party package and runtime
+installers cannot all be proven idempotent. Use `--yes` for unattended runs or
+`--dry-run` to inspect the plan without changing the machine. On Linux,
+unattended installs also require working root access up front; use `sudo -v`
+first, or explicitly opt into degraded mode with `--allow-partial`.
 
 The shared base layer installs the same core CLI set on every machine, including `cloudflared`, `ngrok`, `git-delta`, TruffleHog secret scanning, and the `git-loc` remote repository line-count helper. `cloudflared` is the canonical path for publishing local services on Anders' Cloudflare-managed domains; the global `personal-edge` skill owns the agent workflow. TruffleHog is the fail-closed preflight used by the global `autoreview` skill. The full profile adds the Claude Code and Codex CLIs, CLIProxyAPI, the isolated `claudex` Claude-Code-with-Codex entrypoint, `git-crypt`, and developer tools including the PostgreSQL client (`psql`) required by Neovim Dadbod for PostgreSQL connections.
 
@@ -40,21 +45,21 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 ## Useful commands
 
 ```bash
-./setup.sh restow
-./setup.sh agents
-agents/instructionctl status
-./setup.sh --verify macos
-./setup.sh --layer full
-./setup.sh --stow nvim
-./setup.sh full --dry-run
-./setup.sh linux-desktop --allow-partial
+./dotfiles.sh refresh
+./dotfiles.sh agents sync
+./dotfiles.sh agents status
+./dotfiles.sh agents verify
+./dotfiles.sh verify macos
+./dotfiles.sh stow nvim
+./dotfiles.sh install full --dry-run
+./dotfiles.sh install linux-desktop --yes --allow-partial
 ./setup/brew-drift
 ```
 
-On an already working machine, `./setup.sh agents` refreshes only the global
+On an already working machine, `./dotfiles.sh agents sync` refreshes only the global
 agent skills and instructions under `~/.claude` and `~/.codex`. It does not
 install packages, restow dotfiles, refresh shell templates, or update stable
-command entrypoints. `agents/instructionctl status` shows the tracked and
-machine-local instruction sources used for each harness.
+command entrypoints. `./dotfiles.sh agents status` shows the tracked and
+machine-local instruction sources and effective invocation modes.
 
-Machine-local login/runtime overrides live in `~/.profile.local`; interactive-only shell tweaks live in `~/.zshrc.local`. `./setup.sh` refreshes `~/.config/zsh/local.example.zsh` as the latest reference template without overwriting a customized local file, and refreshes stable `~/.local/bin` entrypoints for commands installed outside the base system PATH.
+Machine-local login/runtime overrides live in `~/.profile.local`; interactive-only shell tweaks live in `~/.zshrc.local`. Profile-wide `install` and `refresh` operations update `~/.config/zsh/local.example.zsh` without overwriting a customized local file, and refresh stable `~/.local/bin` entrypoints for commands installed outside the base system PATH.

@@ -19,18 +19,19 @@ HAS_SUDO=0
 SUDO_KEEPALIVE_PID=""
 ACTIVE_PROFILE=""
 ACTIVE_LAYERS=()
+CLI_COMMAND=""
+AGENTS_ACTION=""
 REQUESTED_PROFILE=""
-RUN_LAYER_ONLY=""
-STOW_ONLY_PACKAGE=""
+STOW_PACKAGES=()
 VERIFY_PROFILE=""
-RESTOW_MODE=0
-AGENTS_ONLY=0
 DRY_RUN=0
 SKIP_INSTALL=0
-SKIP_INSTALL_EXPLICIT=0
+ASSUME_YES=0
+NO_INPUT=0
 ALLOW_PARTIAL="${DOTFILES_ALLOW_PARTIAL:-0}"
-ALLOW_PARTIAL_EXPLICIT=0
 SHOW_HELP=0
+SHOW_VERSION=0
+NO_COLOR_REQUESTED=0
 ARG_ERRORS=()
 
 secrets_source_path() {
@@ -309,11 +310,13 @@ cleanup_runtime() {
 
 handle_interrupt() {
   cleanup_runtime
-  log_warn "Setup interrupted."
+  log_warn "Dotfiles operation interrupted."
   if [[ ${#COMPLETED_LAYERS[@]} -gt 0 ]]; then
     printf 'Completed layers: %s\n' "${COMPLETED_LAYERS[*]}"
   fi
-  printf 'Re-run ./setup.sh <profile> to resume.\n'
+  if [[ "$CLI_COMMAND" == "install" ]]; then
+    printf 'Re-run ./dotfiles.sh install %s to resume.\n' "$REQUESTED_PROFILE"
+  fi
   exit 130
 }
 
@@ -330,15 +333,34 @@ valid_profile() {
   return 1
 }
 
-print_setup_help() {
+configure_output_style() {
+  if [[ "$NO_COLOR_REQUESTED" -eq 1 || -n "${NO_COLOR:-}" || "${TERM:-}" == "dumb" || ! -t 1 ]]; then
+    COLOR_GREEN=""
+    COLOR_YELLOW=""
+    COLOR_RED=""
+    COLOR_BLUE=""
+    COLOR_RESET=""
+  fi
+}
+
+print_dotfiles_version() {
+  local revision="unknown"
+  if command -v git >/dev/null 2>&1; then
+    revision="$(git -C "$DOTFILES_DIR" rev-parse --short HEAD 2>/dev/null || printf 'unknown')"
+  fi
+  printf 'dotfiles %s\n' "$revision"
+}
+
+print_dotfiles_help() {
   cat <<'EOF'
 Usage:
-  ./setup.sh <profile> [--dry-run] [--skip-install] [--allow-partial]
-  ./setup.sh restow [profile] [--dry-run]
-  ./setup.sh agents [--dry-run]
-  ./setup.sh --verify <profile>
-  ./setup.sh --layer <layer>
-  ./setup.sh --stow <package>
+  ./dotfiles.sh install <profile> [options]
+  ./dotfiles.sh refresh [profile] [-n|--dry-run]
+  ./dotfiles.sh stow <package>... [-n|--dry-run]
+  ./dotfiles.sh agents sync [-n|--dry-run]
+  ./dotfiles.sh agents status
+  ./dotfiles.sh agents verify
+  ./dotfiles.sh verify <profile>
 
 Profiles:
   minimal         Portable shell-focused environment
@@ -347,17 +369,39 @@ Profiles:
   linux-desktop   Full plus Linux desktop/window-manager configuration
 
 Examples:
-  ./setup.sh macos
-  ./setup.sh linux-desktop
-  ./setup.sh restow
-  ./setup.sh restow linux-desktop
-  ./setup.sh agents
-  ./setup.sh --verify macos
-  ./setup.sh --layer full
-  ./setup.sh --stow shell
+  ./dotfiles.sh install macos
+  ./dotfiles.sh install linux-desktop --yes
+  ./dotfiles.sh install full --dry-run
+  ./dotfiles.sh refresh
+  ./dotfiles.sh refresh macos
+  ./dotfiles.sh stow shell nvim
+  ./dotfiles.sh agents sync
+  ./dotfiles.sh agents verify
+  ./dotfiles.sh verify macos
 
-Normal bootstrap never auto-detects a profile. The restow shortcut defaults to full.
-The agents mode refreshes only global agent skills and instructions.
+Commands:
+  install    Install packages/runtimes and apply repo-managed configuration.
+  refresh    Apply repo-managed configuration without package/runtime installers.
+             Defaults to the additive full profile.
+  stow       Apply only the named Stow packages. Accepts more than one package.
+  agents     Sync, inspect, or verify global skills and agent instructions only.
+  verify     Read-only verification of a profile and the global agent surface.
+
+Install safety:
+  We can't prove this is idempotent. Install may rerun third-party installers or
+  change package/runtime state. It asks before starting unless --yes is supplied.
+  Non-interactive installs require --yes. --dry-run never prompts or mutates.
+
+Options:
+  -n, --dry-run       Print planned work without changing the machine.
+  -y, --yes           Confirm an install without prompting.
+      --no-input      Never prompt; fails unless --yes or --dry-run is also used.
+      --allow-partial Allow an install to continue without privileged Linux steps.
+      --no-color      Disable colored output. NO_COLOR is also respected.
+  -h, --help          Show this help.
+      --version       Show the repository revision.
+
+Install and verify require an explicit profile; no profile is auto-detected.
 EOF
 }
 
@@ -367,105 +411,158 @@ parse_args() {
     return 0
   fi
 
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --help|-h)
-        SHOW_HELP=1
-        ;;
-      --dry-run)
-        DRY_RUN=1
-        ;;
-      --skip-install)
-        SKIP_INSTALL=1
-        SKIP_INSTALL_EXPLICIT=1
-        ;;
-      --allow-partial|--allow-without-sudo)
-        ALLOW_PARTIAL=1
-        ALLOW_PARTIAL_EXPLICIT=1
-        ;;
-      restow)
-        RESTOW_MODE=1
-        SKIP_INSTALL=1
-        ;;
-      agents)
-        if [[ "$AGENTS_ONLY" -eq 1 ]]; then
-          record_arg_error "agents may be specified only once"
-        fi
-        AGENTS_ONLY=1
-        SKIP_INSTALL=1
-        ;;
-      --layer)
-        shift
-        if [[ $# -eq 0 || "$1" == --* ]]; then
-          record_arg_error "--layer requires an explicit layer"
-          break
-        fi
-        if ! valid_profile "$1"; then
-          record_arg_error "Unknown layer: $1"
-          break
-        fi
-        RUN_LAYER_ONLY="$1"
-        ;;
-      --stow)
-        shift
-        if [[ $# -eq 0 || "$1" == --* ]]; then
-          record_arg_error "--stow requires a package name"
-          break
-        fi
-        STOW_ONLY_PACKAGE="$1"
-        ;;
-      --verify)
-        shift
-        if [[ $# -eq 0 || "$1" == --* ]]; then
-          record_arg_error "--verify requires an explicit profile"
-          break
-        fi
-        if ! valid_profile "$1"; then
-          record_arg_error "Unknown verify profile: $1"
-          break
-        fi
-        VERIFY_PROFILE="$1"
-        ;;
-      minimal|full|macos|linux-desktop)
-        REQUESTED_PROFILE="$1"
-        ;;
-      *)
-        record_arg_error "Unknown argument: $1"
-        ;;
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --help|-h|help) SHOW_HELP=1; return 0 ;;
+      --version) SHOW_VERSION=1; return 0 ;;
     esac
-    shift
   done
 
-  if [[ "$SHOW_HELP" -eq 1 || "${#ARG_ERRORS[@]}" -gt 0 ]]; then
+  CLI_COMMAND="$1"
+  shift
+
+  case "$CLI_COMMAND" in
+    install)
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          -n|--dry-run) DRY_RUN=1 ;;
+          -y|--yes) ASSUME_YES=1 ;;
+          --no-input) NO_INPUT=1 ;;
+          --allow-partial|--allow-without-sudo) ALLOW_PARTIAL=1 ;;
+          --no-color) NO_COLOR_REQUESTED=1 ;;
+          --*) record_arg_error "Unknown install option: $1" ;;
+          *)
+            if [[ -n "$REQUESTED_PROFILE" ]]; then
+              record_arg_error "install accepts exactly one profile"
+            elif valid_profile "$1"; then
+              REQUESTED_PROFILE="$1"
+            else
+              record_arg_error "Unknown profile: $1"
+            fi
+            ;;
+        esac
+        shift
+      done
+      [[ -n "$REQUESTED_PROFILE" ]] || record_arg_error "install requires an explicit profile"
+      ;;
+    refresh)
+      SKIP_INSTALL=1
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          -n|--dry-run) DRY_RUN=1 ;;
+          --no-color) NO_COLOR_REQUESTED=1 ;;
+          --*) record_arg_error "Unknown refresh option: $1" ;;
+          *)
+            if [[ -n "$REQUESTED_PROFILE" ]]; then
+              record_arg_error "refresh accepts at most one profile"
+            elif valid_profile "$1"; then
+              REQUESTED_PROFILE="$1"
+            else
+              record_arg_error "Unknown profile: $1"
+            fi
+            ;;
+        esac
+        shift
+      done
+      REQUESTED_PROFILE="${REQUESTED_PROFILE:-full}"
+      ;;
+    stow)
+      SKIP_INSTALL=1
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          -n|--dry-run) DRY_RUN=1 ;;
+          --no-color) NO_COLOR_REQUESTED=1 ;;
+          --*) record_arg_error "Unknown stow option: $1" ;;
+          *) STOW_PACKAGES+=("$1") ;;
+        esac
+        shift
+      done
+      [[ ${#STOW_PACKAGES[@]} -gt 0 ]] || record_arg_error "stow requires at least one package"
+      ;;
+    agents)
+      SKIP_INSTALL=1
+      if [[ $# -gt 0 && "$1" != --* ]]; then
+        AGENTS_ACTION="$1"
+        shift
+      fi
+      case "$AGENTS_ACTION" in
+        sync|status|verify) ;;
+        "") record_arg_error "agents requires one of: sync, status, verify" ;;
+        *) record_arg_error "Unknown agents action: $AGENTS_ACTION" ;;
+      esac
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          -n|--dry-run)
+            if [[ "$AGENTS_ACTION" == "sync" ]]; then
+              DRY_RUN=1
+            else
+              record_arg_error "agents $AGENTS_ACTION does not accept --dry-run"
+            fi
+            ;;
+          --no-color) NO_COLOR_REQUESTED=1 ;;
+          *) record_arg_error "Unknown agents option: $1" ;;
+        esac
+        shift
+      done
+      ;;
+    verify)
+      SKIP_INSTALL=1
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --no-color) NO_COLOR_REQUESTED=1 ;;
+          --*) record_arg_error "Unknown verify option: $1" ;;
+          *)
+            if [[ -n "$VERIFY_PROFILE" ]]; then
+              record_arg_error "verify accepts exactly one profile"
+            elif valid_profile "$1"; then
+              VERIFY_PROFILE="$1"
+            else
+              record_arg_error "Unknown profile: $1"
+            fi
+            ;;
+        esac
+        shift
+      done
+      [[ -n "$VERIFY_PROFILE" ]] || record_arg_error "verify requires an explicit profile"
+      ;;
+    minimal|full|macos|linux-desktop|restow)
+      record_arg_error "Legacy syntax '$CLI_COMMAND' is no longer supported; run ./dotfiles.sh --help"
+      ;;
+    *)
+      record_arg_error "Unknown command: $CLI_COMMAND"
+      ;;
+  esac
+
+  if [[ "${#ARG_ERRORS[@]}" -gt 0 ]]; then
     return 0
   fi
+}
 
-  if [[ "$RESTOW_MODE" -eq 1 && -z "$REQUESTED_PROFILE" ]]; then
-    REQUESTED_PROFILE=full
+confirm_unproven_install() {
+  [[ "$DRY_RUN" -eq 1 ]] && return 0
+  [[ "$ASSUME_YES" -eq 1 ]] && return 0
+
+  log_warn "We can't prove this is idempotent. Install may rerun third-party installers or change package/runtime state."
+  if [[ "$NO_INPUT" -eq 1 || ! -t 0 ]]; then
+    log_error "Install requires confirmation. Re-run with --yes, or inspect it first with --dry-run."
+    return 2
   fi
 
-  if [[ "$AGENTS_ONLY" -eq 1 ]] &&
-     [[ "$RESTOW_MODE" -eq 1 || -n "$REQUESTED_PROFILE" || -n "$RUN_LAYER_ONLY" ||
-        -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ||
-        "$SKIP_INSTALL_EXPLICIT" -eq 1 || "$ALLOW_PARTIAL_EXPLICIT" -eq 1 ]]; then
-    record_arg_error "agents accepts only --dry-run or --help"
-    return 0
-  fi
-
-  if [[ "$AGENTS_ONLY" -eq 1 || -n "$RUN_LAYER_ONLY" || -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ]]; then
-    return 0
-  fi
-
-  if [[ -z "$REQUESTED_PROFILE" ]]; then
-    SHOW_HELP=1
-  fi
+  local reply
+  read -r -p "Continue with dotfiles install? [y/N] " reply || return 2
+  case "$reply" in
+    y|Y|yes|YES) return 0 ;;
+  esac
+  log_warn "Install cancelled."
+  return 1
 }
 
 print_profile_banner() {
   local profile="$1"
   shift
   local layers=("$@")
-  printf 'dotfiles setup\n'
+  printf 'dotfiles %s\n' "$CLI_COMMAND"
   printf 'profile: %s\n' "$profile"
   printf 'layers: %s\n' "${layers[*]}"
 }
@@ -625,11 +722,11 @@ check_required_commands() {
 exit_with_summary() {
   cleanup_runtime
   if [[ ${#ERRORS[@]} -eq 0 ]]; then
-    log_ok "Setup complete."
+    log_ok "Dotfiles operation complete."
     exit 0
   fi
 
-  printf 'Setup completed with %d error(s):\n' "${#ERRORS[@]}"
+  printf 'Dotfiles operation completed with %d error(s):\n' "${#ERRORS[@]}"
   printf '%s\n' "${ERRORS[@]}"
   exit 1
 }
