@@ -336,6 +336,10 @@ notes = [
   "Machine-wide audit-only storage census with ignored per-machine paths and deterministic Codex transcript accounting.",
 ]
 
+[skills.application-email]
+local_path = "agents/skills/application-email"
+tracking = "local"
+
 [skills.personal-edge]
 local_path = "agents/skills/personal-edge"
 tracking = "local"
