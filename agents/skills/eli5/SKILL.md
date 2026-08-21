@@ -7,4 +7,7 @@ description: Explain a topic like I'm a 5 year old. Use when the user types /eli
 
 Explain like I'm someone who knows nothing about this topic, using a HTML artifact with big pictures and few words.
 
+Open it from the CLI. The artifact is not delivered until it is open on
+Anders's Mac.
+
 Topic: $ARGUMENTS

@@ -8,6 +8,9 @@ disable-model-invocation: true
 
 Apply Edward Tufte's principles to design clear, honest, high-density data visualizations.
 
+When the work produces a visual artifact, open it from the CLI. The artifact
+is not delivered until it is open on Anders's Mac.
+
 ## Workflow
 
 ### For new visualizations:

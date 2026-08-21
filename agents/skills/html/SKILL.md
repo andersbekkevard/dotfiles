@@ -72,9 +72,8 @@ resolve `${TMPDIR:-/tmp}` and use a descriptive timestamped filename.
 
 ## Deliver
 
-The artifact is delivered when it is open on Anders's Mac, not merely on the
-machine that ran the agent. Use the installed `fleet` skill to put and open it
-there. Always report the absolute path on the Mac.
+Open it from the CLI. The artifact is not delivered until it is open on
+Anders's Mac. Always report the absolute path on the Mac.
 
 Verify the rendered page before handing over: wide (~1440px) and narrow
 (~390px) widths, no horizontal page overflow, no console errors, source links

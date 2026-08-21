@@ -44,11 +44,17 @@ preserve = [
 local_path = "agents/skills/eli5/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/anthropics/claude-plugins-community.git", ref = "main", path = "eli5/skills/eli5/SKILL.md" }
+preserve = [
+  "Keep the CLI-open completion trigger so an HTML artifact is not considered delivered until it is open on Anders's Mac.",
+]
 
 [skills.show-me]
 local_path = "agents/skills/show-me"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/humanlayer/skills.git", ref = "main", path = "plugins/show-me/skills/show-me" }
+preserve = [
+  "Keep the CLI-open completion trigger and let the global fleet posture own the cross-machine mechanism.",
+]
 
 [skills.obsidian-markdown]
 local_path = "agents/skills/obsidian-markdown"
@@ -108,6 +114,9 @@ upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref
 local_path = "agents/skills/improve-codebase-architecture"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/improve-codebase-architecture" }
+preserve = [
+  "Keep the CLI-open completion trigger and Mac absolute-path handoff; the global fleet posture owns the cross-machine mechanism.",
+]
 
 [skills.extreme-software-optimization]
 local_path = "agents/skills/extreme-software-optimization"
