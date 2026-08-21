@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "case_count": 26,
+  "cases": [
+    {
+      "case_id": "01-mcp-analytics-capability",
+      "group": "positive-borderline",
+      "expected_owner": "tufte-viz for quantitative judgment; HTML only if the requested explanation benefits from a report"
+    },
+    {
+      "case_id": "02-pertento-performance-report",
+      "group": "positive",
+      "expected_owner": "html with tufte-viz quantitative judgment"
+    },
+    {
+      "case_id": "03-arcana-api-surface",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "04-nvda-equity-report",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "05-agent-usage-explorer",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "06-san-francisco-trip-map",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "07-arcana-model-journey",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "08-q2-return-audit",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "09-html-pattern-landscape",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "10-anthropic-gallery-index",
+      "group": "positive-utility",
+      "expected_owner": "html utility"
+    },
+    {
+      "case_id": "11-ingest-architecture-review",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "12-ingest-benchmark-report",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "13-ingest-user-journey",
+      "group": "positive",
+      "expected_owner": "show-me or diagram specialist; HTML may be useful"
+    },
+    {
+      "case_id": "14-cold-verification-triage",
+      "group": "positive",
+      "expected_owner": "html"
+    },
+    {
+      "case_id": "15-live-agent-trace-viewer",
+      "group": "positive-product",
+      "expected_owner": "web app or html"
+    },
+    {
+      "case_id": "16-analytics-mcp-data-flow",
+      "group": "positive",
+      "expected_owner": "html or diagram specialist"
+    },
+    {
+      "case_id": "17-coda-investment-briefing",
+      "group": "positive",
+      "expected_owner": "html with tufte-viz quantitative judgment"
+    },
+    {
+      "case_id": "18-coda-thematic-explorer",
+      "group": "positive",
+      "expected_owner": "interactive html with tufte-viz quantitative judgment"
+    },
+    {
+      "case_id": "19-analytics-skeleton-qa",
+      "group": "routing-borderline",
+      "expected_owner": "existing UI implementation and screenshot verification"
+    },
+    {
+      "case_id": "20-code-diff-control",
+      "group": "routing-control",
+      "expected_owner": "show-me"
+    },
+    {
+      "case_id": "21-wayfinder-diff-control",
+      "group": "routing-control",
+      "expected_owner": "show-me"
+    },
+    {
+      "case_id": "22-existing-ui-screenshot-control",
+      "group": "routing-control",
+      "expected_owner": "browser or screenshot tooling"
+    },
+    {
+      "case_id": "23-remotion-timing-control",
+      "group": "routing-control",
+      "expected_owner": "video or Remotion tooling"
+    },
+    {
+      "case_id": "24-excel-home-formatting-control",
+      "group": "routing-control",
+      "expected_owner": "Excel or workbook tooling"
+    },
+    {
+      "case_id": "25-raycast-visual-bug-control",
+      "group": "routing-control",
+      "expected_owner": "host UI inspection"
+    },
+    {
+      "case_id": "26-token-spend-slide-control",
+      "group": "routing-control",
+      "expected_owner": "slide or deck tooling"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "case_id": "26-token-spend-slide-control",
+  "group": "routing-control",
+  "expected_owner": "slide or deck tooling",
+  "prompt_is_verbatim": true,
+  "source_corpus": "14-day benchmark corpus",
+  "source_file": "/Users/andersbekkevard/Documents/Codex/2026-08-21/users-andersbekkevard-dotfiles-agents-in-progress/outputs/html-skill-benchmark-prompts-2026-08-21.jsonl",
+  "source_case_id": "route-007",
+  "source_session_id": "86f8b7ea-835c-41c8-aafb-af5a6a745af9",
+  "source_runtime": "claude",
+  "source_working_directory": "/Users/andersbekkevard/vault/Projects/Odin",
+  "source_date": "2026-08-13T21:26:33.886Z",
+  "source_description": "Slide-design brief for a token-spend chart; route to slide/design tooling rather than the generic /html entrypoint."
+}

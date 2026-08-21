@@ -1,0 +1,1 @@
+Check the «improve durable date « thing codex convo on europa. I steered borter truncation. For the newset, blackstone fund, take the «focus that fund» thing on dates, and sort by sharpe, and screenshot and show mem in this chat

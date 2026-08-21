@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "case_id": "03-arcana-api-surface",
+  "group": "positive",
+  "expected_owner": "html",
+  "prompt_is_verbatim": true,
+  "source_corpus": "14-day benchmark corpus",
+  "source_file": "/Users/andersbekkevard/Documents/Codex/2026-08-21/users-andersbekkevard-dotfiles-agents-in-progress/outputs/html-skill-benchmark-prompts-2026-08-21.jsonl",
+  "source_case_id": "html-003",
+  "source_session_id": "019ff5cb-53e5-75d0-8a62-6d5b70ed0370",
+  "source_runtime": "codex",
+  "source_working_directory": "/Users/andersbekkevard/vault/Projects/Seatankers",
+  "source_date": "2026-08-12T12:16:34.088Z",
+  "source_description": "Layered, searchable HTML map of the complete Arcana MCP/API surface with details on demand."
+}

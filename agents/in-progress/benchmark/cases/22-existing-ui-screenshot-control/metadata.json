@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "case_id": "22-existing-ui-screenshot-control",
+  "group": "routing-control",
+  "expected_owner": "browser or screenshot tooling",
+  "prompt_is_verbatim": true,
+  "source_corpus": "14-day benchmark corpus",
+  "source_file": "/Users/andersbekkevard/Documents/Codex/2026-08-21/users-andersbekkevard-dotfiles-agents-in-progress/outputs/html-skill-benchmark-prompts-2026-08-21.jsonl",
+  "source_case_id": "route-003",
+  "source_session_id": "01a01bac-07f0-7883-9873-f9897364e30d",
+  "source_runtime": "codex",
+  "source_working_directory": "/Users/andersbekkevard/vault/Projects/Seatankers",
+  "source_date": "2026-08-19T20:17:37.327Z",
+  "source_description": "Request to screenshot a configured fund view and show it in chat; this is existing-UI capture, not generative HTML."
+}

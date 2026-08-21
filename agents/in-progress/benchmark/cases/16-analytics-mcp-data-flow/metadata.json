@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "case_id": "16-analytics-mcp-data-flow",
+  "group": "positive",
+  "expected_owner": "html or diagram specialist",
+  "prompt_is_verbatim": true,
+  "source_corpus": "3-day benchmark corpus",
+  "source_file": "/tmp/html-skill-benchmark-corpus-2026-08-21/benchmark-scenarios.jsonl",
+  "source_case_id": "S06-analytics-mcp-data-flow",
+  "source_session_id": "01a01b5b-89fb-7ea3-be23-1e2c7c1550b9",
+  "source_runtime": "codex",
+  "source_working_directory": "/home/anders/Seatankers",
+  "source_date": "2026-08-19T19:19:51.930Z",
+  "source_message_kind": "trigger",
+  "source_description": "Show where Analytics and MCP share their numerical path, where they diverge, and which files or packages carry data from Postgres to the final number."
+}

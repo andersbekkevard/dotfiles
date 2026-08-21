@@ -1,0 +1,1 @@
+[$show-me](/home/anders/dotfiles/agents/skills/desk/show-me/SKILL.md) the difference in a html report with a before and after of the callstacks for analytics and for mcp and how data flows. forward to mac and open in comet

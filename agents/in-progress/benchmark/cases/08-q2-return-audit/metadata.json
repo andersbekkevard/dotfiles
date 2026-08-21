@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "case_id": "08-q2-return-audit",
+  "group": "positive",
+  "expected_owner": "html",
+  "prompt_is_verbatim": true,
+  "source_corpus": "14-day benchmark corpus",
+  "source_file": "/Users/andersbekkevard/Documents/Codex/2026-08-21/users-andersbekkevard-dotfiles-agents-in-progress/outputs/html-skill-benchmark-prompts-2026-08-21.jsonl",
+  "source_case_id": "html-008",
+  "source_session_id": "01a02090-626d-7b20-8610-dd36d0230573",
+  "source_runtime": "codex",
+  "source_working_directory": "/Users/andersbekkevard/vault/Projects/InFi",
+  "source_date": "2026-08-20T20:43:46.164Z",
+  "source_description": "Use Show Me to produce a beautiful, clean HTML visual."
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "case_id": "12-ingest-benchmark-report",
+  "group": "positive",
+  "expected_owner": "html",
+  "prompt_is_verbatim": true,
+  "source_corpus": "3-day benchmark corpus",
+  "source_file": "/tmp/html-skill-benchmark-corpus-2026-08-21/benchmark-scenarios.jsonl",
+  "source_case_id": "S02-ingest-benchmark-report",
+  "source_session_id": "384b1068-dc57-40a8-b72c-c3c7c8ad4f58",
+  "source_runtime": "claude",
+  "source_working_directory": "/home/anders/Seatankers",
+  "source_date": "2026-08-18T23:09:56.231Z",
+  "source_message_kind": "trigger",
+  "source_description": "Make the overnight bronze-to-gold benchmark results and end-to-end ingest journey understandable in an ergonomic visual report."
+}

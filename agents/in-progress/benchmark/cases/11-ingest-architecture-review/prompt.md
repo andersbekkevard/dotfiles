@@ -1,0 +1,1 @@
+[$improve-codebase-architecture](/home/anders/dotfiles/agents/skills/engineering/improve-codebase-architecture/SKILL.md) for the automated docker ingest harness. both the current dev setup, but as interestingly, the wayfinder map described future prod version
