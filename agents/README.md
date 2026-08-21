@@ -18,9 +18,11 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   children at `~/.claude/skills/<name>` and
   `~/.codex/skills/<name>`. Per-skill symlinks let root-level user and
   third-party skills plus Codex-managed `.system/` skills survive beside them.
-- `in-progress/<name>/` — candidate skills under deliberate development. They
-  are excluded from `skillctl`, `skilltokens`, and harness installation. Test
-  one by explicitly asking an agent to read its `SKILL.md`. `skillpull` still
+- `in-progress/<name>/` or `in-progress/<collection>/<name>/` — candidate
+  skills under deliberate development. Collection directories contain no
+  `SKILL.md`; they exist only to organize related experiments. Candidates are
+  excluded from `skillctl`, `skilltokens`, and harness installation. Test one
+  by explicitly asking an agent to read its `SKILL.md`. `skillpull` still
   validates its provenance entry. Promotion moves it into `skills/<name>/`.
 - `skills/.local/<name>/` — machine-specific global skills. Git ignores this
   namespace, while setup projects it to `~/.claude/skills/<name>` and

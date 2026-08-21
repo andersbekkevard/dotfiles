@@ -1,2 +1,0 @@
-visualize the entireity of arcana mcp surface to the smallest granularity, so i will be able to understand what we can use it for. that is, essentially, the entire api surface. document it in a html page i can view. give me: details on demand:
-this is likely a layered system, so make the html dynamic so i dont get flooded with api surface and can naviagte and find the tool definition and scope for everything it surfaces, to such a level that i intuitively can identify what it does NOT offer as well

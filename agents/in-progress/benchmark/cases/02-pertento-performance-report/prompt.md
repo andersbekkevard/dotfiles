@@ -1,1 +1,0 @@
-use [$arcana](/Users/andersbekkevard/vault/Projects/Seatankers/.agents/skills/arcana/SKILL.md)  and [$tufte-viz](/Users/andersbekkevard/dotfiles/agents/skills/desk/tufte-viz/SKILL.md) and make an html report on the returns since inception for pertento. what are the drivers of return? act as a senior portfolio analyst giving a report to his Pod manager

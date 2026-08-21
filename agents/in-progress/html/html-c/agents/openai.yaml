@@ -1,0 +1,6 @@
+interface:
+  display_name: "HTML C"
+  short_description: "Create visual and interactive HTML artifacts"
+  default_prompt: "Use $html-c to turn this into a clear local HTML artifact."
+policy:
+  allow_implicit_invocation: false

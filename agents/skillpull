@@ -56,6 +56,43 @@ def rel(path: Path) -> str:
         return str(path)
 
 
+def discover_candidate_dirs() -> tuple[dict[str, Path], dict[str, list[Path]]]:
+    """Find candidate skill roots beneath in-progress, allowing collections."""
+    discovered: dict[str, Path] = {}
+    collisions: dict[str, list[Path]] = {}
+    if not IN_PROGRESS.is_dir():
+        return discovered, collisions
+
+    skill_dirs: list[Path] = []
+    for child in sorted(IN_PROGRESS.iterdir()):
+        if not child.is_dir() or child.name.startswith("."):
+            continue
+        if (child / "SKILL.md").is_file() or (child / "SKILL.off.md").is_file():
+            skill_dirs.append(child)
+            continue
+        for candidate in sorted(child.iterdir()):
+            if (
+                candidate.is_dir()
+                and not candidate.name.startswith(".")
+                and (
+                    (candidate / "SKILL.md").is_file()
+                    or (candidate / "SKILL.off.md").is_file()
+                )
+            ):
+                skill_dirs.append(candidate)
+
+    for skill_dir in skill_dirs:
+        name = skill_dir.name
+        existing = discovered.get(name)
+        if existing is None:
+            discovered[name] = skill_dir
+        elif existing != skill_dir:
+            paths = collisions.setdefault(name, [existing])
+            if skill_dir not in paths:
+                paths.append(skill_dir)
+    return discovered, collisions
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     data = skills(load_manifest())
     width = max([len(name) for name in data] + [5])
@@ -222,20 +259,18 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_validate(args: argparse.Namespace) -> int:
     data = skills(load_manifest())
-    active = {
-        p.name
-        for p in (ROOT / "skills").iterdir()
-        if p.is_dir() and not p.name.startswith(".")
-    }
-    candidates = (
+    active_root = ROOT / "skills"
+    active = (
         {
             p.name
-            for p in IN_PROGRESS.iterdir()
+            for p in active_root.iterdir()
             if p.is_dir() and not p.name.startswith(".")
         }
-        if IN_PROGRESS.is_dir()
+        if active_root.is_dir()
         else set()
     )
+    candidate_dirs, candidate_collisions = discover_candidate_dirs()
+    candidates = set(candidate_dirs)
     duplicates = sorted(active & candidates)
     actual = active | candidates
     declared = set(data)
@@ -243,9 +278,11 @@ def cmd_validate(args: argparse.Namespace) -> int:
     stale = sorted(declared - actual)
     misplaced = []
     for name in sorted(actual & declared):
-        lifecycle_root = Path(
-            "agents/in-progress" if name in candidates else "agents/skills"
-        ) / name
+        lifecycle_root = (
+            Path("agents") / candidate_dirs[name].relative_to(ROOT)
+            if name in candidates
+            else Path("agents/skills") / name
+        )
         allowed = {
             lifecycle_root,
             lifecycle_root / "SKILL.md",
@@ -258,6 +295,12 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print("skill names present in both active and in-progress directories:")
         for name in duplicates:
             print(f"  - {name}")
+    if candidate_collisions:
+        print("skill names present more than once under in-progress:")
+        for name, paths in sorted(candidate_collisions.items()):
+            print(f"  - {name}:")
+            for path in paths:
+                print(f"      {rel(path)}")
     if missing:
         print("skills missing from manifest:")
         for name in missing:
@@ -270,7 +313,13 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print("manifest entries outside their lifecycle directory:")
         for name, local_path, lifecycle_root in misplaced:
             print(f"  - {name}: {local_path} (expected {lifecycle_root})")
-    if not duplicates and not missing and not stale and not misplaced:
+    if (
+        not duplicates
+        and not candidate_collisions
+        and not missing
+        and not stale
+        and not misplaced
+    ):
         print(f"validate: ok ({len(actual)} skills mapped)")
         return 0
     return 1

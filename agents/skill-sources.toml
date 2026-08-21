@@ -136,14 +136,14 @@ notes = [
 ]
 
 [skills.html-1]
-local_path = "agents/in-progress/html-1"
+local_path = "agents/in-progress/html/html-1"
 tracking = "local"
 notes = [
   "Tournament candidate: consistent Anders house style with a reusable stylesheet.",
 ]
 
 [skills.html-2]
-local_path = "agents/in-progress/html-2"
+local_path = "agents/in-progress/html/html-2"
 tracking = "local"
 notes = [
   "Tournament candidate: implementation-heavy technical HTML report builder.",
@@ -151,7 +151,7 @@ notes = [
 ]
 
 [skills.html-3]
-local_path = "agents/in-progress/html-3"
+local_path = "agents/in-progress/html/html-3"
 tracking = "local"
 notes = [
   "Tournament candidate: subject-shaped editorial director.",
@@ -159,10 +159,18 @@ notes = [
 ]
 
 [skills.html-4]
-local_path = "agents/in-progress/html-4"
+local_path = "agents/in-progress/html/html-4"
 tracking = "local"
 notes = [
   "Tournament candidate: short empirical record of Anders's observed visual corrections and preferences.",
+]
+
+[skills.html-b]
+local_path = "agents/in-progress/html/html-b"
+tracking = "local"
+notes = [
+  "Independent work-in-progress candidate created without inspecting the existing dotfiles HTML skill.",
+  "Draws on Anders's gradual skill-writing preferences, Anthropic's html-effectiveness article and gallery, the 2026-08-21 research agent report, and selected public HTML-skill research with provenance retained in the visual grammar reference.",
 ]
 
 [skills.mine-sessions]
@@ -324,3 +332,28 @@ notes = [
 [skills.personal-edge]
 local_path = "agents/skills/personal-edge"
 tracking = "local"
+
+[skills.html-c]
+local_path = "agents/in-progress/html/html-c"
+tracking = "local"
+notes = [
+  "Independent in-progress candidate created without reading or comparing the existing dotfiles HTML skills.",
+  "Synthesizes Anders's preferences, Anthropic html-effectiveness examples, and the 2026-08-21 last30days research memo.",
+]
+
+[skills.html-fable]
+local_path = "agents/in-progress/html/html-fable"
+tracking = "local"
+notes = [
+  "Tournament candidate by Claude Fable: single /html entry point owning judgment, house visual language, and Mac delivery.",
+  "Design weight lives in assets/page.css and assets/skeleton.html, distilled from Anthropic's html-effectiveness gallery; tokens fixed, composition free.",
+  "Quantitative work routes to the unchanged tufte-viz skill; interactive decision surfaces are a conditional reference.",
+]
+
+[skills.html-d]
+local_path = "agents/in-progress/html/html-d"
+tracking = "local"
+notes = [
+  "Independent in-progress candidate written without reading sibling candidates; detailed source provenance is retained in PROVENANCE.md.",
+  "Synthesizes Anders's stated preferences with the html-effectiveness gallery, Shneiderman's details-on-demand, and clipboard copy-back sources.",
+]

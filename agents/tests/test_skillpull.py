@@ -72,6 +72,36 @@ class SkillpullValidateTest(unittest.TestCase):
             result.stdout,
         )
 
+    def test_validates_candidate_inside_collection(self):
+        self.add_skill("in-progress/html/html-1", "html-1")
+        (self.root / "skill-sources.toml").write_text(
+            "[skills.html-1]\n"
+            'local_path = "agents/in-progress/html/html-1"\n'
+            'tracking = "local"\n'
+        )
+
+        result = self.run_validate()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("validate: ok (1 skills mapped)", result.stdout)
+
+    def test_rejects_duplicate_candidate_names_across_collections(self):
+        self.add_skill("in-progress/html/sample", "sample")
+        self.add_skill("in-progress/other/sample", "sample")
+        (self.root / "skill-sources.toml").write_text(
+            "[skills.sample]\n"
+            'local_path = "agents/in-progress/html/sample"\n'
+            'tracking = "local"\n'
+        )
+
+        result = self.run_validate()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "skill names present more than once under in-progress",
+            result.stdout,
+        )
+
     def test_rejects_manifest_path_outside_lifecycle_directory(self):
         self.add_skill("skills/sample", "sample")
         (self.root / "skill-sources.toml").write_text(
