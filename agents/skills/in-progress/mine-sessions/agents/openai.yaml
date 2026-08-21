@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mine Sessions"
+  short_description: "Answer questions across past sessions"
+  default_prompt: "Use $mine-sessions to reconstruct what happened in this repository over the past seven days."

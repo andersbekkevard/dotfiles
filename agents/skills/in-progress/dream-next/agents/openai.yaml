@@ -1,0 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+interface:
+  display_name: "Dream next"
+  short_description: "Audit past sessions for workflow drift"
+  default_prompt: "Use $dream-next to find recurring failures in our skills, instructions, and agent workflow."

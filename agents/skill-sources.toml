@@ -143,6 +143,27 @@ notes = [
   "Work-in-progress record of Anders's evolving preferences for modular skill design, gradual specificity, and selective borrowing.",
 ]
 
+[skills.mine-sessions]
+local_path = "agents/skills/in-progress/mine-sessions"
+tracking = "local"
+notes = [
+  "Experimental shared procedure for answering a question across scoped Codex and Claude session history.",
+]
+
+[skills.dream-next]
+local_path = "agents/skills/in-progress/dream-next"
+tracking = "local"
+notes = [
+  "Experimental decoupled workflow audit. It delegates session corpus mechanics to mine-sessions.",
+]
+
+[skills.reflect-next]
+local_path = "agents/skills/in-progress/reflect-next"
+tracking = "local"
+notes = [
+  "Experimental current-session reflection with no Dream dependency or promotion authority.",
+]
+
 [skills.diagnosing-bugs]
 local_path = "agents/skills/engineering/diagnosing-bugs"
 tracking = "tracked"
