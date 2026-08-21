@@ -85,6 +85,17 @@ preserve = [
   "Keep unslop model-invoked in both Claude and Codex.",
 ]
 
+[skills.technical-writing]
+local_path = "agents/skills/technical-writing"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/technical-writing" }
+notes = [
+  "Imported from pinned commit 46125561306434d8a1d7745d540d8932ab0cd2a2 on 2026-08-22; main is the live drift target.",
+]
+preserve = [
+  "Keep technical-writing user-invoked in both Claude and Codex.",
+]
+
 [skills.codebase-design]
 local_path = "agents/skills/codebase-design"
 tracking = "tracked"
