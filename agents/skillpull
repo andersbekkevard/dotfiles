@@ -21,6 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 MANIFEST = ROOT / "skill-sources.toml"
+IN_PROGRESS = ROOT / "in-progress"
 DEFAULT_IGNORES = ("agents", ".git", "__pycache__", ".DS_Store")
 
 
@@ -221,16 +222,42 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_validate(args: argparse.Namespace) -> int:
     data = skills(load_manifest())
-    actual = {
+    active = {
         p.name
-        for cat in (ROOT / "skills").iterdir()
-        if cat.is_dir() and not cat.name.startswith(".")
-        for p in cat.iterdir()
+        for p in (ROOT / "skills").iterdir()
         if p.is_dir() and not p.name.startswith(".")
     }
+    candidates = (
+        {
+            p.name
+            for p in IN_PROGRESS.iterdir()
+            if p.is_dir() and not p.name.startswith(".")
+        }
+        if IN_PROGRESS.is_dir()
+        else set()
+    )
+    duplicates = sorted(active & candidates)
+    actual = active | candidates
     declared = set(data)
     missing = sorted(actual - declared)
     stale = sorted(declared - actual)
+    misplaced = []
+    for name in sorted(actual & declared):
+        lifecycle_root = Path(
+            "agents/in-progress" if name in candidates else "agents/skills"
+        ) / name
+        allowed = {
+            lifecycle_root,
+            lifecycle_root / "SKILL.md",
+            lifecycle_root / "SKILL.off.md",
+        }
+        local_path = Path(data[name].get("local_path", ""))
+        if local_path not in allowed:
+            misplaced.append((name, local_path, lifecycle_root))
+    if duplicates:
+        print("skill names present in both active and in-progress directories:")
+        for name in duplicates:
+            print(f"  - {name}")
     if missing:
         print("skills missing from manifest:")
         for name in missing:
@@ -239,7 +266,11 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print("manifest entries without local skill directory:")
         for name in stale:
             print(f"  - {name}")
-    if not missing and not stale:
+    if misplaced:
+        print("manifest entries outside their lifecycle directory:")
+        for name, local_path, lifecycle_root in misplaced:
+            print(f"  - {name}: {local_path} (expected {lifecycle_root})")
+    if not duplicates and not missing and not stale and not misplaced:
         print(f"validate: ok ({len(actual)} skills mapped)")
         return 0
     return 1

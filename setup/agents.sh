@@ -6,9 +6,10 @@
 # instruction overlays live under agents/.local/ and are appended after the
 # tracked global sources.
 # Claude Code and Codex read flat per-skill symlinks at
-# ~/.claude/skills/<name> and ~/.codex/skills/<name>. The canonical category
-# hierarchy stays in the repo. Codex links are maintained by `skillctl sync`
-# so Codex-managed content such as .system/ stays untouched beside them.
+# ~/.claude/skills/<name> and ~/.codex/skills/<name>. Active tracked skills are
+# flat under agents/skills/; candidates under agents/in-progress/ are not
+# projected. Codex links are maintained by `skillctl sync` so Codex-managed
+# content such as .system/ stays untouched beside them.
 
 agent_mkdir_p() {
   local dir="$1"
@@ -201,10 +202,9 @@ sync_claude_skill_links() {
   ensure_claude_skill_dir "$claude_skills_dir" "$managed_skills_dir"
   prune_stale_claude_skill_links "$claude_skills_dir" "$managed_skills_dir"
 
-  # Flatten the canonical skills/<category>/<name> structure for Claude Code.
-  # Skill names are globally unique, while the categorized source tree remains
-  # authoritative for humans.
-  for skill_dir in "$managed_skills_dir"/*/* "$managed_skills_dir"/.local/*; do
+  # Tracked active skills are flat; ignored machine-local skills keep their
+  # skills/.local/<name> namespace.
+  for skill_dir in "$managed_skills_dir"/* "$managed_skills_dir"/.local/*; do
     [[ -d "$skill_dir" ]] || continue
     [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
     link_claude_skill "$skill_dir" "$claude_skills_dir"

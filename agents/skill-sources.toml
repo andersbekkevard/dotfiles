@@ -6,7 +6,7 @@ version = 1
 # - local: intentionally local skill; no remote drift check.
 
 [skills.autoreview]
-local_path = "agents/skills/engineering/autoreview"
+local_path = "agents/skills/autoreview"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/openclaw/agent-skills.git", ref = "main", path = "skills/autoreview" }
 preserve = [
@@ -16,7 +16,7 @@ preserve = [
 ]
 
 [skills.create-cli]
-local_path = "agents/skills/engineering/create-cli"
+local_path = "agents/skills/create-cli"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/create-cli" }
 preserve = [
@@ -24,7 +24,7 @@ preserve = [
 ]
 
 [skills.define-goal]
-local_path = "agents/skills/fleet/define-goal/SKILL.md"
+local_path = "agents/skills/define-goal/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/openai/skills.git", ref = "main", path = "skills/.curated/define-goal/SKILL.md" }
 preserve = [
@@ -33,7 +33,7 @@ preserve = [
 ]
 
 [skills.humanizer]
-local_path = "agents/skills/desk/humanizer/SKILL.md"
+local_path = "agents/skills/humanizer/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/blader/humanizer.git", ref = "main", path = "SKILL.md" }
 preserve = [
@@ -41,30 +41,22 @@ preserve = [
 ]
 
 [skills.show-me]
-local_path = "agents/skills/desk/show-me"
+local_path = "agents/skills/show-me"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/humanlayer/skills.git", ref = "main", path = "plugins/show-me/skills/show-me" }
 
 [skills.obsidian-markdown]
-local_path = "agents/skills/desk/obsidian-markdown"
+local_path = "agents/skills/obsidian-markdown"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/kepano/obsidian-skills.git", ref = "main", path = "skills/obsidian-markdown" }
 
-[skills.defuddle]
-local_path = "agents/skills/desk/defuddle"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/kepano/obsidian-skills.git", ref = "main", path = "skills/defuddle" }
-preserve = [
-  "Keep disable-model-invocation=true so defuddle remains user-invoked in this global skill surface.",
-]
-
 [skills.officecli]
-local_path = "agents/skills/desk/officecli/SKILL.md"
+local_path = "agents/skills/officecli/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/iOfficeAI/OfficeCLI.git", ref = "main", path = "SKILL.md" }
 
 [skills.thermo-nuclear-code-quality-review]
-local_path = "agents/skills/engineering/thermo-nuclear-code-quality-review/SKILL.md"
+local_path = "agents/skills/thermo-nuclear-code-quality-review/SKILL.md"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md" }
 preserve = [
@@ -72,7 +64,7 @@ preserve = [
 ]
 
 [skills.unslop]
-local_path = "agents/skills/engineering/unslop"
+local_path = "agents/skills/unslop"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/unslop" }
 notes = [
@@ -83,17 +75,17 @@ preserve = [
 ]
 
 [skills.codebase-design]
-local_path = "agents/skills/engineering/codebase-design"
+local_path = "agents/skills/codebase-design"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/codebase-design" }
 
 [skills.domain-modeling]
-local_path = "agents/skills/flow/domain-modeling"
+local_path = "agents/skills/domain-modeling"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/domain-modeling" }
 
 [skills.fix-merge-conflicts]
-local_path = "agents/skills/engineering/fix-merge-conflicts"
+local_path = "agents/skills/fix-merge-conflicts"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/resolving-merge-conflicts" }
 preserve = [
@@ -103,17 +95,17 @@ preserve = [
 ]
 
 [skills.grilling]
-local_path = "agents/skills/flow/grilling"
+local_path = "agents/skills/grilling"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/grilling" }
 
 [skills.improve-codebase-architecture]
-local_path = "agents/skills/engineering/improve-codebase-architecture"
+local_path = "agents/skills/improve-codebase-architecture"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/improve-codebase-architecture" }
 
 [skills.extreme-software-optimization]
-local_path = "agents/skills/engineering/extreme-software-optimization"
+local_path = "agents/skills/extreme-software-optimization"
 tracking = "local"
 notes = [
   "Imported from the paid Jeffrey's Skills.md catalog on 2026-07-10; no public git path is available for drift checks.",
@@ -123,7 +115,7 @@ preserve = [
 ]
 
 [skills.wayfinder]
-local_path = "agents/skills/flow/wayfinder"
+local_path = "agents/skills/wayfinder"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/wayfinder" }
 preserve = [
@@ -132,58 +124,53 @@ preserve = [
 ]
 
 [skills.writing-for-agents]
-local_path = "agents/skills/meta/writing-for-agents"
+local_path = "agents/skills/writing-for-agents"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/writing-for-agents" }
 
 [skills.anders-skill-writing]
-local_path = "agents/skills/meta/anders-skill-writing"
+local_path = "agents/skills/anders-skill-writing"
 tracking = "local"
 notes = [
   "Work-in-progress record of Anders's evolving preferences for modular skill design, gradual specificity, and selective borrowing.",
 ]
 
 [skills.mine-sessions]
-local_path = "agents/skills/in-progress/mine-sessions"
+local_path = "agents/in-progress/mine-sessions"
 tracking = "local"
 notes = [
   "Experimental shared procedure for answering a question across scoped Codex and Claude session history.",
 ]
 
 [skills.dream-next]
-local_path = "agents/skills/in-progress/dream-next"
+local_path = "agents/in-progress/dream-next"
 tracking = "local"
 notes = [
   "Experimental decoupled workflow audit. It delegates session corpus mechanics to mine-sessions.",
 ]
 
 [skills.reflect-next]
-local_path = "agents/skills/in-progress/reflect-next"
+local_path = "agents/in-progress/reflect-next"
 tracking = "local"
 notes = [
   "Experimental current-session reflection with no Dream dependency or promotion authority.",
 ]
 
 [skills.diagnosing-bugs]
-local_path = "agents/skills/engineering/diagnosing-bugs"
+local_path = "agents/skills/diagnosing-bugs"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/diagnosing-bugs" }
 preserve = [
   "Keep the local description scoped to hard bugs; broad broken/failing/slow triggers over-invoke this heavyweight loop.",
 ]
 
-[skills.grill-with-docs]
-local_path = "agents/skills/flow/grill-with-docs"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/grill-with-docs" }
-
 [skills.handoff]
-local_path = "agents/skills/flow/handoff"
+local_path = "agents/skills/handoff"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/handoff" }
 
 [skills.tdd]
-local_path = "agents/skills/engineering/tdd"
+local_path = "agents/skills/tdd"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/tdd" }
 preserve = [
@@ -191,7 +178,7 @@ preserve = [
 ]
 
 [skills.to-tickets]
-local_path = "agents/skills/flow/to-tickets"
+local_path = "agents/skills/to-tickets"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-tickets" }
 preserve = [
@@ -199,7 +186,7 @@ preserve = [
 ]
 
 [skills.to-spec]
-local_path = "agents/skills/flow/to-spec"
+local_path = "agents/skills/to-spec"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-spec" }
 preserve = [
@@ -207,7 +194,7 @@ preserve = [
 ]
 
 [skills.visual-plan]
-local_path = "agents/skills/flow/visual-plan"
+local_path = "agents/skills/visual-plan"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/BuilderIO/skills.git", ref = "main", path = "skills/visual-plan" }
 notes = [
@@ -219,15 +206,15 @@ preserve = [
 ]
 
 [skills.beads]
-local_path = "agents/skills/flow/beads"
+local_path = "agents/skills/beads"
 tracking = "local"
 
 [skills.talk]
-local_path = "agents/skills/desk/talk"
+local_path = "agents/skills/talk"
 tracking = "local"
 
 [skills.tufte-viz]
-local_path = "agents/skills/desk/tufte-viz"
+local_path = "agents/skills/tufte-viz"
 tracking = "local"
 notes = [
   "Copied from the Seatankers repository skill on 2026-08-05 for reuse across projects.",
@@ -237,7 +224,7 @@ preserve = [
 ]
 
 [skills.codex-dispatch]
-local_path = "agents/skills/fleet/codex-dispatch"
+local_path = "agents/skills/codex-dispatch"
 tracking = "watch"
 upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/codex-first" }
 notes = [
@@ -245,68 +232,68 @@ notes = [
 ]
 
 [skills.control-europa-desktop]
-local_path = "agents/skills/desk/control-europa-desktop"
+local_path = "agents/skills/control-europa-desktop"
 tracking = "local"
 notes = [
   "Private on-demand VNC over supervised reverse SSH; persistent desktop substrate stays separate.",
 ]
 
 [skills.cycle-codex-account]
-local_path = "agents/skills/fleet/cycle-codex-account"
+local_path = "agents/skills/cycle-codex-account"
 tracking = "local"
 notes = [
   "Intentional non-operational placeholder while the Europa persistent-credential migration is paused.",
 ]
 
 [skills.fable-counsel]
-local_path = "agents/skills/fleet/fable-counsel"
+local_path = "agents/skills/fable-counsel"
 tracking = "local"
 
 [skills.dream]
-local_path = "agents/skills/meta/dream"
+local_path = "agents/skills/dream"
 tracking = "local"
 
 [skills.lint]
-local_path = "agents/skills/meta/lint"
+local_path = "agents/skills/lint"
 tracking = "local"
 
 [skills.pro-brief]
-local_path = "agents/skills/fleet/pro-brief"
+local_path = "agents/skills/pro-brief"
 tracking = "local"
 
 [skills.provision-hetzner-dev-server]
-local_path = "agents/skills/fleet/provision-hetzner-dev-server"
+local_path = "agents/skills/provision-hetzner-dev-server"
 tracking = "local"
 
 [skills.recap]
-local_path = "agents/skills/desk/recap"
+local_path = "agents/skills/recap"
 tracking = "local"
 
 [skills.reflect]
-local_path = "agents/skills/meta/reflect"
+local_path = "agents/skills/reflect"
 tracking = "local"
 
 [skills.router]
-local_path = "agents/skills/meta/router"
+local_path = "agents/skills/router"
 tracking = "local"
 
 [skills.skill-audit]
-local_path = "agents/skills/meta/skill-audit"
+local_path = "agents/skills/skill-audit"
 tracking = "local"
 
 [skills.reclaim-storage]
-local_path = "agents/skills/meta/reclaim-storage"
+local_path = "agents/skills/reclaim-storage"
 tracking = "local"
 notes = [
   "Machine-wide audit-only storage census with ignored per-machine paths and deterministic Codex transcript accounting.",
 ]
 
 [skills.personal-edge]
-local_path = "agents/skills/desk/personal-edge"
+local_path = "agents/skills/personal-edge"
 tracking = "local"
 
 [skills.refund-chatgpt-subscriptions]
-local_path = "agents/skills/desk/refund-chatgpt-subscriptions"
+local_path = "agents/skills/refund-chatgpt-subscriptions"
 tracking = "local"
 notes = [
   "Private machine-local skill contents are intentionally gitignored; the tracked placeholder preserves the catalog slot.",

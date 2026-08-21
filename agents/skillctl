@@ -33,23 +33,31 @@ LOCAL_CATEGORY = ".local"
 
 
 def skill_dirs():
-    # Skills live one level below category folders (skills/<category>/<name>).
-    # A dir is a skill iff it holds SKILL.md or SKILL.off.md; names are
-    # globally unique across categories (invocation still uses the skill name).
+    # Tracked active skills are flat under skills/<name>. Machine-local skills
+    # retain their ignored skills/.local/<name> namespace.
     dirs = [
         d
-        for cat in SKILLS.iterdir()
-        if cat.is_dir()
-        and (not cat.name.startswith(".") or cat.name == LOCAL_CATEGORY)
-        for d in cat.iterdir()
+        for d in SKILLS.iterdir()
         if d.is_dir()
         and not d.name.startswith(".")
         and ((d / "SKILL.md").exists() or (d / "SKILL.off.md").exists())
     ]
+    local_root = SKILLS / LOCAL_CATEGORY
+    if local_root.is_dir():
+        dirs.extend(
+            d
+            for d in local_root.iterdir()
+            if d.is_dir()
+            and not d.name.startswith(".")
+            and ((d / "SKILL.md").exists() or (d / "SKILL.off.md").exists())
+        )
     names = [d.name for d in dirs]
     dupes = {n for n in names if names.count(n) > 1}
     if dupes:
-        sys.exit(f"skillctl: duplicate skill names across categories: {sorted(dupes)}")
+        sys.exit(
+            "skillctl: duplicate skill names across active and machine-local "
+            f"skills: {sorted(dupes)}"
+        )
     return sorted(dirs, key=lambda d: d.name)
 
 

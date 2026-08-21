@@ -120,8 +120,8 @@ test_canonical_repo_path_contract() {
     "$REPO_ROOT/docs/usage.md" \
     "$REPO_ROOT/shell/.zsh/aliases.zsh" \
     "$REPO_ROOT/shell/.config/sesh/sesh.toml" \
-    "$REPO_ROOT/agents/skills/fleet/provision-hetzner-dev-server/SKILL.md" \
-    "$REPO_ROOT/agents/skills/fleet/provision-hetzner-dev-server/scripts/verify-host.sh"; then
+    "$REPO_ROOT/agents/skills/provision-hetzner-dev-server/SKILL.md" \
+    "$REPO_ROOT/agents/skills/provision-hetzner-dev-server/scripts/verify-host.sh"; then
     fail "canonical operator surfaces still reference ~/.dotfiles"
   fi
 }
@@ -764,7 +764,7 @@ test_control_europa_desktop_wrapper() {
   fake_home="$(mktemp -d)"
   fake_bin="$fake_home/bin"
   capture="$fake_home/capture"
-  helper_dir="$fake_home/dotfiles/agents/skills/desk/control-europa-desktop/scripts"
+  helper_dir="$fake_home/dotfiles/agents/skills/control-europa-desktop/scripts"
   wrapper="$REPO_ROOT/scripts/.local/bin/control-europa-desktop"
   mkdir -p "$fake_bin" "$helper_dir"
 

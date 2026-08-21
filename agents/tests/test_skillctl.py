@@ -18,7 +18,7 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.home.mkdir()
         self.skillctl = self.root / "skillctl"
         shutil.copy2(SOURCE, self.skillctl)
-        self.skill = self.root / "skills" / "test" / "sample"
+        self.skill = self.root / "skills" / "sample"
         self.skill.mkdir(parents=True)
         (self.skill / "SKILL.md").write_text(
             "---\nname: sample\ndescription: Sample skill.\n---\n\n# Sample\n"
@@ -27,6 +27,11 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.local_skill.mkdir(parents=True)
         (self.local_skill / "SKILL.md").write_text(
             "---\nname: private\ndescription: Private skill.\n---\n\n# Private\n"
+        )
+        self.candidate = self.root / "in-progress" / "candidate"
+        self.candidate.mkdir(parents=True)
+        (self.candidate / "SKILL.md").write_text(
+            "---\nname: candidate\ndescription: Candidate skill.\n---\n\n# Candidate\n"
         )
 
     def tearDown(self):
@@ -69,7 +74,7 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.assertNotIn("disable-codex-model-invocation", self.frontmatter())
         self.assertIn("sample: claude=model codex=model", output)
 
-    def test_sync_flattens_category_path_and_migrates_nested_links(self):
+    def test_sync_migrates_legacy_nested_links(self):
         codex_skills = self.home / ".codex" / "skills"
         nested_link = codex_skills / "test" / "sample"
         nested_link.parent.mkdir(parents=True)
@@ -92,6 +97,13 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.assertEqual(local_link.resolve(), self.local_skill.resolve())
         self.assertFalse(nested_local_link.exists())
         self.assertFalse(nested_local_link.parent.exists())
+
+    def test_in_progress_skills_are_not_discoverable(self):
+        output = self.run_skillctl("list")
+        self.assertNotIn("candidate", output)
+
+        self.run_skillctl("sync")
+        self.assertFalse((self.home / ".codex" / "skills" / "candidate").exists())
 
     def test_local_skills_share_the_global_name_namespace(self):
         duplicate = self.root / "skills" / ".local" / "sample"
@@ -120,7 +132,7 @@ class ClaudeSkillProjectionTest(unittest.TestCase):
         self.home = self.root / "home"
         self.home.mkdir()
         self.skills = self.root / "skills"
-        self.skill = self.skills / "fleet" / "sample"
+        self.skill = self.skills / "sample"
         self.skill.mkdir(parents=True)
         (self.skill / "SKILL.md").write_text(
             "---\nname: sample\ndescription: Sample skill.\n---\n"
@@ -130,11 +142,16 @@ class ClaudeSkillProjectionTest(unittest.TestCase):
         (self.local_skill / "SKILL.md").write_text(
             "---\nname: private\ndescription: Private skill.\n---\n"
         )
+        self.candidate = self.root / "in-progress" / "candidate"
+        self.candidate.mkdir(parents=True)
+        (self.candidate / "SKILL.md").write_text(
+            "---\nname: candidate\ndescription: Candidate skill.\n---\n"
+        )
 
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_sync_flattens_category_path_and_migrates_nested_link(self):
+    def test_sync_migrates_legacy_nested_link(self):
         claude_skills = self.home / ".claude" / "skills"
         nested_link = claude_skills / "fleet" / "sample"
         nested_link.parent.mkdir(parents=True)
@@ -164,6 +181,7 @@ sync_claude_skill_links {shlex.quote(str(self.skills))}
         local_link = claude_skills / "private"
         self.assertTrue(local_link.is_symlink())
         self.assertEqual(local_link.resolve(), self.local_skill.resolve())
+        self.assertFalse((claude_skills / "candidate").exists())
 
 
 if __name__ == "__main__":

@@ -13,16 +13,17 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   Git-ignored machine instructions. Setup appends shared local rules and then
   harness-local rules after the tracked global sources. Removing an overlay
   removes its content on the next setup run.
-- `skills/<category>/<name>/` — canonical global skills, grouped for overview:
-  `flow/` (planning surface + beads substrate), `engineering/` (craft +
-  review), `fleet/` (orchestration/delegation), `meta/` (the system that
-  maintains the system), `desk/` (personal utilities + format references).
-  Skill names are globally unique. Setup flattens the categorized source tree
-  into immediate children at `~/.claude/skills/<name>` and
+- `skills/<name>/` — canonical active global skills in one flat, auditable
+  namespace. Skill names are globally unique. Setup projects them to immediate
+  children at `~/.claude/skills/<name>` and
   `~/.codex/skills/<name>`. Per-skill symlinks let root-level user and
   third-party skills plus Codex-managed `.system/` skills survive beside them.
+- `in-progress/<name>/` — candidate skills under deliberate development. They
+  are excluded from `skillctl`, `skilltokens`, and harness installation. Test
+  one by explicitly asking an agent to read its `SKILL.md`. `skillpull` still
+  validates its provenance entry. Promotion moves it into `skills/<name>/`.
 - `skills/.local/<name>/` — machine-specific global skills. Git ignores this
-  category, while setup projects it to `~/.claude/skills/<name>` and
+  namespace, while setup projects it to `~/.claude/skills/<name>` and
   `~/.codex/skills/<name>`. `skillctl` and `skilltokens` include it;
   `skillpull` excludes it because it is not repository provenance.
 - `archive/<name>/` — retired skills, kept whole but unlinked from every
@@ -71,7 +72,7 @@ Claude per-skill symlinks or compose the top-level harness instructions.
 
 Planning is conversation-first; artifacts exist for readers, not for stages.
 
-1. **Talk** — a plain conversation (or `/grilling` / `/grill-with-docs`)
+1. **Talk** — a plain conversation (or `/grilling`)
    builds the shared understanding. No skill required to plan.
 2. **Land** — `wayfinder` makes it durable: the effort's Markdown `map.md` is the
    current-intent register (append-only decision index, fog, supersessions).
@@ -140,8 +141,8 @@ self-runs through `uv` with `tiktoken` when needed.
 
 ## Source Drift
 
-`skill-sources.toml` is the single place to record where a global skill came
-from. It distinguishes:
+`skill-sources.toml` is the single place to record where an active or
+in-progress global skill came from. It distinguishes:
 
 - `tracked` — compare local content to an upstream Git path.
 - `watch` — related upstream/project to keep an eye on, but no stable diff path.
@@ -161,3 +162,4 @@ agents/skillpull check humanizer --diff
 not "replace the local skill". Preserve notes in `skill-sources.toml` identify
 intentional local behavior such as autoreview's thermonuclear review wiring.
 Machine-specific skills under `skills/.local/` do not belong in this manifest.
+In-progress skills do belong because provenance should survive incubation.

@@ -12,10 +12,10 @@ import tiktoken
 
 
 REPO = Path(__file__).resolve().parents[2]
-SCRIPT = REPO / "agents/skills/fleet/fable-counsel/scripts/counsel.py"
-COMPOSER = REPO / "agents/skills/fleet/fable-counsel/scripts/compose_packet.py"
-SKILL = REPO / "agents/skills/fleet/fable-counsel/SKILL.md"
-OPENAI = REPO / "agents/skills/fleet/fable-counsel/agents/openai.yaml"
+SCRIPT = REPO / "agents/skills/fable-counsel/scripts/counsel.py"
+COMPOSER = REPO / "agents/skills/fable-counsel/scripts/compose_packet.py"
+SKILL = REPO / "agents/skills/fable-counsel/SKILL.md"
+OPENAI = REPO / "agents/skills/fable-counsel/agents/openai.yaml"
 
 
 class FableCounselPacketTests(unittest.TestCase):

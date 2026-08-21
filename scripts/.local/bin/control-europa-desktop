@@ -2,7 +2,7 @@
 set -euo pipefail
 
 readonly EUROPA_HOST="europa"
-readonly LOCAL_HELPER="$HOME/dotfiles/agents/skills/desk/control-europa-desktop/scripts/control-europa-desktop"
+readonly LOCAL_HELPER="$HOME/dotfiles/agents/skills/control-europa-desktop/scripts/control-europa-desktop"
 readonly REMOTE_HELPER="/home/anders/.local/bin/control-europa-desktop"
 
 usage() {

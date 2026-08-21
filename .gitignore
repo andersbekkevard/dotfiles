@@ -13,14 +13,14 @@ agents/skills/.local/
 agents/.local/
 
 # Private local skill: contains Anders's subscription email candidates.
-agents/skills/desk/refund-chatgpt-subscriptions/*
-!agents/skills/desk/refund-chatgpt-subscriptions/.gitkeep
+agents/skills/refund-chatgpt-subscriptions/*
+!agents/skills/refund-chatgpt-subscriptions/.gitkeep
 
 # Generated or machine-local state.
 .playwright-cli/
 nvim/.config/nvim/lazy-lock.json
 .DS_Store
-agents/skills/meta/reclaim-storage/machine.local.toml
+agents/skills/reclaim-storage/machine.local.toml
 
 # bv (beads viewer) local config and caches
 .bv/
