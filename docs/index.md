@@ -26,7 +26,7 @@ Operator invariant:
 | Repository/layer architecture | `docs/architecture.md` | Stow packages + setup orchestration |
 | Claude Code harness with Codex models | `docs/claudex.md` | Isolated `claudex` setup, model overrides, and proxy lifecycle |
 | Git repository LOC helper | `docs/git-loc.md` | `git-loc` exact and estimate modes for remote repository size checks |
-| Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks and automation-visible wrappers belong |
+| Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks, agent instructions, and automation-visible wrappers belong |
 | Secrets and git-crypt flow | `docs/secrets.md` | Unlock/export behavior |
 | General engineering principles | `docs/design-principles.md` | Broader coding standards |
 

@@ -31,6 +31,7 @@ If the task touches secrets, also read:
 | `docs/profiles.md` | Profile behavior | Explicit profile selection and boundaries |
 | `docs/runtimes.md` | Runtime/toolchain policy | Version floors and installer strategy |
 | `docs/architecture.md` | Structural model | Stow layout, layering, ownership boundaries |
+| `docs/local-overrides.md` | Machine-local customization | Shell, command, and global agent override ownership |
 | `docs/secrets.md` | Secrets handling | `git-crypt` unlock/export flow |
 | `docs/design-principles.md` | General engineering philosophy | Cross-project standards (not bootstrap behavior) |
 | `agents/README.md` | Global agent surface (skills, skillctl, wiring) | Skill invocation-state system and harness composition contract |

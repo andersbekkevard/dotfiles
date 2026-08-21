@@ -42,6 +42,7 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 ```bash
 ./setup.sh restow
 ./setup.sh agents
+agents/instructionctl status
 ./setup.sh --verify macos
 ./setup.sh --layer full
 ./setup.sh --stow nvim
@@ -53,6 +54,7 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 On an already working machine, `./setup.sh agents` refreshes only the global
 agent skills and instructions under `~/.claude` and `~/.codex`. It does not
 install packages, restow dotfiles, refresh shell templates, or update stable
-command entrypoints.
+command entrypoints. `agents/instructionctl status` shows the tracked and
+machine-local instruction sources used for each harness.
 
 Machine-local login/runtime overrides live in `~/.profile.local`; interactive-only shell tweaks live in `~/.zshrc.local`. `./setup.sh` refreshes `~/.config/zsh/local.example.zsh` as the latest reference template without overwriting a customized local file, and refreshes stable `~/.local/bin` entrypoints for commands installed outside the base system PATH.

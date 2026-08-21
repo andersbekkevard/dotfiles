@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -u
+
+AGENTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "$AGENTS_DIR/.." && pwd)"
+
+# render_agent_file is the composition source of truth used by setup.
+# shellcheck source=../setup/agents.sh
+source "$DOTFILES_DIR/setup/agents.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: agents/instructionctl [status|verify]
+
+Inspect the tracked and machine-local inputs for global agent instructions.
+
+  status  Show each harness, generated target, and source state. This is the default.
+  verify  Show the same report and fail when a generated target is missing or stale.
+
+Repair generated targets with ./setup.sh agents.
+EOF
+}
+
+display_path() {
+  local path="$1"
+
+  case "$path" in
+    "$AGENTS_DIR"/*) printf 'agents/%s' "${path#"$AGENTS_DIR"/}" ;;
+    "$HOME"/*) printf '~/%s' "${path#"$HOME"/}" ;;
+    *) printf '%s' "$path" ;;
+  esac
+}
+
+local_source_state() {
+  local source="$1"
+
+  if [[ -s "$source" ]]; then
+    printf 'active'
+  elif [[ -e "$source" ]]; then
+    printf 'empty'
+  else
+    printf 'absent'
+  fi
+}
+
+report_harness() {
+  local harness="$1" target="$2" harness_source="$3" harness_local_source="$4"
+  local shared_source="$AGENTS_DIR/SHARED.global.md"
+  local shared_local_source="$AGENTS_DIR/.local/SHARED.md"
+  local state
+
+  if [[ ! -f "$target" ]]; then
+    state="missing"
+  elif cmp -s "$target" <(render_agent_file \
+      "$shared_source" "$harness_source" "$shared_local_source" "$harness_local_source"); then
+    state="current"
+  else
+    state="stale"
+  fi
+
+  printf '%-7s %-7s %s\n' "$harness" "$state" "$(display_path "$target")"
+  printf '  tracked  %s\n' "$(display_path "$shared_source")"
+  printf '  tracked  %s\n' "$(display_path "$harness_source")"
+  printf '  local    %s (%s)\n' \
+    "$(display_path "$shared_local_source")" "$(local_source_state "$shared_local_source")"
+  printf '  local    %s (%s)\n' \
+    "$(display_path "$harness_local_source")" "$(local_source_state "$harness_local_source")"
+
+  [[ "$state" == "current" ]]
+}
+
+main() {
+  local command="${1:-status}"
+  local failures=0
+
+  if [[ $# -gt 1 ]]; then
+    usage >&2
+    return 2
+  fi
+
+  case "$command" in
+    status|verify) ;;
+    -h|--help|help)
+      usage
+      return 0
+      ;;
+    *)
+      usage >&2
+      return 2
+      ;;
+  esac
+
+  printf 'HARNESS STATE   TARGET\n'
+  report_harness \
+    codex "$HOME/.codex/AGENTS.md" \
+    "$AGENTS_DIR/AGENTS.global.md" "$AGENTS_DIR/.local/AGENTS.md" || failures=$((failures + 1))
+  report_harness \
+    claude "$HOME/.claude/CLAUDE.md" \
+    "$AGENTS_DIR/CLAUDE.global.md" "$AGENTS_DIR/.local/CLAUDE.md" || failures=$((failures + 1))
+
+  if [[ "$command" == "verify" && "$failures" -gt 0 ]]; then
+    printf '\nrepair: ./setup.sh agents\n' >&2
+    return 1
+  fi
+  return 0
+}
+
+main "$@"

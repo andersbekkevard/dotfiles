@@ -5,7 +5,7 @@ The repository is split into three categories:
 1. Stow packages under top-level package directories such as `shell/`, `git/`, `nvim/`, `tmux/`, `terminals/`, `wt/`, and `linux-desktop/`. A package may materialize more than one target subtree under `$HOME`; for example, the `scripts/` package owns both interactive helper files under `~/.scripts/` and stable executable entrypoints under `~/.local/bin/`.
 2. Setup logic under `setup/`, with library modules in `setup/lib/` (core, profiles, packages, runtimes, shell-setup, stow, verify), driven by `setup.sh`.
 3. Documentation under `docs/`.
-4. The global agent surface under `agents/` contains canonical active skills in the flat `agents/skills/<name>` namespace, candidates under `agents/in-progress/<name>`, and retired skills under `agents/archive/<name>`. It also contains primary shared global instructions in `agents/SHARED.global.md`, harness additions in `agents/AGENTS.global.md` and `agents/CLAUDE.global.md`, optional Git-ignored machine overlays under `agents/.local/`, and the `skillctl` invocation-state tool. This is not a stow package. `setup/agents.sh` owns machine-level wiring, composes tracked shared and harness instructions followed by local shared and harness overlays into `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`, and projects only active skills as flat per-skill symlinks for both harnesses. The `skillctl sync` call inside setup refreshes Codex links without touching Codex-managed entries such as `.system/`. Existing same-name skills are not overwritten. See `agents/README.md`.
+4. The global agent surface under `agents/` contains canonical active skills in the flat `agents/skills/<name>` namespace, candidates under `agents/in-progress/<name>`, and retired skills under `agents/archive/<name>`. It also contains primary shared global instructions in `agents/SHARED.global.md`, harness additions in `agents/AGENTS.global.md` and `agents/CLAUDE.global.md`, and optional Git-ignored machine overlays under `agents/.local/`. This is not a stow package. `setup/agents.sh` owns machine-level wiring, composes tracked shared and harness instructions followed by local shared and harness overlays into `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`, and projects only active skills as flat per-skill symlinks for both harnesses. `agents/instructionctl` inspects and verifies those composed files without writing them. The `skillctl sync` call inside setup refreshes Codex links without touching Codex-managed entries such as `.system/`. Existing same-name skills are not overwritten. See `agents/README.md`.
 5. Retired configs and scripts under `archive/`.
 
 The `claudex` integration follows the same tracked/runtime split: `scripts/.local/bin/claudex` and `claudex-proxy` are portable stowed commands; setup installs the versioned CLIProxyAPI binary. The generated proxy configuration, local API key, OAuth credentials, PID, and logs are machine state and never live in the repository. The proxy binds to `127.0.0.1`, and only the `claudex` process receives its endpoint and token.
@@ -32,6 +32,13 @@ so the exported `autoreview` skill does not start with a missing hard
 dependency. macOS gets it from `Brewfile.minimal`; Linux gets the
 architecture-matched upstream release through
 `linux-binaries.minimal.txt`.
+
+Global instruction ownership is a two-axis matrix. Storage selects tracked or
+machine-local policy; the file name selects shared, Codex-only, or Claude-only
+policy. Setup is the compiler for this matrix. Generated files in the home
+directory are outputs, while `agents/instructionctl verify` checks that they
+match their sources. Machine-local sources remain absent until a machine needs
+one and never require a tracked placeholder.
 
 ## Installation ordering
 

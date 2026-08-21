@@ -1,6 +1,6 @@
 # Local Overrides Contract
 
-This document defines where machine-specific behavior should live, where user-level executable overrides belong, and how shared shell startup should treat them.
+This document defines where machine-specific behavior should live, where user-level executable overrides belong, and how shell and agent setup should treat them.
 
 ## Goals
 
@@ -18,9 +18,10 @@ There are three different concerns:
    - Must stay portable across supported machines.
 
 2. **Machine-local overrides**
-   - Lives outside the managed repo when it is specific to one host or one person's local state.
+   - Lives outside tracked config when it is specific to one host or one person's local state.
    - Runtime/login file: `~/.profile.local`
    - Interactive shell file: `~/.zshrc.local`
+   - Global agent instructions: `agents/.local/SHARED.md`, `AGENTS.md`, and `CLAUDE.md`
    - Use `~/.profile.local` for machine-specific env and PATH that automation, agents, or services must see.
    - Use `~/.zshrc.local` for prompt tweaks, aliases, completions, experiments, and one-off shell ergonomics.
 
@@ -82,6 +83,23 @@ These files are optional, untracked, and machine-owned.
 |---|---|---|
 | `~/.profile.local` | Login shells, automation-visible bootstrap | Machine-specific env vars, PATH additions, installer-added lines moved out of tracked files |
 | `~/.zshrc.local` | Interactive zsh only | Aliases, prompt tweaks, completions, experiments, interactive helpers |
+| `agents/.local/SHARED.md` | Global Claude and Codex instructions after `./setup.sh agents` | Machine paths, installed applications, host capabilities, local access rules shared by both harnesses |
+| `agents/.local/AGENTS.md` | Global Codex instructions after `./setup.sh agents` | Codex-only machine rules |
+| `agents/.local/CLAUDE.md` | Global Claude instructions after `./setup.sh agents` | Claude-only machine rules |
+
+## Machine-local agent instructions
+
+Copy only the required starter from `agents/templates/local-instructions/`,
+replace its comment, and run `./setup.sh agents`. Setup writes the composed
+outputs to `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md` atomically. Direct
+edits to those generated files are replaced on the next refresh.
+
+`agents/instructionctl status` reports which local sources are active without
+printing their content. `agents/instructionctl verify` fails if either output
+does not match its sources. Promote a local rule into the corresponding
+tracked source when it should apply on every machine. `agents/README.md` owns
+the tracked/local and shared/harness matrix, composition order, and repair
+commands.
 
 Installer pollution workflow:
 

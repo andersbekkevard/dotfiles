@@ -10,6 +10,7 @@ Start here:
 - Profile selection semantics: `profiles.md`
 - Runtime and installer policy: `runtimes.md`
 - Repo/package architecture: `architecture.md`
+- Machine-local shell, command, and agent instruction overrides: `local-overrides.md`
 - Isolated Claude Code harness with Codex models: `claudex.md`
 - Git repository LOC helper: `git-loc.md`
 

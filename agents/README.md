@@ -32,6 +32,9 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
 - `skillctl` — invocation-state tool. Machine-level wiring is done by
   `setup/agents.sh` (minimal profile); `skillctl sync` only handles the
   Codex-generated projection.
+- `instructionctl`: read-only status and verification for composed global
+  instructions. It reports source presence without printing private local
+  content. `setup.sh agents` remains the only writer.
 - `skilltokens` — exact tiktoken report for skill descriptions and `SKILL.md`
   bodies, used to prune context load and sprawl.
 - `skill-sources.toml` + `skillpull` — source/provenance map and read-only
@@ -61,9 +64,39 @@ agents/.local/AGENTS.md
 agents/.local/CLAUDE.md
 ```
 
-Run `./setup.sh agents` after adding, changing, or removing an overlay. The
-composition order is tracked shared, tracked harness, local shared, local
-harness. Later files can therefore specialize earlier rules for one machine.
+The two independent choices are storage and harness:
+
+| Storage | Both harnesses | Codex only | Claude only |
+|---|---|---|---|
+| Git-synced | `SHARED.global.md` | `AGENTS.global.md` | `CLAUDE.global.md` |
+| Machine-local | `.local/SHARED.md` | `.local/AGENTS.md` | `.local/CLAUDE.md` |
+
+Create only the local files this machine needs. The tracked templates are safe
+starting points:
+
+```bash
+mkdir -p agents/.local
+cp agents/templates/local-instructions/SHARED.md agents/.local/SHARED.md
+# Or copy AGENTS.md or CLAUDE.md for one harness only.
+$EDITOR agents/.local/SHARED.md
+./setup.sh agents
+agents/instructionctl verify
+```
+
+Setup composes tracked shared, tracked harness, local shared, then local
+harness. Keep machine paths, installed application names, host capabilities,
+and machine-specific access rules in the local files. Move a rule into the
+tracked source once it should apply on every machine. The local directory is
+Git-ignored and has no tracked placeholder.
+
+Use `agents/instructionctl status` to inspect source state without checking the
+private files into Git or printing their contents. `verify` exits nonzero when
+either generated target is missing or stale. Repair it with `./setup.sh agents`.
+
+[OpenAI's AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md/)
+states that Codex gives `~/.codex/AGENTS.override.md` precedence over
+`AGENTS.md`. Reserve that native file for a deliberate temporary replacement;
+the additive machine-local path in this repo is `agents/.local/AGENTS.md`.
 
 Do not use direct `agents/skillctl sync` as full agent setup. It does not create
 Claude per-skill symlinks or compose the top-level harness instructions.
