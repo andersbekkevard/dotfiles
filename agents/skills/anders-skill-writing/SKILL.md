@@ -1,6 +1,7 @@
 ---
 name: anders-skill-writing
 description: Anders's evolving preferences for designing, importing, splitting, and revising agent skills. Use when creating or materially revising a skill in Anders's system.
+disable-model-invocation: true
 ---
 
 # Anders skill writing

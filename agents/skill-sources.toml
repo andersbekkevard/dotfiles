@@ -335,10 +335,6 @@ tracking = "local"
 local_path = "agents/skills/recap"
 tracking = "local"
 
-[skills.router]
-local_path = "agents/skills/router"
-tracking = "local"
-
 [skills.skill-audit]
 local_path = "agents/skills/skill-audit"
 tracking = "local"

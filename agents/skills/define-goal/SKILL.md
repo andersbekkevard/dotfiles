@@ -1,7 +1,6 @@
 ---
 name: define-goal
 description: Goal definition. Use when Anders asks to create/set a goal or turn an intention into a verifiable objective.
-disable-model-invocation: true
 ---
 
 # Define Goal

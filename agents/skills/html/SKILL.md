@@ -1,7 +1,6 @@
 ---
 name: html
-description: Create a browser artifact from the current material and open it on Anders's Mac. Owns what to show, how to show it, and the house visual language.
-disable-model-invocation: true
+description: Create a browser artifact from the current material and open it on Anders's Mac. Owns what to show and how to show it within the artifact.
 ---
 
 # HTML
