@@ -1,6 +1,0 @@
-policy:
-  allow_implicit_invocation: false
-interface:
-  display_name: "Reflect next"
-  short_description: "Review how the current session went"
-  default_prompt: "Use $reflect-next to capture the process lessons from this session."

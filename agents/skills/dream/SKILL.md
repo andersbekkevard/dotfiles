@@ -1,22 +1,20 @@
 ---
 name: dream
-description: Mine session reflections and logs for recurring process lessons and proposed instruction edits.
+description: Mine session logs for recurring process lessons and proposed instruction edits.
 disable-model-invocation: true
 ---
 
 # dream
 
-Offline reflection over past sessions to keep the current repo's instruction
-surface aligned with how Anders actually works. This is **not** a memory store —
+Offline audit over past sessions to keep the current repo's instruction surface
+aligned with how Anders actually works. This is **not** a memory store —
 it edits the authored docs you control: `CLAUDE.md`, `AGENTS.md`, `docs/`
 meta-instructions, and repo skills. It runs as a map → reduce → review → apply
 pipeline and is safe to schedule weekly.
 
-`dream` is the cold half of the learning loop; `reflect` is the hot half. The
-shared contract — what counts as a learning, evidence standards, dedup keys,
-the memory/instruction/narrative boundary — lives with the atomic capture
-side, in [`reflect/PRINCIPLES.md`](../reflect/PRINCIPLES.md); scanners and the
-reducer follow it.
+The audit contract for what counts as a learning, evidence standards, dedup
+keys, and the memory/instruction/narrative boundary lives in
+[`PRINCIPLES.md`](PRINCIPLES.md). Scanners and the reducer follow it.
 
 Two domains, both first-class:
 - **meta** — how we work: orchestration, parallelization, goal framing, verification
@@ -26,7 +24,7 @@ Two domains, both first-class:
 
 ## Layout
 
-- Code: this skill's folder (global) — `SKILL.md`, `extract.jq`, `scripts/dream.sh`, `lib/`; the shared learning-loop contract is `../reflect/PRINCIPLES.md`.
+- Code: this skill's folder (global) — `SKILL.md`, `PRINCIPLES.md`, `extract.jq`, `scripts/dream.sh`, and `lib/`.
 - Runtime root: `.agents/dreams/` at the root of the repo being mined. Do not
   create or use `.dream/` or the legacy `.dreams/` root.
 - Review artifacts: `.agents/dreams/proposals/<run_id>/` — `proposal.md`,
@@ -78,11 +76,9 @@ context.
 
 ### 2. Scan (parallel subagents — one per shard)
 
-**Reflections first.** Before spawning scanners, list the repo's
-`.agents/reflections/`. Hand every scanner the reflections whose dates overlap
-its shard: a reflection is the pre-digested record of its session, weighted as
-primary evidence, with the transcript used to corroborate. Transcript-only
-mining is the fallback for unreflected sessions.
+The original transcript is primary evidence. Historical reflections or
+summaries may help locate evidence, but scanners must verify every proposed
+learning against the dialogue.
 
 Read `lib/scanner-prompt.md` and `lib/schema.md`. For **each** `shard-NN.files`
 in the run dir, spawn ONE subagent using the model in `manifest.json`
@@ -183,9 +179,6 @@ bash "$DREAM" status   # last_run, discovered / processed / pending sessions, op
 
 ## Notes
 
-- The `reflect` skill is the single-session process retro that writes
-  `.agents/reflections/`. `dream` is the multi-session miner; reflections are
-  its primary input (see `../reflect/PRINCIPLES.md`).
 - Findings that are not doc-fixable (model limits, one-offs, Anders changing his
   mind) are still logged but excluded from proposals — they remain useful signal.
 - Every run should look for what to delete or merge, not just what to add. A

@@ -23,8 +23,8 @@ You are operating in <one line: what this repo is and is for>.
 - **Decisions** → ADRs in `<adr home>`, per `<adr conventions doc or "the global
   domain-modeling skill's three-part test">`. Glossary: `<CONTEXT.md / glossary path>`.
 - **Human-only areas**: `<paths the agent reads but never writes, or "none">`.
-- **Agent surface**: repo skills in `.agents/skills/`; reflections in
-  `.agents/reflections/`; dream runtime in `.agents/dreams/`.
+- **Agent surface**: repo skills in `.agents/skills/`; dream runtime in
+  `.agents/dreams/`.
 
 ## Authority (typed, per question)
 

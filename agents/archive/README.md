@@ -42,3 +42,6 @@ commit message that moves it.
 - `model-routing` — Claude/Fable fleet-routing policy. Archived 2026-08-17
   after its simplified Codex rules moved behind progressive disclosure in the
   user-invoked `codex-dispatch` skill.
+- `reflect` — file-writing session retrospective. Archived 2026-08-21 after
+  reflection became a conversation-only review of friction and wasted effort;
+  Dream now owns its audit principles and uses transcripts as primary evidence.

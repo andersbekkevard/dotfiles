@@ -142,18 +142,18 @@ notes = [
   "Experimental shared procedure for answering a question across scoped Codex and Claude session history.",
 ]
 
-[skills.dream-next]
-local_path = "agents/in-progress/dream-next"
+[skills.workflow-audit]
+local_path = "agents/in-progress/workflow-audit"
 tracking = "local"
 notes = [
   "Experimental decoupled workflow audit. It delegates session corpus mechanics to mine-sessions.",
 ]
 
-[skills.reflect-next]
-local_path = "agents/in-progress/reflect-next"
+[skills.reflect]
+local_path = "agents/in-progress/reflect"
 tracking = "local"
 notes = [
-  "Experimental current-session reflection with no Dream dependency or promotion authority.",
+  "Experimental conversation-only review of friction, wasted effort, and improvement candidates.",
 ]
 
 [skills.diagnosing-bugs]
@@ -267,10 +267,6 @@ tracking = "local"
 
 [skills.recap]
 local_path = "agents/skills/recap"
-tracking = "local"
-
-[skills.reflect]
-local_path = "agents/skills/reflect"
 tracking = "local"
 
 [skills.router]

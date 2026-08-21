@@ -1,10 +1,10 @@
 ---
-name: dream-next
+name: workflow-audit
 description: Audit past sessions for recurring failures in skills, instructions, delegation, verification, and workflow, then propose narrow reviewed changes.
 disable-model-invocation: true
 ---
 
-# Dream next
+# Workflow audit
 
 Audit how the agent system has been working. Read and follow
 [`mine-sessions`](../mine-sessions/SKILL.md) for all session discovery,

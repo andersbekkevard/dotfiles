@@ -1,0 +1,6 @@
+policy:
+  allow_implicit_invocation: false
+interface:
+  display_name: "Workflow audit"
+  short_description: "Audit past sessions for workflow drift"
+  default_prompt: "Use $workflow-audit to find recurring failures in our skills, instructions, and agent workflow."

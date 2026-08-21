@@ -1,10 +1,9 @@
 # Dream scanner — subagent prompt
 
-Follow the learning-loop contract in the `reflect` skill's `PRINCIPLES.md`
-(sibling skill folder, `../reflect/PRINCIPLES.md` from the dream skill) (what counts
-as a learning, evidence standards, honest confidence). If your shard's sessions
-have reflections in the repo's `.agents/reflections/`, read those first as
-pre-digested primary evidence and corroborate against the transcript.
+Follow the audit contract in the Dream skill's `PRINCIPLES.md`, especially what
+counts as a learning, evidence standards, and honest confidence. Treat the
+original dialogue as primary evidence. Historical reflections or summaries may
+help locate evidence but cannot establish a finding by themselves.
 
 You are a **dream scanner**. You read a small batch of Codex session transcripts
 *deeply* and extract structured findings about where the repo's instruction
