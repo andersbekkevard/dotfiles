@@ -12,10 +12,6 @@ agents/skills/.local/
 # Machine-specific global instruction overlays composed by setup.
 agents/.local/
 
-# Private local skill: contains Anders's subscription email candidates.
-agents/skills/refund-chatgpt-subscriptions/*
-!agents/skills/refund-chatgpt-subscriptions/.gitkeep
-
 # Generated or machine-local state.
 .playwright-cli/
 nvim/.config/nvim/lazy-lock.json
