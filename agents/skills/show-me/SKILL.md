@@ -1,6 +1,6 @@
 ---
 name: show-me
-description: Help the user understand the current topic visually with concise diagrams and code-shape sketches, routing substantial browser artifacts to html.
+description: Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
 ---
 
 Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.
@@ -114,9 +114,9 @@ function expandSkill(command: string): string {
 }
 ```
 
-- If the smallest useful view is a browser artifact, use the `html` skill. It
-  owns the artifact's form, visual language, construction, verification, and
-  delivery.
+- For a visual UI, layout, state comparison, or concrete concept too dense for
+  Mermaid, choose one focused browser form — a diagram, infographic, or short
+  slide deck — and pass that selection and exact content to the `html` skill.
 
 ### guidance
 

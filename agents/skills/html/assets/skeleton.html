@@ -15,20 +15,20 @@
 <body>
 <div class="sheet">
 
-  <!-- Masthead: eyebrow names the territory, h1 states the finding. -->
+  <!-- Masthead: render the supplied eyebrow, lead claim, lede, and metadata. -->
   <header>
     <div class="eyebrow">Component demo · html</div>
-    <h1>Headings state the finding, not the document type</h1>
+    <h1>The supplied lead claim occupies the visual hierarchy</h1>
     <p class="lede">
-      Every component below is defined in <code>page.css</code>. A real page uses
-      the few that fit its subject — this file only exists so you can see the
-      grammar rendered and copy correct markup. Named things link to their
+      Every component below is defined in <code>page.css</code>. The calling
+      specification chooses the content and form; this file shows the grammar
+      rendered with correct markup. Named things link to their
       source: <a href="https://github.com/anthropics/html-effectiveness">html-effectiveness</a>.
     </p>
     <div class="meta">Reference skeleton · replace with artifact provenance</div>
   </header>
 
-  <!-- Each section = one claim, stated in the h2. -->
+  <!-- Render each supplied section and claim in the provided order. -->
   <section>
     <h2>A figure sits on a canvas, with its caveat in the caption</h2>
     <div class="canvas">
@@ -57,8 +57,8 @@
         </g>
         <g class="node hot">
           <rect x="210" y="51" width="160" height="48"/>
-          <text x="290" y="72" text-anchor="middle">choose the form</text>
-          <text class="sub" x="290" y="88" text-anchor="middle">references/forms.md</text>
+          <text x="290" y="72" text-anchor="middle">render the form</text>
+          <text class="sub" x="290" y="88" text-anchor="middle">content specification</text>
         </g>
         <g class="node ok">
           <rect x="430" y="12" width="170" height="48"/>

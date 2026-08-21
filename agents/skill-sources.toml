@@ -57,6 +57,7 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/humanlayer/skills.git", ref = "main", path = "plugins/show-me/skills/show-me" }
 preserve = [
   "Keep the CLI-open completion trigger and let the global fleet posture own the cross-machine mechanism.",
+  "Keep Show Me close to HumanLayer's concrete visualizer: it selects diffs, trees, flows, and other focused views; HTML only renders a browser form it supplies.",
 ]
 
 [skills.obsidian-markdown]
@@ -97,6 +98,106 @@ notes = [
 ]
 preserve = [
   "Keep technical-writing user-invoked in both Claude and Codex.",
+]
+
+[skills.arena]
+local_path = "agents/skills/arena"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/arena" }
+notes = [
+  "Adapted from pstack Arena on 2026-08-21 as a standalone Unix-style utility.",
+]
+preserve = [
+  "Do not prescribe models, candidate count, worktrees, branches, or a surrounding orchestration system.",
+  "Candidates use fresh selected context and separate temporary outputs; synthesis alone writes the final target.",
+  "Default to one Codex, one Claude, and one Grok candidate while selecting models and effort for the task.",
+  "Claude follows Fable Counsel's claude.ai subscription and isolation contract instead of a bare claude -p call.",
+  "Keep the blind judge advisory and make durable synthesis records conditional on the task.",
+]
+
+[skills.architect]
+local_path = "agents/skills/architect"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/architect" }
+notes = [
+  "Adapted from pstack Architect on 2026-08-21 as a standalone sketch-first implementation skill.",
+]
+preserve = [
+  "Keep Architect independent of Arena, fixed models, worktrees, and a surrounding orchestration system.",
+  "Preserve caller-first concrete sketches, implementation feedback into the sketch, redesign on repeated structural friction, and real-path verification.",
+  "Keep Architect user-invoked in both Claude and Codex.",
+]
+
+[skills.create-verification-skill]
+local_path = "agents/skills/create-verification-skill"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/create-verification-skill" }
+notes = [
+  "Adapted from pstack on 2026-08-21 for repository-native project skill locations and custody.",
+]
+preserve = [
+  "Keep the launch, doctor, drive, evidence, cleanup, feature-map, and self-proof contract.",
+  "Generate into the repository's project-local skill convention rather than assuming Cursor paths.",
+  "Keep the generated skill user-invoked in both Claude and Codex.",
+]
+
+[skills.maintain-verification-skill]
+local_path = "agents/skills/maintain-verification-skill"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/maintain-verification-skill" }
+notes = [
+  "Adapted from pstack on 2026-08-21 as a harness-neutral source-and-live reconciliation pass.",
+]
+preserve = [
+  "Keep clean, changed, and blocked outcomes; full feature source and live coverage; and the verification-directory-only edit boundary.",
+  "Do not require Cursor tasks, fixed subagent topology, branches, worktrees, or automatic pull requests.",
+  "Keep the maintenance skill user-invoked in both Claude and Codex.",
+]
+
+[skills.blast-radius]
+local_path = "agents/skills/blast-radius"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/blast-radius" }
+notes = [
+  "Adapted from pstack Blast Radius on 2026-08-21 as a standalone safety review.",
+]
+preserve = [
+  "Keep Blast Radius independent of Arena, How, and Why.",
+  "Read applicable ADRs, owner documentation, and history directly when establishing rationale.",
+  "Keep the proof ladder and require the safety fact to be proven or marked unproven.",
+]
+
+[skills.principle-prove-it-works]
+local_path = "agents/skills/principle-prove-it-works"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-prove-it-works" }
+notes = [
+  "Adapted from pstack on 2026-08-21 as a standalone verification principle.",
+]
+preserve = [
+  "Keep Prove It Works independent of Show Me Your Work or another audit-log skill.",
+  "Keep direct real-artifact proof stronger than builds, cached state, or worker self-reports.",
+]
+
+[skills.principle-redesign-from-first-principles]
+local_path = "agents/skills/principle-redesign-from-first-principles"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-redesign-from-first-principles" }
+notes = [
+  "Imported from pstack on 2026-08-21 as a standalone design principle.",
+]
+
+[skills.show-me-your-work]
+local_path = "agents/skills/show-me-your-work"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/show-me-your-work" }
+notes = [
+  "Adapted from pstack on 2026-08-21 as a harness-neutral decision trail.",
+]
+preserve = [
+  "Resolve the current task record through the active harness instead of assuming Cursor transcript paths.",
+  "Use a fresh reviewer from a different model family without fixing the model or worktree arrangement.",
+  "Keep the TSV helper, append-only decision trail, evidence pointers, and local-by-default custody.",
 ]
 
 [skills.codebase-design]
@@ -236,6 +337,21 @@ notes = [
   "Conversation-only review of friction, wasted effort, and improvement candidates.",
 ]
 
+[skills.independent-reflect]
+local_path = "agents/skills/independent-reflect"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/reflect" }
+notes = [
+  "Adapted from pstack Reflect on 2026-08-21 under a distinct local name so the lightweight Reflect remains intact.",
+]
+preserve = [
+  "Default reviewers are Fable 5 high for judgment, GPT-5.6 Sol high for tooling, and Grok 4.6 high for divergence through their native CLI harnesses.",
+  "Resolve the current task record through the active harness and never assume Cursor transcript paths or Task calls.",
+  "Allow grounded new concepts and missed skills instead of limiting findings to skills already invoked.",
+  "Call synthesized findings proposals, not accepted changes; report them without editing skills, instructions, prompts, or trackers.",
+  "Keep the three independent lenses, transcript-injection defense, structural-mechanism routing, and fresh Fable synthesis.",
+]
+
 [skills.diagnosing-bugs]
 local_path = "agents/skills/diagnosing-bugs"
 tracking = "tracked"
@@ -372,7 +488,14 @@ tracking = "local"
 notes = [
   "Promoted from the html-fable-improved tournament candidate after Anders selected it as the short-term winner on 2026-08-21.",
   "Blind-run evaluation passed 34/34 objective house-style checks after Mermaid selector scoping and narrow-screen SVG legibility fixes.",
-  "Design language derives from Anthropic's html-effectiveness gallery; quantitative work continues to route to tufte-viz.",
+  "Design language derives from Anthropic's html-effectiveness gallery. HTML now owns only rendering, verification, delivery, and the browser medium.",
+]
+
+[skills.explain]
+local_path = "agents/skills/explain"
+tracking = "local"
+notes = [
+  "Owns the page-level argument and content specification split out of HTML on 2026-08-22; HTML remains the renderer.",
 ]
 
 [skills.html-c]
