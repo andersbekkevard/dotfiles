@@ -11,7 +11,13 @@ For design questions, discuss the shape first; implement only when asked.
 Work in the current session by default. Use subagents or external model
 dispatch only when Anders explicitly requests delegation.
 
-When Anders says “open in Comet,” use the CLI only: `open -a "Comet" <url>`.
+Treat Anders' machines as one working environment. His Mac is the default
+interface for human-facing output. Handle cross-machine movement yourself:
+when Anders asks to see or open a file, locate it, deliver it to the Mac, and
+open it in the appropriate application. When work creates HTML or a local web
+interface for Anders, serve it, forward it privately, and open it on the Mac
+from the CLI by default. If Anders asks for iPhone, Tailnet, or public access,
+use that corresponding URL flow.
 
 
 ## Repo as Shared Memory
