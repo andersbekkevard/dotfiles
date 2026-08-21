@@ -181,6 +181,17 @@ preserve = [
   "Keep the proof ladder and require the safety fact to be proven or marked unproven.",
 ]
 
+[skills.principle-compound-the-improvement-loop]
+local_path = "agents/skills/principle-compound-the-improvement-loop"
+tracking = "local"
+notes = [
+  "Anders-authored principle for systems whose gains strengthen the mechanism that produces future gains.",
+]
+preserve = [
+  "Keep the distinction between incremental improvement and compounding: each gain must strengthen the mechanism that produces future gains.",
+  "Keep this principle user-invoked in both Claude and Codex.",
+]
+
 [skills.principle-prove-it-works]
 local_path = "agents/skills/principle-prove-it-works"
 tracking = "tracked"
