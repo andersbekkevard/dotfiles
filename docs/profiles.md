@@ -18,8 +18,8 @@ Adds Linux desktop packages and window-manager config on top of `full`. This inc
 
 ## Selection rule
 
-`./dotfiles.sh install` and `./dotfiles.sh verify` require an explicit profile;
-neither auto-detects one. `./dotfiles.sh refresh` has a fixed `full` default;
+`./dotfiles.sh install`, `./dotfiles.sh update`, and `./dotfiles.sh verify`
+require an explicit profile; none auto-detects one. `./dotfiles.sh refresh` has a fixed `full` default;
 pass `macos` or `linux-desktop` explicitly when platform configuration belongs
 in the refresh.
 
@@ -31,6 +31,13 @@ That keeps first-run bootstrap deterministic and makes the chosen machine contra
 - `./dotfiles.sh install linux-desktop`
 - `./dotfiles.sh install full`
 - `./dotfiles.sh install minimal`
+
+Deliberate managed upgrades use the same profile boundaries:
+
+- `./dotfiles.sh update macos`
+- `./dotfiles.sh update linux-desktop`
+- `./dotfiles.sh update full`
+- `./dotfiles.sh update minimal`
 
 Idempotent repo-managed repair without package or runtime installation:
 

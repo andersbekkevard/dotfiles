@@ -17,6 +17,7 @@ source "$DOTFILES_DIR/setup/agents.sh"
 
 parse_args "$@"
 configure_output_style
+configure_mutation_environment
 
 if [[ "$SHOW_HELP" -eq 1 ]]; then
   print_dotfiles_help
@@ -72,8 +73,8 @@ case "$CLI_COMMAND" in
     ;;
 esac
 
-if [[ "$CLI_COMMAND" == "install" ]]; then
-  confirm_unproven_install || exit $?
+if [[ "$CLI_COMMAND" == "install" || "$CLI_COMMAND" == "update" ]]; then
+  confirm_package_mutation || exit $?
 fi
 
 ACTIVE_PROFILE="$REQUESTED_PROFILE"
@@ -103,6 +104,10 @@ fi
 
 if [[ "$DRY_RUN" -eq 0 ]] && ! verify_agent_surface; then
   record_error "Agent surface verification failed after $CLI_COMMAND"
+fi
+
+if [[ "$DRY_RUN" -eq 0 && "$SKIP_INSTALL" -eq 0 && ${#ERRORS[@]} -eq 0 ]]; then
+  write_profile_install_state "$ACTIVE_PROFILE"
 fi
 
 exit_with_summary

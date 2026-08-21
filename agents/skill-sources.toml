@@ -364,3 +364,11 @@ tracking = "local"
 notes = [
   "Tournament candidate containing only HTML behavior and visual principles Anders explicitly stated in the design conversation.",
 ]
+
+[skills.html-fable-improved]
+local_path = "agents/in-progress/html/html-fable-improved"
+tracking = "local"
+notes = [
+  "Blind-run-tested revision of html-fable (2026-08-21 skill-creator loop): Mermaid-safe svg.flow selector scoping and min-width narrow-screen legibility in page.css.",
+  "Evaluation workspace with graded artifacts lives in the session scratchpad; with-skill runs passed 34/34 objective house-style checks vs 18/34 baseline.",
+]

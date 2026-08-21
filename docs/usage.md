@@ -12,7 +12,7 @@ Explicit profile selection:
 
 - `./dotfiles.sh` is the only root management entrypoint.
 - Files under `setup/` are support scripts, not alternate install entrypoints.
-- `install` and `verify` never auto-detect a profile.
+- `install`, `update`, and `verify` never auto-detect a profile.
 - Running `./dotfiles.sh` with no command prints the command map and profiles.
 - Pick the exact target you want: `minimal`, `full`, `macos`, or `linux-desktop`.
 
@@ -27,6 +27,7 @@ Common maintenance:
 
 ```bash
 ./dotfiles.sh refresh
+./dotfiles.sh update full
 ./dotfiles.sh refresh linux-desktop
 ./dotfiles.sh agents sync
 ./dotfiles.sh agents status
@@ -34,6 +35,7 @@ Common maintenance:
 ./dotfiles.sh verify macos
 ./dotfiles.sh stow shell nvim
 ./dotfiles.sh install full --dry-run
+./dotfiles.sh update full --dry-run
 ./dotfiles.sh install linux-desktop --yes --allow-partial
 DOTFILES_ALLOW_PARTIAL=1 ./dotfiles.sh install linux-desktop --yes
 ./setup/brew-drift
@@ -41,17 +43,39 @@ DOTFILES_ALLOW_PARTIAL=1 ./dotfiles.sh install linux-desktop --yes
 
 Command boundaries:
 
-- `install <profile>` is the only command that invokes package or runtime installers. We cannot prove every third-party installer is idempotent, so a real install says so and asks before starting. Use `--yes` for unattended execution. `--no-input` refuses to prompt and therefore also requires `--yes` unless this is a dry run.
-- `refresh [profile]` applies repo-managed configuration without installers. It defaults to the additive `full` profile; name `macos` or `linux-desktop` when platform configuration belongs in the repair.
+| Command | Package/runtime behavior | Configuration behavior |
+|---|---|---|
+| `install <profile>` | Installs missing prerequisites. It does not upgrade working tools and adopts an existing provider where the contract is already satisfied. | Applies the full profile and records installed command state. |
+| `update <profile>` | Installs missing prerequisites and deliberately updates packages/runtimes owned by the declared package manager or dotfiles installer. It warns and skips an active provider it does not own. | Applies the full profile and replaces the installed-command receipt. |
+| `refresh [profile]` | Never runs package or runtime installers. | Reapplies repo-managed state; defaults to `full`. |
+
+Install and update ask before starting because not every third-party installer can be proven idempotent. `--yes` confirms the operation and disables subordinate prompts. `--no-input` refuses to prompt and therefore requires `--yes` unless this is a dry run.
+
+- Name `macos` or `linux-desktop` explicitly when platform configuration belongs in a refresh.
 - `stow <package>...` applies only the named Stow packages and accepts several packages in one call.
 - `agents sync` exclusively refreshes global skills and agent instructions. `agents status` and `agents verify` are read-only.
-- `verify <profile>` is read-only and checks the profile plus the global agent surface.
-- `-n` or `--dry-run` prints planned mutating work without changing the machine. An install dry run never prompts or acquires sudo.
-- `--allow-partial` is the install-only CLI equivalent of `DOTFILES_ALLOW_PARTIAL=1`; use it when you intentionally want Linux installation to continue without privileged apt/system steps.
+- `verify <profile>` is read-only and checks the profile, its recorded command providers/versions, and the global agent surface.
+- `-n` or `--dry-run` prints planned mutating work without changing the machine. Install and update dry runs never prompt or acquire sudo.
+- `--allow-partial` is the install/update CLI equivalent of `DOTFILES_ALLOW_PARTIAL=1`; use it only when you intentionally accept skipped privileged Linux work.
 
 `./dotfiles.sh refresh` is the normal repair command for repo-managed state. It restows the profile packages, repairs the global agent surface, refreshes local templates, and refreshes stable command entrypoints without running package or runtime installers.
 
-For unattended Linux installation, pre-authenticate with `sudo -v` and pass `--yes`. If you intentionally want a rootless pass that skips apt/system setup, make that explicit with `--allow-partial` or `DOTFILES_ALLOW_PARTIAL=1`.
+For unattended Linux install or update, run `sudo -v` first and then pass `--yes`. `--yes` never opens a sudo or installer prompt. Without cached sudo, the command fails unless `--allow-partial` or `DOTFILES_ALLOW_PARTIAL=1` explicitly authorizes a degraded run.
+
+## Installed-command state
+
+After a successful install or update, dotfiles atomically writes:
+
+```text
+${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/install-state/<profile>.tsv
+```
+
+Each profile command records its resolved executable, provider class, and a safe
+reported version when the command exposes one. Repeating an install that changes
+nothing leaves the receipt untouched. `verify` fails when the receipt is missing
+or when a recorded provider, path, or reported version has drifted. Run `install`
+to establish a missing receipt, `refresh` for configuration drift, or `update`
+when you intend to change managed versions.
 
 Scope:
 

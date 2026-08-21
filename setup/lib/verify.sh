@@ -58,6 +58,7 @@ verify_profile() {
 
   verify_profile_symlink_drift "$profile" || failures=1
   verify_commands "$profile" || failures=1
+  verify_profile_install_state "$profile" || failures=1
 
   if command_exists nvim; then
     if ! nvim_version_at_least "0.11"; then

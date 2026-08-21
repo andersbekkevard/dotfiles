@@ -8,7 +8,6 @@ run_full_layer() {
     brew_bundle "$DOTFILES_DIR/setup/packages/Brewfile.full"
   elif [[ "$OS_FAMILY" == "linux" ]]; then
     ensure_gh_apt_repo
-    apt_update_once
     apt_install_manifest "$DOTFILES_DIR/setup/packages/apt.full.txt"
     install_linux_release_binaries
   fi

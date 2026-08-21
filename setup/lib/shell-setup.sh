@@ -1,5 +1,44 @@
+git_checkout_is_complete() {
+  local target="$1" required_path="$2"
+  [[ -d "$target/.git" && -e "$target/$required_path" ]]
+}
+
+install_git_checkout_if_incomplete() {
+  local name="$1" url="$2" target="$3" required_path="$4"
+  local parent staging clone_output
+
+  git_checkout_is_complete "$target" "$required_path" && return 0
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install $name"
+    return 0
+  fi
+
+  parent="$(dirname "$target")"
+  mkdir -p "$parent"
+  staging="$(mktemp -d "$parent/.$(basename "$target").tmp.XXXXXX")"
+  if ! clone_output="$(git clone --depth=1 "$url" "$staging/checkout" 2>&1)" ||
+     ! git_checkout_is_complete "$staging/checkout" "$required_path"; then
+    rm -rf "$staging"
+    record_error "Install $name failed: $(tail -n 1 <<< "$clone_output")"
+    return 0
+  fi
+
+  if [[ -e "$target" || -L "$target" ]]; then
+    backup_path "$target"
+    log_warn "backed up incomplete $name checkout at $target"
+  fi
+  if ! mv "$staging/checkout" "$target"; then
+    rm -rf "$staging"
+    record_error "Could not activate $name at $target"
+    return 0
+  fi
+  rmdir "$staging" 2>/dev/null || true
+}
+
 ensure_oh_my_zsh() {
-  if [[ "$SKIP_INSTALL" -eq 1 || -d "$HOME/.oh-my-zsh" ]]; then
+  local target="$HOME/.oh-my-zsh"
+  if [[ "$SKIP_INSTALL" -eq 1 ]] ||
+     [[ -d "$target/.git" && -f "$target/oh-my-zsh.sh" ]]; then
     return 0
   fi
 
@@ -8,12 +47,44 @@ ensure_oh_my_zsh() {
     return 0
   fi
 
-  log_info "Install Oh My Zsh assets"
-  RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-  local status=$?
-  if [[ $status -ne 0 ]]; then
-    record_error "Install Oh My Zsh assets failed (exit $status)"
+  local parent staging tmp_dir installer status
+  parent="$(dirname "$target")"
+  staging="$(mktemp -d "$parent/.oh-my-zsh.tmp.XXXXXX")"
+  tmp_dir="$(mktemp -d)"
+  installer="$tmp_dir/install.sh"
+  if curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -o "$installer" &&
+     [[ -s "$installer" ]]; then
+    status=0
+  else
+    status=$?
+    rm -rf "$staging" "$tmp_dir"
+    record_error "Download Oh My Zsh installer failed (exit $status)"
+    return 0
   fi
+
+  log_info "Install Oh My Zsh assets"
+  if ZSH="$staging/checkout" RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    sh "$installer" "" --unattended; then
+    status=0
+  else
+    status=$?
+  fi
+  rm -rf "$tmp_dir"
+  if [[ $status -ne 0 || ! -d "$staging/checkout/.git" || ! -f "$staging/checkout/oh-my-zsh.sh" ]]; then
+    rm -rf "$staging"
+    record_error "Install Oh My Zsh assets failed (exit $status)"
+    return 0
+  fi
+  if [[ -e "$target" || -L "$target" ]]; then
+    backup_path "$target"
+    log_warn "backed up incomplete Oh My Zsh checkout at $target"
+  fi
+  if ! mv "$staging/checkout" "$target"; then
+    rm -rf "$staging"
+    record_error "Could not activate Oh My Zsh assets"
+    return 0
+  fi
+  rmdir "$staging" 2>/dev/null || true
 }
 
 ensure_zsh_plugins() {
@@ -31,18 +102,7 @@ ensure_zsh_plugins() {
   for spec in "${specs[@]}"; do
     IFS='|' read -r name rel url <<< "$spec"
     local target="$custom_dir/$rel"
-    if [[ -d "$target" ]]; then
-      continue
-    fi
-    if [[ "$DRY_RUN" -eq 1 ]]; then
-      log_info "[dry-run] Install $name"
-      continue
-    fi
-    mkdir -p "$(dirname "$target")"
-    local clone_output
-    if ! clone_output="$(git clone --depth=1 "$url" "$target" 2>&1)"; then
-      record_error "Install $name failed: $(tail -n 1 <<< "$clone_output")"
-    fi
+    install_git_checkout_if_incomplete "$name" "$url" "$target" .git
   done
 }
 
@@ -53,16 +113,8 @@ ensure_tpm() {
     return 0
   fi
 
-  if [[ ! -d "$target" ]]; then
-    if [[ "$DRY_RUN" -eq 1 ]]; then
-      log_info "[dry-run] Install tmux plugin manager"
-    else
-      local clone_output
-      if ! clone_output="$(git clone --depth=1 https://github.com/tmux-plugins/tpm "$target" 2>&1)"; then
-        record_error "Install tmux plugin manager failed: $(tail -n 1 <<< "$clone_output")"
-      fi
-    fi
-  fi
+  install_git_checkout_if_incomplete \
+    "tmux plugin manager" https://github.com/tmux-plugins/tpm "$target" bin/install_plugins
 
   if [[ -x "$target/bin/install_plugins" ]]; then
     run_cmd_allow_failure "Install tmux plugins with TPM" "$target/bin/install_plugins"
@@ -82,9 +134,16 @@ ensure_default_shell_zsh() {
     return 0
   fi
 
-  local zsh_path
+  local zsh_path current_shell
   zsh_path="$(command -v zsh)"
-  if [[ "${SHELL:-}" == "$zsh_path" || "$SKIP_INSTALL" -eq 1 ]]; then
+  if command_exists getent; then
+    current_shell="$(getent passwd "${USER:-$(id -un)}" | awk -F: '{print $7}')"
+  elif command_exists dscl; then
+    current_shell="$(dscl . -read "/Users/${USER:-$(id -un)}" UserShell 2>/dev/null | awk '{print $2}')"
+  else
+    current_shell="${SHELL:-}"
+  fi
+  if [[ "$current_shell" == "$zsh_path" || "$SKIP_INSTALL" -eq 1 ]]; then
     return 0
   fi
 
@@ -94,15 +153,18 @@ ensure_default_shell_zsh() {
   fi
 
   log_info "Changing default shell to $zsh_path"
+  local status
   if [[ $EUID -eq 0 ]]; then
-    chsh -s "$zsh_path"
+    if chsh -s "$zsh_path"; then status=0; else status=$?; fi
   elif [[ "$HAS_SUDO" -eq 1 ]]; then
-    sudo chsh -s "$zsh_path" "$USER"
+    if sudo chsh -s "$zsh_path" "$USER"; then status=0; else status=$?; fi
+  elif [[ "$ASSUME_YES" -eq 1 || "$NO_INPUT" -eq 1 || ! -t 0 ]]; then
+    record_error "Changing the default shell requires interactive authentication or working sudo"
+    return 0
   else
     log_warn "chsh will prompt for your password."
-    chsh -s "$zsh_path"
+    if chsh -s "$zsh_path"; then status=0; else status=$?; fi
   fi
-  local status=$?
   if [[ $status -ne 0 ]]; then
     record_error "Change default shell to zsh failed (exit $status)"
   fi

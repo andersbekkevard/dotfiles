@@ -21,8 +21,7 @@ route rather than the entire call stack. Make URL references clickable wherever
 possible.
 
 If the work is definitely quantitative, read and apply
-[`tufte-viz`](../../../skills/tufte-viz/SKILL.md) itself. Keep it standalone;
-do not reproduce its quantitative guidance here.
+[`tufte-viz`](../../../skills/tufte-viz/SKILL.md).
 
 Write one self-contained HTML file under `${TMPDIR:-/tmp}`, using a fresh
 descriptive timestamped name. Tailwind and Mermaid via CDN are good patterns

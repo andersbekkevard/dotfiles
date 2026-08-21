@@ -26,6 +26,7 @@ STOW_PACKAGES=()
 VERIFY_PROFILE=""
 DRY_RUN=0
 SKIP_INSTALL=0
+UPGRADE_EXISTING=0
 ASSUME_YES=0
 NO_INPUT=0
 ALLOW_PARTIAL="${DOTFILES_ALLOW_PARTIAL:-0}"
@@ -77,8 +78,12 @@ run_cmd() {
   fi
 
   log_info "$description"
-  "$@"
-  local status=$?
+  local status
+  if "$@"; then
+    status=0
+  else
+    status=$?
+  fi
   if [[ $status -ne 0 ]]; then
     record_error "$description failed (exit $status)"
     return $status
@@ -97,8 +102,12 @@ run_cmd_allow_failure() {
   fi
 
   log_info "$description"
-  "$@"
-  local status=$?
+  local status
+  if "$@"; then
+    status=0
+  else
+    status=$?
+  fi
   if [[ $status -ne 0 ]]; then
     record_error "$description failed (exit $status)"
   fi
@@ -314,8 +323,8 @@ handle_interrupt() {
   if [[ ${#COMPLETED_LAYERS[@]} -gt 0 ]]; then
     printf 'Completed layers: %s\n' "${COMPLETED_LAYERS[*]}"
   fi
-  if [[ "$CLI_COMMAND" == "install" ]]; then
-    printf 'Re-run ./dotfiles.sh install %s to resume.\n' "$REQUESTED_PROFILE"
+  if [[ "$CLI_COMMAND" == "install" || "$CLI_COMMAND" == "update" ]]; then
+    printf 'Re-run ./dotfiles.sh %s %s to resume.\n' "$CLI_COMMAND" "$REQUESTED_PROFILE"
   fi
   exit 130
 }
@@ -343,6 +352,20 @@ configure_output_style() {
   fi
 }
 
+configure_mutation_environment() {
+  case "$CLI_COMMAND" in
+    install|update) ;;
+    *) return 0 ;;
+  esac
+
+  if [[ "$ASSUME_YES" -eq 1 || "$NO_INPUT" -eq 1 ]]; then
+    export CI=1
+    export NONINTERACTIVE=1
+    export GIT_TERMINAL_PROMPT=0
+    export DEBIAN_FRONTEND=noninteractive
+  fi
+}
+
 print_dotfiles_version() {
   local revision="unknown"
   if command -v git >/dev/null 2>&1; then
@@ -355,6 +378,7 @@ print_dotfiles_help() {
   cat <<'EOF'
 Usage:
   ./dotfiles.sh install <profile> [options]
+  ./dotfiles.sh update <profile> [options]
   ./dotfiles.sh refresh [profile] [-n|--dry-run]
   ./dotfiles.sh stow <package>... [-n|--dry-run]
   ./dotfiles.sh agents sync [-n|--dry-run]
@@ -370,6 +394,7 @@ Profiles:
 
 Examples:
   ./dotfiles.sh install macos
+  ./dotfiles.sh update macos
   ./dotfiles.sh install linux-desktop --yes
   ./dotfiles.sh install full --dry-run
   ./dotfiles.sh refresh
@@ -380,28 +405,31 @@ Examples:
   ./dotfiles.sh verify macos
 
 Commands:
-  install    Install packages/runtimes and apply repo-managed configuration.
+  install    Install missing prerequisites and apply repo-managed configuration.
+             Working tools are adopted without upgrading them.
+  update     Deliberately update managed packages/runtimes, then apply configuration.
   refresh    Apply repo-managed configuration without package/runtime installers.
              Defaults to the additive full profile.
   stow       Apply only the named Stow packages. Accepts more than one package.
   agents     Sync, inspect, or verify global skills and agent instructions only.
   verify     Read-only verification of a profile and the global agent surface.
 
-Install safety:
-  We can't prove this is idempotent. Install may rerun third-party installers or
-  change package/runtime state. It asks before starting unless --yes is supplied.
-  Non-interactive installs require --yes. --dry-run never prompts or mutates.
+Mutation safety:
+  Install may execute third-party installers for missing tools. Update intentionally
+  changes tool versions. We can't prove every third-party installer is idempotent.
+  Both ask before starting unless --yes is supplied.
+  Non-interactive install/update requires --yes. --dry-run never prompts or mutates.
 
 Options:
   -n, --dry-run       Print planned work without changing the machine.
-  -y, --yes           Confirm an install without prompting.
+  -y, --yes           Confirm install/update without prompting anywhere in the run.
       --no-input      Never prompt; fails unless --yes or --dry-run is also used.
-      --allow-partial Allow an install to continue without privileged Linux steps.
+      --allow-partial Allow install/update to continue without privileged Linux steps.
       --no-color      Disable colored output. NO_COLOR is also respected.
   -h, --help          Show this help.
       --version       Show the repository revision.
 
-Install and verify require an explicit profile; no profile is auto-detected.
+Install, update, and verify require an explicit profile; no profile is auto-detected.
 EOF
 }
 
@@ -423,7 +451,10 @@ parse_args() {
   shift
 
   case "$CLI_COMMAND" in
-    install)
+    install|update)
+      if [[ "$CLI_COMMAND" == "update" ]]; then
+        UPGRADE_EXISTING=1
+      fi
       while [[ $# -gt 0 ]]; do
         case "$1" in
           -n|--dry-run) DRY_RUN=1 ;;
@@ -431,10 +462,10 @@ parse_args() {
           --no-input) NO_INPUT=1 ;;
           --allow-partial|--allow-without-sudo) ALLOW_PARTIAL=1 ;;
           --no-color) NO_COLOR_REQUESTED=1 ;;
-          --*) record_arg_error "Unknown install option: $1" ;;
+          --*) record_arg_error "Unknown $CLI_COMMAND option: $1" ;;
           *)
             if [[ -n "$REQUESTED_PROFILE" ]]; then
-              record_arg_error "install accepts exactly one profile"
+              record_arg_error "$CLI_COMMAND accepts exactly one profile"
             elif valid_profile "$1"; then
               REQUESTED_PROFILE="$1"
             else
@@ -444,7 +475,7 @@ parse_args() {
         esac
         shift
       done
-      [[ -n "$REQUESTED_PROFILE" ]] || record_arg_error "install requires an explicit profile"
+      [[ -n "$REQUESTED_PROFILE" ]] || record_arg_error "$CLI_COMMAND requires an explicit profile"
       ;;
     refresh)
       SKIP_INSTALL=1
@@ -539,22 +570,27 @@ parse_args() {
   fi
 }
 
-confirm_unproven_install() {
+confirm_package_mutation() {
   [[ "$DRY_RUN" -eq 1 ]] && return 0
   [[ "$ASSUME_YES" -eq 1 ]] && return 0
 
-  log_warn "We can't prove this is idempotent. Install may rerun third-party installers or change package/runtime state."
+  if [[ "$CLI_COMMAND" == "update" ]]; then
+    log_warn "Update intentionally changes managed package and runtime versions."
+  else
+    log_warn "Install may execute third-party installers for missing prerequisites."
+  fi
+  log_warn "We can't prove every third-party installer is idempotent."
   if [[ "$NO_INPUT" -eq 1 || ! -t 0 ]]; then
-    log_error "Install requires confirmation. Re-run with --yes, or inspect it first with --dry-run."
+    log_error "$CLI_COMMAND requires confirmation. Re-run with --yes, or inspect it first with --dry-run."
     return 2
   fi
 
   local reply
-  read -r -p "Continue with dotfiles install? [y/N] " reply || return 2
+  read -r -p "Continue with dotfiles $CLI_COMMAND? [y/N] " reply || return 2
   case "$reply" in
     y|Y|yes|YES) return 0 ;;
   esac
-  log_warn "Install cancelled."
+  log_warn "$CLI_COMMAND cancelled."
   return 1
 }
 
@@ -575,12 +611,7 @@ handle_missing_sudo() {
     return 0
   fi
 
-  if [[ -t 0 ]]; then
-    log_warn "$reason Privileged operations will be skipped."
-    return 0
-  fi
-
-  record_error "$reason Non-interactive Linux bootstrap would skip privileged setup. Re-run interactively, run 'sudo -v' first, or set DOTFILES_ALLOW_PARTIAL=1."
+  record_error "$reason Installation requires privileged Linux setup. Re-run with working sudo, or explicitly pass --allow-partial."
   return 1
 }
 
@@ -600,6 +631,9 @@ acquire_sudo_if_needed() {
 
   if sudo -n true >/dev/null 2>&1; then
     HAS_SUDO=1
+  elif [[ "$ASSUME_YES" -eq 1 || "$NO_INPUT" -eq 1 ]]; then
+    handle_missing_sudo "No cached sudo for a no-prompt run."
+    return $?
   elif [[ -t 0 ]]; then
     log_info "Requesting sudo access up front."
     if sudo -v; then

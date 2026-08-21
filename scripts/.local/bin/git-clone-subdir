@@ -16,6 +16,8 @@ Notes:
   The input URL must look like:
     https://github.com/<owner>/<repo>/tree/<branch>/<path>
 
+  The destination gets a .url file containing the source tree URL.
+
   Branch names containing slashes are ambiguous in GitHub tree URLs. Pass
   --ref <branch-name> when you need one.
 EOF
@@ -163,5 +165,6 @@ source_dir="$tmp_dir/repo/$subdir"
 
 mkdir -p -- "$destination"
 cp -R "$source_dir"/. "$destination"/
+printf '%s\n' "$(strip_url_noise "$input_url")" > "$destination/.url"
 
 printf 'Copied %s:%s/%s -> %s\n' "$repo_url" "$branch" "$subdir" "$destination"

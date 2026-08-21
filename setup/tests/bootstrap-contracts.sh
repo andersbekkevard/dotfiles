@@ -20,6 +20,14 @@ stat_mode() {
   fi
 }
 
+stat_inode() {
+  if [[ "$(uname -s)" == Darwin ]]; then
+    stat -f '%i' "$1"
+  else
+    stat -c '%i' "$1"
+  fi
+}
+
 test_runtime_path_defaults() {
   (
     HOME=/tmp/personal-edge-darwin
@@ -176,6 +184,69 @@ test_homebrew_dry_run() {
     brew_bundle "$REPO_ROOT/setup/packages/Brewfile.minimal"
     [[ ${#ERRORS[@]} -eq 0 ]] || fail "Homebrew dry-run recorded an error"
   )
+}
+
+test_homebrew_install_update_split() {
+  local fake_root fake_bin brew_log manifest
+  fake_root="$(mktemp -d)"
+  fake_bin="$fake_root/bin"
+  brew_log="$fake_root/brew.log"
+  manifest="$fake_root/Brewfile"
+  mkdir -p "$fake_bin"
+  printf 'brew "git"\n' > "$manifest"
+  cat > "$fake_bin/brew" <<'EOF'
+#!/bin/sh
+if [ "$1 $2 $3" = "bundle install --help" ]; then
+  printf '%s\n' '--no-upgrade --upgrade'
+  exit 0
+fi
+printf 'CI=%s NONINTERACTIVE=%s NO_AUTO_UPDATE=%s args=%s\n' \
+  "${CI-}" "${NONINTERACTIVE-}" "${HOMEBREW_NO_AUTO_UPDATE-}" "$*" >> "$BREW_LOG"
+EOF
+  chmod +x "$fake_bin/brew"
+
+  (
+    PATH="$fake_bin:/usr/bin:/bin"
+    BREW_LOG="$brew_log"
+    export BREW_LOG
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    DRY_RUN=0
+    SKIP_INSTALL=0
+    UPGRADE_EXISTING=0
+    ERRORS=()
+    brew_bundle "$manifest"
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "missing-only Brewfile run recorded an error"
+  )
+  grep -Fq 'NO_AUTO_UPDATE=1 args=bundle install --file' "$brew_log" ||
+    fail "install did not suppress Homebrew auto-update"
+  grep -Fq -- '--no-upgrade' "$brew_log" || fail "install omitted brew bundle --no-upgrade"
+
+  : > "$brew_log"
+  (
+    PATH="$fake_bin:/usr/bin:/bin"
+    BREW_LOG="$brew_log"
+    export BREW_LOG
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    DRY_RUN=0
+    SKIP_INSTALL=0
+    UPGRADE_EXISTING=1
+    ERRORS=()
+    brew_bundle "$manifest"
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "Brewfile update recorded an error"
+  )
+  grep -Fq 'args=update' "$brew_log" || fail "update omitted brew update"
+  grep -Fq -- '--upgrade' "$brew_log" || fail "update omitted brew bundle --upgrade"
+  if grep -Fq -- '--no-upgrade' "$brew_log"; then
+    fail "update retained missing-only Homebrew semantics"
+  fi
+
+  rm -rf "$fake_root"
 }
 
 test_pnpm_setup_contract() {
@@ -433,6 +504,17 @@ test_dotfiles_cli_contract() {
   (
     # shellcheck source=../lib/core.sh
     source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args update full --yes
+    assert_eq "$CLI_COMMAND" "update"
+    assert_eq "$REQUESTED_PROFILE" "full"
+    assert_eq "$UPGRADE_EXISTING" "1"
+    assert_eq "$ASSUME_YES" "1"
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "update arguments were rejected"
+  )
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
     parse_args refresh
     assert_eq "$CLI_COMMAND" "refresh"
     assert_eq "$REQUESTED_PROFILE" "full"
@@ -479,28 +561,41 @@ test_dotfiles_cli_contract() {
   (
     # shellcheck source=../lib/core.sh
     source "$REPO_ROOT/setup/lib/core.sh"
+    CLI_COMMAND=install
     NO_INPUT=1
-    if confirm_unproven_install >/dev/null 2>&1; then
+    if confirm_package_mutation >/dev/null 2>&1; then
       fail "unconfirmed non-interactive install was accepted"
     fi
     ASSUME_YES=1
-    confirm_unproven_install >/dev/null 2>&1 || fail "--yes did not confirm install"
+    confirm_package_mutation >/dev/null 2>&1 || fail "--yes did not confirm install"
   )
 
-  local help_output install_output install_status
+  local help_output install_output install_status update_output update_status
   help_output="$(bash "$REPO_ROOT/dotfiles.sh" --help)"
   printf '%s\n' "$help_output" | grep -Fq './dotfiles.sh stow <package>...' ||
     fail "dotfiles help omits multi-package stow"
-  printf '%s\n' "$help_output" | grep -Fq "We can't prove this is idempotent" ||
-    fail "dotfiles help omits the install idempotence warning"
+  printf '%s\n' "$help_output" | grep -Fq './dotfiles.sh update <profile>' ||
+    fail "dotfiles help omits explicit update"
+  printf '%s\n' "$help_output" | grep -Fq 'Working tools are adopted without upgrading them.' ||
+    fail "dotfiles help omits missing-only install semantics"
+  printf '%s\n' "$help_output" | grep -Fq "We can't prove every third-party installer is idempotent." ||
+    fail "dotfiles help omits the unproven-idempotence warning"
 
   set +e
   install_output="$(bash "$REPO_ROOT/dotfiles.sh" install minimal --no-input 2>&1)"
   install_status=$?
   set -e
   assert_eq "$install_status" "2"
-  printf '%s\n' "$install_output" | grep -Fq "We can't prove this is idempotent" ||
-    fail "unconfirmed install omitted the idempotence warning"
+  printf '%s\n' "$install_output" | grep -Fq 'Install may execute third-party installers' ||
+    fail "unconfirmed install omitted its mutation warning"
+
+  set +e
+  update_output="$(bash "$REPO_ROOT/dotfiles.sh" update minimal --no-input 2>&1)"
+  update_status=$?
+  set -e
+  assert_eq "$update_status" "2"
+  printf '%s\n' "$update_output" | grep -Fq 'Update intentionally changes managed package and runtime versions.' ||
+    fail "unconfirmed update omitted its mutation warning"
 }
 
 test_agents_cli_contract() {
@@ -843,6 +938,239 @@ test_dry_run_privileged_plan() {
   return 0
 }
 
+test_install_update_package_selection() {
+  local fake_root manifest output
+  fake_root="$(mktemp -d)"
+  manifest="$fake_root/apt.txt"
+  printf '%s\n' git ripgrep jq > "$manifest"
+
+  output="$(
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    OS_FAMILY=linux
+    SKIP_INSTALL=0
+    DRY_RUN=0
+    UPGRADE_EXISTING=0
+    dpkg_package_installed() { [[ "$1" == git ]]; }
+    apt_package_satisfied_by_command() { [[ "$1" == ripgrep ]]; }
+    can_use_root() { return 0; }
+    apt_update_once() { printf 'apt-update\n'; }
+    run_cmd_allow_failure() { shift; printf 'selected=%s\n' "$*"; }
+    apt_install_manifest "$manifest"
+  )"
+  grep -Fq 'selected=as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y jq' <<<"$output" ||
+    fail "install did not limit apt to missing, unprovided packages: $output"
+
+  output="$(
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    OS_FAMILY=linux
+    SKIP_INSTALL=0
+    DRY_RUN=0
+    UPGRADE_EXISTING=1
+    dpkg_package_installed() { [[ "$1" == git ]]; }
+    apt_package_satisfied_by_command() { [[ "$1" == ripgrep ]]; }
+    can_use_root() { return 0; }
+    apt_update_once() { printf 'apt-update\n'; }
+    run_cmd_allow_failure() { shift; printf 'selected=%s\n' "$*"; }
+    apt_install_manifest "$manifest"
+  )"
+  grep -Fq 'selected=as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y git jq' <<<"$output" ||
+    fail "update did not upgrade apt-owned and install truly missing packages: $output"
+  if grep -Fq 'ripgrep' <<<"${output##*selected=}"; then
+    fail "update replaced an adopted command provider with apt"
+  fi
+
+  rm -rf "$fake_root"
+}
+
+test_installer_convergence_and_atomicity() {
+  local fake_home fake_bin install_count old_target source_file
+  fake_home="$(mktemp -d)"
+  fake_bin="$fake_home/bin"
+  install_count="$fake_home/install-count"
+  old_target="$fake_home/managed-tool"
+  source_file="$fake_home/new-tool"
+  mkdir -p "$fake_bin"
+
+  (
+    HOME="$fake_home"
+    PATH="$fake_bin:/usr/bin:/bin"
+    INSTALL_COUNT="$install_count"
+    export INSTALL_COUNT
+    curl() {
+      local output="${@: -1}"
+      cat > "$output" <<'EOF'
+#!/bin/sh
+count=0
+[ ! -f "$INSTALL_COUNT" ] || count="$(cat "$INSTALL_COUNT")"
+count=$((count + 1))
+printf '%s\n' "$count" > "$INSTALL_COUNT"
+cat > "$HOME/bin/probe" <<'INNER'
+#!/bin/sh
+[ "${1-}" = --version ] && printf 'probe 1.0\n'
+INNER
+chmod +x "$HOME/bin/probe"
+EOF
+    }
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    SKIP_INSTALL=0
+    DRY_RUN=0
+    ASSUME_YES=1
+    ERRORS=()
+    install_remote_script_if_missing probe "Install probe" https://example.invalid/install.sh sh
+    hash -r
+    install_remote_script_if_missing probe "Install probe" https://example.invalid/install.sh sh
+    assert_eq "$(cat "$INSTALL_COUNT")" "1"
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "convergent remote installer recorded an error"
+  )
+
+  printf 'old\n' > "$old_target"
+  printf 'new\n' > "$source_file"
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    install() {
+      local destination="${@: -1}"
+      printf 'partial\n' > "$destination"
+      return 9
+    }
+    if atomic_install_file "$source_file" "$old_target" 0755; then
+      fail "atomic install accepted a failed staging write"
+    fi
+  )
+  assert_eq "$(cat "$old_target")" old
+  if find "$fake_home" -name '.managed-tool.tmp.*' -print -quit | grep -q .; then
+    fail "failed atomic install left a staging file"
+  fi
+
+  (
+    HOME="$fake_home"
+    PATH=/usr/bin:/bin
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/packages.sh
+    source "$REPO_ROOT/setup/lib/packages.sh"
+    SKIP_INSTALL=0
+    DRY_RUN=0
+    ASSUME_YES=1
+    ERRORS=()
+    curl() { return 22; }
+    install_remote_script_if_missing missing-probe "Install missing probe" https://example.invalid/fail.sh sh
+    [[ ${#ERRORS[@]} -eq 1 ]] || fail "failed installer download was not recorded exactly once"
+  )
+
+  rm -rf "$fake_home"
+}
+
+test_install_state_receipt() {
+  local fake_home fake_bin state_file first_inode second_inode output
+  fake_home="$(mktemp -d)"
+  fake_bin="$fake_home/.local/bin"
+  state_file="$fake_home/state/dotfiles/install-state/minimal.tsv"
+  mkdir -p "$fake_bin"
+  cat > "$fake_bin/probe" <<'EOF'
+#!/bin/sh
+printf 'probe 1.0\n'
+EOF
+  chmod +x "$fake_bin/probe"
+
+  (
+    HOME="$fake_home"
+    XDG_STATE_HOME="$fake_home/state"
+    DOTFILES_DIR="$REPO_ROOT"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/state.sh
+    source "$REPO_ROOT/setup/lib/state.sh"
+    profile_commands() { printf 'probe\n'; }
+    command_has_safe_version_flag() { return 0; }
+    resolve_command_from_clean_login_shell_without_stable_path() { printf '%s\n' "$fake_bin/$1"; }
+    resolve_command_from_clean_login_shell() { printf '%s\n' "$fake_bin/$1"; }
+    ERRORS=()
+    write_profile_install_state minimal
+    [[ ${#ERRORS[@]} -eq 0 ]] || fail "install-state write recorded an error"
+  )
+  first_inode="$(stat_inode "$state_file")"
+  assert_eq "$(stat_mode "$state_file")" 600
+  grep -Fq $'probe\tuser-local\t' "$state_file" || fail "install state omitted provider/path data"
+  grep -Fq $'\tprobe 1.0' "$state_file" || fail "install state omitted version data"
+
+  (
+    HOME="$fake_home"
+    XDG_STATE_HOME="$fake_home/state"
+    DOTFILES_DIR="$REPO_ROOT"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/state.sh
+    source "$REPO_ROOT/setup/lib/state.sh"
+    profile_commands() { printf 'probe\n'; }
+    command_has_safe_version_flag() { return 0; }
+    resolve_command_from_clean_login_shell_without_stable_path() { printf '%s\n' "$fake_bin/$1"; }
+    resolve_command_from_clean_login_shell() { printf '%s\n' "$fake_bin/$1"; }
+    ERRORS=()
+    write_profile_install_state minimal >/dev/null
+    verify_profile_install_state minimal >/dev/null
+  )
+  second_inode="$(stat_inode "$state_file")"
+  assert_eq "$second_inode" "$first_inode"
+
+  sed 's/probe 1.0/probe 2.0/' "$fake_bin/probe" > "$fake_bin/probe.new"
+  mv "$fake_bin/probe.new" "$fake_bin/probe"
+  chmod +x "$fake_bin/probe"
+  set +e
+  output="$(
+    HOME="$fake_home"
+    XDG_STATE_HOME="$fake_home/state"
+    DOTFILES_DIR="$REPO_ROOT"
+    source "$REPO_ROOT/setup/lib/core.sh"
+    source "$REPO_ROOT/setup/lib/state.sh"
+    profile_commands() { printf 'probe\n'; }
+    command_has_safe_version_flag() { return 0; }
+    resolve_command_from_clean_login_shell_without_stable_path() { printf '%s\n' "$fake_bin/$1"; }
+    resolve_command_from_clean_login_shell() { printf '%s\n' "$fake_bin/$1"; }
+    verify_profile_install_state minimal
+  )"
+  local status=$?
+  set -e
+  [[ $status -ne 0 ]] || fail "install-state verification accepted version drift"
+  grep -Fq 'install-state version drift: probe is probe 2.0; recorded probe 1.0' <<<"$output" ||
+    fail "install-state verification did not explain version drift"
+
+  rm -rf "$fake_home"
+}
+
+test_privilege_and_manifest_guards() {
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    ERRORS=()
+    ALLOW_PARTIAL=0
+    if handle_missing_sudo "sudo unavailable." >/dev/null; then
+      fail "install silently degraded without --allow-partial"
+    fi
+    [[ ${#ERRORS[@]} -eq 1 ]] || fail "missing sudo did not become a hard error"
+    ALLOW_PARTIAL=1
+    handle_missing_sudo "sudo unavailable." >/dev/null || fail "explicit --allow-partial was rejected"
+  )
+
+  if grep -Fq '|always' "$REPO_ROOT/setup/packages/linux-binaries.minimal.txt"; then
+    fail "minimal Linux binaries still force unconditional downloads"
+  fi
+  if rg -n 'curl[^|]*\|[[:space:]]*(sh|bash)' "$REPO_ROOT/setup" -g '*.sh' >/dev/null; then
+    fail "setup still pipes remote scripts directly into a shell"
+  fi
+}
+
 test_control_europa_desktop_wrapper() {
   local fake_home fake_bin capture helper_dir wrapper
   fake_home="$(mktemp -d)"
@@ -894,12 +1222,48 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_git_clone_subdir_writes_source_url() {
+  local fake_root fake_bin destination wrapper
+  fake_root="$(mktemp -d)"
+  fake_bin="$fake_root/bin"
+  destination="$fake_root/copied"
+  wrapper="$REPO_ROOT/scripts/.local/bin/git-clone-subdir"
+  mkdir -p "$fake_bin"
+
+  cat >"$fake_bin/git" <<'EOF'
+#!/bin/sh
+if [ "$1" = clone ]; then
+  destination=""
+  for argument in "$@"; do destination="$argument"; done
+  mkdir -p "$destination/tasks/tripletex"
+  printf 'fixture\n' > "$destination/tasks/tripletex/example.txt"
+  exit 0
+fi
+if [ "$1" = -C ] && [ "$3" = sparse-checkout ] && [ "$4" = set ]; then
+  exit 0
+fi
+exit 1
+EOF
+  chmod +x "$fake_bin/git"
+
+  PATH="$fake_bin:/usr/bin:/bin" "$wrapper" \
+    'https://github.com/example/repo/tree/main/tasks/tripletex/?download=1#readme' \
+    "$destination" >/dev/null
+
+  assert_eq "$(cat "$destination/.url")" \
+    'https://github.com/example/repo/tree/main/tasks/tripletex'
+  assert_eq "$(cat "$destination/example.txt")" fixture
+
+  rm -rf "$fake_root"
+}
+
 test_runtime_path_defaults
 test_profile_contract
 test_no_machine_specific_home_paths
 test_canonical_repo_path_contract
 test_homebrew_activation
 test_homebrew_dry_run
+test_homebrew_install_update_split
 test_pnpm_setup_contract
 test_pnpm_dry_run
 test_agent_cli_profile_contract
@@ -912,7 +1276,12 @@ test_cliproxyapi_config_contract
 test_cliproxyapi_umask_containment
 test_fnm_entrypoint_stability
 test_dry_run_privileged_plan
+test_install_update_package_selection
+test_installer_convergence_and_atomicity
+test_install_state_receipt
+test_privilege_and_manifest_guards
 test_dry_run_on_toolless_machine
 test_claudex_environment_isolation
 test_control_europa_desktop_wrapper
+test_git_clone_subdir_writes_source_url
 printf 'bootstrap contracts: ok\n'

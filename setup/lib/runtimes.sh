@@ -53,7 +53,8 @@ ensure_pnpm_global_bin_available_now() {
 }
 
 install_fnm_node_stack() {
-  install_script_if_missing fnm "Install fnm" "curl -fsSL https://fnm.vercel.app/install | bash"
+  install_remote_script_if_missing \
+    fnm "Install fnm" https://fnm.vercel.app/install bash
   ensure_fnm_available_now
 
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
@@ -67,19 +68,42 @@ install_fnm_node_stack() {
     return 0
   fi
 
-  run_cmd_allow_failure "Install Node.js LTS with fnm" fnm install --lts
-  run_cmd_allow_failure "Select Node.js LTS with fnm" fnm default lts-latest
+  local update_node=0
+  if ! command_exists node; then
+    update_node=1
+  elif [[ "$UPGRADE_EXISTING" -eq 1 ]]; then
+    case "$(resolve_path_chain "$(command -v node)" 2>/dev/null || command -v node)" in
+      "$HOME/.local/share/fnm/"*|"$HOME/.fnm/"*) update_node=1 ;;
+      *) log_warn "Skipping Node.js update; the active command is not fnm-owned ($(command -v node))." ;;
+    esac
+  fi
+  if [[ "$update_node" -eq 1 ]]; then
+    run_cmd_allow_failure "Install Node.js LTS with fnm" fnm install --lts --progress never
+    run_cmd_allow_failure "Select Node.js LTS with fnm" fnm default lts-latest
+  fi
 
   # Re-evaluate fnm env so node/npm/corepack land on PATH for the rest of setup
   eval "$(fnm env --use-on-cd --shell bash 2>/dev/null)" || true
 
-  if command_exists corepack; then
-    run_cmd_allow_failure "Enable corepack" corepack enable
-    run_cmd_allow_failure "Activate pnpm" corepack prepare pnpm@latest --activate
-  elif command_exists npm; then
-    run_cmd_allow_failure "Install pnpm via npm (corepack unavailable)" npm install -g pnpm
-  else
-    record_error "Neither corepack nor npm available; pnpm not installed"
+  local update_pnpm=0 pnpm_home
+  pnpm_home="${PNPM_HOME:-$(dotfiles_default_pnpm_home)}"
+  if ! command_exists pnpm; then
+    update_pnpm=1
+  elif [[ "$UPGRADE_EXISTING" -eq 1 ]]; then
+    case "$(resolve_path_chain "$(command -v pnpm)" 2>/dev/null || command -v pnpm)" in
+      "$HOME/.local/share/fnm/"*|"$HOME/.fnm/"*|"$pnpm_home/"*) update_pnpm=1 ;;
+      *) log_warn "Skipping pnpm update; the active command is not fnm/pnpm-home-owned ($(command -v pnpm))." ;;
+    esac
+  fi
+  if [[ "$update_pnpm" -eq 1 ]]; then
+    if command_exists corepack; then
+      run_cmd_allow_failure "Enable corepack" corepack enable
+      run_cmd_allow_failure "Activate pnpm" corepack prepare pnpm@latest --activate
+    elif command_exists npm; then
+      run_cmd_allow_failure "Install pnpm via npm (corepack unavailable)" npm install -g pnpm
+    else
+      record_error "Neither corepack nor npm available; pnpm not installed"
+    fi
   fi
 
   ensure_pnpm_global_bin_available_now
@@ -96,6 +120,23 @@ install_fnm_node_stack() {
 install_typescript_language_tools() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0
+  fi
+
+  if [[ "$UPGRADE_EXISTING" -eq 0 ]] && command_exists typescript-language-server && command_exists tsc; then
+    return 0
+  fi
+
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]] && command_exists typescript-language-server; then
+    local tls_path pnpm_home
+    tls_path="$(resolve_path_chain "$(command -v typescript-language-server)" 2>/dev/null || command -v typescript-language-server)"
+    pnpm_home="${PNPM_HOME:-$(dotfiles_default_pnpm_home)}"
+    case "$tls_path" in
+      "$pnpm_home/"*) ;;
+      *)
+        log_warn "Skipping TypeScript language tools update; the active server is not pnpm-owned ($(command -v typescript-language-server))."
+        return 0
+        ;;
+    esac
   fi
 
   if command_exists pnpm; then
@@ -117,6 +158,19 @@ install_codex_cli() {
     return 0
   fi
 
+  if [[ "$UPGRADE_EXISTING" -eq 0 ]] && command_exists codex && codex --version >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]] && command_exists codex; then
+    case "$(resolve_path_chain "$(command -v codex)" 2>/dev/null || command -v codex)" in
+      "$HOME/.codex/packages/standalone/"*) ;;
+      *)
+        log_warn "Skipping Codex CLI update; the active command is not standalone-installer-owned ($(command -v codex))."
+        return 0
+        ;;
+    esac
+  fi
+
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log_info "[dry-run] Install Codex CLI with the official standalone installer"
     return 0
@@ -131,17 +185,21 @@ install_codex_cli() {
   tmp_dir="$(mktemp -d)"
   installer="$tmp_dir/install.sh"
 
-  curl -fsSL https://chatgpt.com/codex/install.sh -o "$installer"
-  status=$?
-  if [[ $status -ne 0 || ! -s "$installer" ]]; then
+  if curl -fsSL https://chatgpt.com/codex/install.sh -o "$installer" && [[ -s "$installer" ]]; then
+    status=0
+  else
+    status=$?
     rm -rf "$tmp_dir"
     record_error "Download Codex CLI installer failed (exit $status)"
     return 0
   fi
 
   log_info "Install Codex CLI with the official standalone installer"
-  PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 sh "$installer"
-  status=$?
+  if PATH="$HOME/.local/bin:$PATH" CODEX_NON_INTERACTIVE=1 NONINTERACTIVE=1 CI=1 sh "$installer"; then
+    status=0
+  else
+    status=$?
+  fi
   rm -rf "$tmp_dir"
   if [[ $status -ne 0 ]]; then
     record_error "Install Codex CLI failed (exit $status)"
@@ -151,6 +209,19 @@ install_codex_cli() {
 install_claude_cli() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0
+  fi
+
+  if [[ "$UPGRADE_EXISTING" -eq 0 ]] && command_exists claude && claude --version >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]] && command_exists claude; then
+    case "$(resolve_path_chain "$(command -v claude)" 2>/dev/null || command -v claude)" in
+      "$HOME/.local/share/claude/"*) ;;
+      *)
+        log_warn "Skipping Claude Code update; the active command is not standalone-installer-owned ($(command -v claude))."
+        return 0
+        ;;
+    esac
   fi
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -167,17 +238,29 @@ install_claude_cli() {
   tmp_dir="$(mktemp -d)"
   installer="$tmp_dir/install.sh"
 
-  curl -fsSL https://claude.ai/install.sh -o "$installer"
-  status=$?
-  if [[ $status -ne 0 || ! -s "$installer" ]]; then
+  if curl -fsSL https://claude.ai/install.sh -o "$installer" && [[ -s "$installer" ]]; then
+    status=0
+  else
+    status=$?
     rm -rf "$tmp_dir"
     record_error "Download Claude Code installer failed (exit $status)"
     return 0
   fi
 
   log_info "Install Claude Code with the official standalone installer"
-  PATH="$HOME/.local/bin:$PATH" bash "$installer"
-  status=$?
+  if [[ "$ASSUME_YES" -eq 1 || "$NO_INPUT" -eq 1 || ! -t 0 ]]; then
+    if PATH="$HOME/.local/bin:$PATH" NONINTERACTIVE=1 CI=1 bash "$installer"; then
+      status=0
+    else
+      status=$?
+    fi
+  else
+    if PATH="$HOME/.local/bin:$PATH" bash "$installer"; then
+      status=0
+    else
+      status=$?
+    fi
+  fi
   rm -rf "$tmp_dir"
   if [[ $status -ne 0 ]]; then
     record_error "Install Claude Code failed (exit $status)"
@@ -263,6 +346,19 @@ install_cliproxyapi() {
     return 0
   fi
 
+  if [[ "$UPGRADE_EXISTING" -eq 0 ]] && command_exists cli-proxy-api; then
+    return 0
+  fi
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]] && command_exists cli-proxy-api; then
+    case "$(resolve_path_chain "$(command -v cli-proxy-api)" 2>/dev/null || command -v cli-proxy-api)" in
+      "$HOME/.local/share/cliproxyapi/"*) ;;
+      *)
+        log_warn "Skipping CLIProxyAPI update; the active command is not dotfiles-release-owned ($(command -v cli-proxy-api))."
+        return 0
+        ;;
+    esac
+  fi
+
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log_info "[dry-run] Install latest CLIProxyAPI release for $OS_FAMILY/$ARCH_GO"
     return 0
@@ -274,10 +370,11 @@ install_cliproxyapi() {
   fi
 
   local release_json version platform release_arch archive_name download_url
-  local tmp_dir archive checksums expected actual install_dir status
-  release_json="$(curl -fsSL https://api.github.com/repos/router-for-me/CLIProxyAPI/releases/latest)"
-  status=$?
-  if [[ $status -ne 0 || -z "$release_json" ]]; then
+  local tmp_dir archive checksums expected actual install_dir staging_dir previous_dir status
+  if release_json="$(curl -fsSL https://api.github.com/repos/router-for-me/CLIProxyAPI/releases/latest)" &&
+     [[ -n "$release_json" ]]; then
+    status=0
+  else
     record_error "Could not resolve latest CLIProxyAPI release"
     return 0
   fi
@@ -317,16 +414,20 @@ install_cliproxyapi() {
   tmp_dir="$(mktemp -d)"
   archive="$tmp_dir/$archive_name"
   checksums="$tmp_dir/checksums.txt"
-  curl -fsSL "$download_url" -o "$archive"
-  status=$?
-  if [[ $status -ne 0 || ! -s "$archive" ]]; then
+  if curl -fsSL "$download_url" -o "$archive" && [[ -s "$archive" ]]; then
+    status=0
+  else
+    status=$?
     rm -rf "$tmp_dir"
     record_error "Download CLIProxyAPI $version failed (exit $status)"
     return 0
   fi
-  curl -fsSL "https://github.com/router-for-me/CLIProxyAPI/releases/download/$version/checksums.txt" \
-    -o "$checksums"
-  status=$?
+  if curl -fsSL "https://github.com/router-for-me/CLIProxyAPI/releases/download/$version/checksums.txt" \
+    -o "$checksums" && [[ -s "$checksums" ]]; then
+    status=0
+  else
+    status=$?
+  fi
   expected="$(awk -v name="$archive_name" '$2 == name {print $1}' "$checksums" 2>/dev/null)"
   actual="$(sha256_file "$archive")"
   if [[ $status -ne 0 || -z "$expected" || "$actual" != "$expected" ]]; then
@@ -335,14 +436,33 @@ install_cliproxyapi() {
     return 0
   fi
 
-  mkdir -p "$install_dir" "$HOME/.local/bin"
-  tar -xzf "$archive" -C "$install_dir" cli-proxy-api
-  status=$?
+  mkdir -p "$(dirname "$install_dir")" "$HOME/.local/bin"
+  staging_dir="$(mktemp -d "$(dirname "$install_dir")/.cliproxyapi.tmp.XXXXXX")"
+  if tar -xzf "$archive" -C "$staging_dir" cli-proxy-api; then
+    status=0
+  else
+    status=$?
+  fi
   rm -rf "$tmp_dir"
-  if [[ $status -ne 0 || ! -x "$install_dir/cli-proxy-api" ]]; then
+  if [[ $status -ne 0 || ! -x "$staging_dir/cli-proxy-api" ]] ||
+     ! "$staging_dir/cli-proxy-api" --version >/dev/null 2>&1; then
+    rm -rf "$staging_dir"
     record_error "Install CLIProxyAPI $version failed (exit $status)"
     return 0
   fi
+  previous_dir="$(dirname "$install_dir")/.cliproxyapi.previous.$RUN_ID"
+  rm -rf "$previous_dir"
+  if [[ -e "$install_dir" ]] && ! mv "$install_dir" "$previous_dir"; then
+    rm -rf "$staging_dir"
+    record_error "Could not stage the existing CLIProxyAPI $version installation"
+    return 0
+  fi
+  if ! mv "$staging_dir" "$install_dir"; then
+    [[ -e "$previous_dir" ]] && mv "$previous_dir" "$install_dir"
+    record_error "Could not activate CLIProxyAPI $version"
+    return 0
+  fi
+  rm -rf "$previous_dir"
   ln -sfn "$install_dir/cli-proxy-api" "$HOME/.local/bin/cli-proxy-api"
   log_info "Installed CLIProxyAPI ${version#v}"
 }
@@ -352,13 +472,42 @@ install_shared_runtimes() {
     return 0
   fi
 
-  install_script_if_missing uv "Install uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
-  install_script_if_missing rustup "Install rustup" "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-  install_script_if_missing bun "Install bun" "curl -fsSL https://bun.sh/install | bash"
-  install_script_if_missing zoxide "Install zoxide" "curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash"
+  install_remote_script_if_missing uv "Install uv" https://astral.sh/uv/install.sh sh
+  install_remote_script_if_missing rustup "Install rustup" https://sh.rustup.rs sh -y
+  install_remote_script_if_missing bun "Install bun" https://bun.sh/install bash
+  install_remote_script_if_missing \
+    zoxide "Install zoxide" https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh bash
+
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]]; then
+    case "$(resolve_path_chain "$(command -v fnm 2>/dev/null || true)" 2>/dev/null || true)" in
+      "$HOME/.local/share/fnm/"*|"$HOME/.fnm/"*)
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+          log_info "[dry-run] Update fnm"
+        else
+          run_remote_installer "Update fnm" https://fnm.vercel.app/install bash
+          ensure_fnm_available_now
+        fi
+        ;;
+    esac
+    case "$(resolve_path_chain "$(command -v uv 2>/dev/null || true)" 2>/dev/null || true)" in
+      "$HOME/.local/bin/"*|"$HOME/.local/share/uv/"*) run_cmd_allow_failure "Update uv" uv self update ;;
+    esac
+    case "$(resolve_path_chain "$(command -v rustup 2>/dev/null || true)" 2>/dev/null || true)" in
+      "$HOME/.cargo/"*) run_cmd_allow_failure "Update Rust toolchains" rustup update ;;
+    esac
+    case "$(resolve_path_chain "$(command -v bun 2>/dev/null || true)" 2>/dev/null || true)" in
+      "$HOME/.bun/"*) run_cmd_allow_failure "Update Bun" bun upgrade ;;
+    esac
+  fi
+
   ensure_cargo_available_now
-  if command_exists cargo; then
+  if command_exists cargo && ! command_exists tree-sitter; then
     run_cmd_allow_failure "Install tree-sitter CLI with cargo" cargo install tree-sitter-cli --locked
+  elif command_exists cargo && [[ "$UPGRADE_EXISTING" -eq 1 ]]; then
+    case "$(resolve_path_chain "$(command -v tree-sitter)" 2>/dev/null || command -v tree-sitter)" in
+      "$HOME/.cargo/"*) run_cmd_allow_failure "Update tree-sitter CLI with cargo" cargo install tree-sitter-cli --locked ;;
+      *) log_warn "Skipping tree-sitter update; the active command is not Cargo-owned ($(command -v tree-sitter))." ;;
+    esac
   elif [[ "$DRY_RUN" -eq 0 ]]; then
     record_error "cargo not on PATH after rustup install; tree-sitter CLI skipped"
   fi
@@ -374,7 +523,13 @@ install_go_linux() {
     return 0
   fi
 
-  if command_exists go; then
+  if command_exists go && [[ "$UPGRADE_EXISTING" -eq 0 ]]; then
+    return 0
+  fi
+
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]] && command_exists go &&
+     [[ "$(command -v go)" != "/usr/local/go/bin/go" ]]; then
+    log_warn "Skipping Go update; current command is not dotfiles-owned ($(command -v go))."
     return 0
   fi
 
@@ -391,7 +546,9 @@ install_go_linux() {
   fi
 
   local version
-  version="$(curl -fsSL 'https://go.dev/dl/?mode=json' | jq -r '.[0].version' | sed 's/^go//')"
+  if ! version="$(curl -fsSL 'https://go.dev/dl/?mode=json' | jq -r '.[0].version' | sed 's/^go//')"; then
+    version=""
+  fi
   if [[ -z "$version" ]]; then
     record_error "Could not determine latest stable Go version"
     return 0
@@ -400,22 +557,43 @@ install_go_linux() {
   local archive="go${version}.linux-${ARCH_GO}.tar.gz"
   local url="https://go.dev/dl/${archive}"
 
-  local tmp_dir
+  local tmp_dir staging_dir previous_dir
   tmp_dir="$(mktemp -d)"
-  curl -fsSL "$url" -o "$tmp_dir/$archive"
-  local status=$?
-  if [[ $status -ne 0 ]]; then
+  local status
+  if curl -fsSL "$url" -o "$tmp_dir/$archive" && [[ -s "$tmp_dir/$archive" ]]; then
+    status=0
+  else
+    status=$?
     rm -rf "$tmp_dir"
     record_error "Download Go ${version} failed (exit $status)"
     return 0
   fi
 
-  as_root rm -rf /usr/local/go
-  as_root tar -C /usr/local -xzf "$tmp_dir/$archive"
-  status=$?
-  rm -rf "$tmp_dir"
-  if [[ $status -ne 0 ]]; then
-    record_error "Install Go ${version} failed (exit $status)"
+  staging_dir="/usr/local/.go.dotfiles-stage-$RUN_ID-$$"
+  previous_dir="/usr/local/.go.dotfiles-previous-$RUN_ID-$$"
+  as_root rm -rf "$staging_dir" "$previous_dir"
+  as_root mkdir -p "$staging_dir"
+  if as_root tar -C "$staging_dir" -xzf "$tmp_dir/$archive" --strip-components=1; then
+    status=0
+  else
+    status=$?
   fi
+  rm -rf "$tmp_dir"
+  if [[ $status -ne 0 ]] || ! as_root "$staging_dir/bin/go" version >/dev/null 2>&1; then
+    as_root rm -rf "$staging_dir"
+    record_error "Install Go ${version} failed (exit $status)"
+    return 0
+  fi
+  if [[ -e /usr/local/go ]] && ! as_root mv /usr/local/go "$previous_dir"; then
+    as_root rm -rf "$staging_dir"
+    record_error "Could not stage the existing Go installation"
+    return 0
+  fi
+  if ! as_root mv "$staging_dir" /usr/local/go; then
+    [[ -e "$previous_dir" ]] && as_root mv "$previous_dir" /usr/local/go
+    record_error "Could not activate Go ${version}"
+    return 0
+  fi
+  as_root rm -rf "$previous_dir"
   return 0
 }

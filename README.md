@@ -19,14 +19,15 @@ Choose the exact profile you want:
 ./dotfiles.sh install linux-desktop
 ```
 
-`./dotfiles.sh` is the only root management entrypoint. It separates installing
-software from refreshing, stowing, and verifying repo-managed state.
+`./dotfiles.sh` is the only root management entrypoint. `install` fills missing
+prerequisites without upgrading working tools; `update` deliberately moves
+dotfiles-managed packages and runtimes; `refresh` reapplies configuration with
+all installers disabled.
 
-An install asks for confirmation because third-party package and runtime
-installers cannot all be proven idempotent. Use `--yes` for unattended runs or
-`--dry-run` to inspect the plan without changing the machine. On Linux,
-unattended installs also require working root access up front; use `sudo -v`
-first, or explicitly opt into degraded mode with `--allow-partial`.
+Install and update ask for confirmation because third-party installers cannot
+all be proven idempotent. Use `--dry-run` to inspect the plan. `--yes` means the
+entire run must remain noninteractive; on Linux, pre-authenticate with `sudo -v`
+or explicitly accept skipped privileged work with `--allow-partial`.
 
 The shared base layer installs the same core CLI set on every machine, including `cloudflared`, `ngrok`, `git-delta`, TruffleHog secret scanning, and the `git-loc` remote repository line-count helper. `cloudflared` is the canonical path for publishing local services on Anders' Cloudflare-managed domains; the global `personal-edge` skill owns the agent workflow. TruffleHog is the fail-closed preflight used by the global `autoreview` skill. The full profile adds the Claude Code and Codex CLIs, CLIProxyAPI, the isolated `claudex` Claude-Code-with-Codex entrypoint, `git-crypt`, and developer tools including the PostgreSQL client (`psql`) required by Neovim Dadbod for PostgreSQL connections.
 
@@ -46,12 +47,14 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 
 ```bash
 ./dotfiles.sh refresh
+./dotfiles.sh update macos
 ./dotfiles.sh agents sync
 ./dotfiles.sh agents status
 ./dotfiles.sh agents verify
 ./dotfiles.sh verify macos
 ./dotfiles.sh stow nvim
 ./dotfiles.sh install full --dry-run
+./dotfiles.sh update full --dry-run
 ./dotfiles.sh install linux-desktop --yes --allow-partial
 ./setup/brew-drift
 ```
@@ -62,4 +65,9 @@ install packages, restow dotfiles, refresh shell templates, or update stable
 command entrypoints. `./dotfiles.sh agents status` shows the tracked and
 machine-local instruction sources and effective invocation modes.
 
-Machine-local login/runtime overrides live in `~/.profile.local`; interactive-only shell tweaks live in `~/.zshrc.local`. Profile-wide `install` and `refresh` operations update `~/.config/zsh/local.example.zsh` without overwriting a customized local file, and refresh stable `~/.local/bin` entrypoints for commands installed outside the base system PATH.
+A successful install or update records the resolved command path, provider, and
+reported version under `${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/install-state/`.
+`./dotfiles.sh verify <profile>` checks the live machine against that receipt as
+well as the profile's links and command contract.
+
+Machine-local login/runtime overrides live in `~/.profile.local`; interactive-only shell tweaks live in `~/.zshrc.local`. Profile-wide `install`, `update`, and `refresh` operations update `~/.config/zsh/local.example.zsh` without overwriting a customized local file, and refresh stable `~/.local/bin` entrypoints for commands installed outside the base system PATH.

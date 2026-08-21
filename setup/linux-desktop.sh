@@ -6,7 +6,6 @@ run_linux_desktop_layer() {
   fi
 
   log_info "Layer: linux-desktop"
-  apt_update_once
   apt_install_manifest "$DOTFILES_DIR/setup/packages/apt.desktop.txt"
   install_meslo_font_linux
   install_greenclip

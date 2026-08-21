@@ -55,9 +55,10 @@ additions, and invokes `agents/skillctl sync` for Codex-generated state.
 Use the normal first-run profile command (`./dotfiles.sh install macos`,
 `./dotfiles.sh install linux-desktop`, `./dotfiles.sh install full`, or
 `./dotfiles.sh install minimal`) on a new machine that still needs packages or
-runtimes. Installation requires confirmation because third-party installer
-idempotence cannot be proven; pass `--yes` only when unattended mutation is
-intended.
+runtimes. `install` fills missing prerequisites without upgrading working
+providers; use `./dotfiles.sh update <profile>` for deliberate managed
+upgrades. Both require confirmation. In a no-prompt run, pre-authenticate sudo
+rather than relying on a subordinate prompt.
 
 Use direct `skillctl` only when the machine-level harness surface already exists
 and the task is specifically to regenerate Codex dialect metadata from
