@@ -238,6 +238,13 @@ preserve = [
   "Keep the upstream blinding rules and single-pass judge calibration intact.",
 ]
 
+[skills.suggest-a-skill]
+local_path = "agents/skills/suggest-a-skill"
+tracking = "local"
+notes = [
+  "User-invoked router over the active skill catalog; recommends without invoking.",
+]
+
 [skills.codebase-design]
 local_path = "agents/skills/codebase-design"
 tracking = "tracked"
