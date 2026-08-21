@@ -96,26 +96,21 @@ class DispatcherTests(unittest.TestCase):
         self.assertEqual(invocation[invocation.index("--tools") + 1], "")
         self.assertNotIn("--dangerously-skip-permissions", invocation)
 
-    def test_claude_agentic_and_unrestricted_are_distinct(self) -> None:
-        for access, required in (
-            ("agentic", "--permission-mode"),
-            ("unrestricted", "--dangerously-skip-permissions"),
-        ):
-            with self.subTest(access=access):
-                env, log = self.fake_cli(f"claude-{access}")
-                real = Path(env["PATH"].split(os.pathsep)[0]) / f"claude-{access}"
-                (real.parent / "claude").symlink_to(real)
-                result = self.run_claude(
-                    "--access",
-                    access,
-                    "--root",
-                    str(self.root),
-                    env=env,
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                calls = [json.loads(line) for line in log.read_text().splitlines()]
-                self.assertEqual(Path(calls[1]["cwd"]), self.root.resolve())
-                self.assertIn(required, calls[1]["args"])
+    def test_claude_agentic_is_unrestricted(self) -> None:
+        env, log = self.fake_cli("claude")
+        result = self.run_claude(
+            "--access",
+            "agentic",
+            "--root",
+            str(self.root),
+            env=env,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        self.assertEqual(Path(calls[1]["cwd"]), self.root.resolve())
+        invocation = calls[1]["args"]
+        self.assertIn("--dangerously-skip-permissions", invocation)
+        self.assertNotIn("--permission-mode", invocation)
 
     def test_claude_archives_private_prompt_and_result(self) -> None:
         env, _ = self.fake_cli("claude")
@@ -162,6 +157,52 @@ class DispatcherTests(unittest.TestCase):
         for flag in ("--ephemeral", "--ignore-user-config", "--ignore-rules", "read-only"):
             self.assertIn(flag, args)
         self.assertNotEqual(call["cwd"], str(self.root))
+
+    def test_codex_agentic_is_unrestricted(self) -> None:
+        env, log = self.fake_cli("codex")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(CODEX),
+                str(self.prompt),
+                "--output",
+                str(self.output),
+                "--access",
+                "agentic",
+                "--root",
+                str(self.root),
+            ],
+            text=True,
+            capture_output=True,
+            env=env,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        call = json.loads(log.read_text().splitlines()[0])
+        args = call["args"]
+        self.assertEqual(Path(args[args.index("-C") + 1]), self.root.resolve())
+        self.assertIn("--dangerously-bypass-approvals-and-sandbox", args)
+        self.assertNotIn("--approve-for-me", args)
+
+    def test_removed_unrestricted_mode_is_rejected(self) -> None:
+        for script in (CLAUDE, CODEX):
+            with self.subTest(script=script):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(script),
+                        str(self.prompt),
+                        "--output",
+                        str(self.output),
+                        "--access",
+                        "unrestricted",
+                    ],
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("invalid choice", result.stderr)
 
     def test_both_skills_are_user_invoked_and_prompt_only(self) -> None:
         for name in ("claude-dispatch", "codex-dispatch"):

@@ -11,8 +11,9 @@ separate responsibility.
 ## Launch
 
 Set `DISPATCH_SCRIPT` to the selected skill's `scripts/invoke.py`. Use absolute
-paths for every artifact and add `--root /absolute/repo` for `agentic` or
-`unrestricted` access.
+paths for every artifact and add `--root /absolute/repo` for `agentic` access.
+The root sets the starting directory; agentic execution is unrestricted and is
+not contained there.
 
 ```sh
 LANE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/model-lane.XXXXXX")
@@ -58,9 +59,9 @@ scheduled wakeup or monitor mechanism when the owning session must return.
 
 ## Harvest and recover
 
-Read `result.md` and the log tail. For an agentic or unrestricted coding run,
-review the path-scoped diff and run the requested verification before
-integrating the result; the dispatcher proves execution, not correctness.
+Read `result.md` and the log tail. For an agentic coding run, review the
+path-scoped diff and run the requested verification before integrating the
+result; the dispatcher proves execution, not correctness.
 
 Classify incomplete lanes before acting:
 

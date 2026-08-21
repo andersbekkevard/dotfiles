@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max", "ultra")
-ACCESS_MODES = ("closed", "agentic", "unrestricted")
+ACCESS_MODES = ("closed", "agentic")
 CLOSED_BOUNDARY = b"""<execution_boundary>
 Answer only from the supplied prompt and your model priors. Do not call tools,
 browse, inspect the filesystem, or run commands. If the prompt lacks evidence,
@@ -31,12 +31,12 @@ def parse_args() -> argparse.Namespace:
         "--access",
         choices=ACCESS_MODES,
         default="closed",
-        help="Tool boundary: closed (default), agentic, or unrestricted.",
+        help="Tool boundary: closed (default) or unrestricted agentic.",
     )
     parser.add_argument(
         "--root",
         metavar="DIR",
-        help="Working root; required for agentic and unrestricted access.",
+        help="Starting directory; required for agentic access but not a containment boundary.",
     )
     parser.add_argument("--model", default="gpt-5.6-terra")
     parser.add_argument("--effort", choices=EFFORTS, default="high")
@@ -94,8 +94,6 @@ def command_for(
         command.extend(
             ("--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "-s", "read-only")
         )
-    elif args.access == "agentic":
-        command.extend(("--approve-for-me", "-s", "workspace-write"))
     else:
         command.append("--dangerously-bypass-approvals-and-sandbox")
     command.append("-")

@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
-ACCESS_MODES = ("closed", "agentic", "unrestricted")
+ACCESS_MODES = ("closed", "agentic")
 SANITIZED_ENV = (
     "ANTHROPIC_API_KEY",
     "ANTHROPIC_AUTH_TOKEN",
@@ -39,12 +39,12 @@ def parse_args() -> argparse.Namespace:
         "--access",
         choices=ACCESS_MODES,
         default="closed",
-        help="Tool boundary: closed (default), agentic, or unrestricted.",
+        help="Tool boundary: closed (default) or unrestricted agentic.",
     )
     parser.add_argument(
         "--root",
         metavar="DIR",
-        help="Working root; required for agentic and unrestricted access.",
+        help="Starting directory; required for agentic access but not a containment boundary.",
     )
     parser.add_argument("--model", default="claude-fable-5")
     parser.add_argument("--effort", choices=EFFORTS, default="high")
@@ -120,8 +120,6 @@ def command_for(args: argparse.Namespace) -> list[str]:
         "" if args.access == "closed" else "default",
     ]
     if args.access == "agentic":
-        command.extend(("--permission-mode", "acceptEdits"))
-    elif args.access == "unrestricted":
         command.append("--dangerously-skip-permissions")
     command.extend(
         (
