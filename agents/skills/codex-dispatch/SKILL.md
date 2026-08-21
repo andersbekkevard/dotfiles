@@ -45,5 +45,5 @@ For `agentic`, also pass `--root /absolute/repo`. The dispatch is complete when
 the runner exits successfully and the output file is nonempty.
 
 For a run that must survive the current session or join a multi-run wave, read
-[the shared detached lifecycle](../../references/model-dispatch-detached.md).
+[the shared detached lifecycle](references/detached.md).
 Prompt construction remains outside this skill in both lifecycles.

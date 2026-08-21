@@ -212,6 +212,19 @@ class DispatcherTests(unittest.TestCase):
             self.assertIn("ready prompt file", skill)
             self.assertIn("allow_implicit_invocation: false", policy)
 
+    def test_detached_reference_resolves_inside_each_projected_skill(self) -> None:
+        shared = (REPO / "agents/references/model-dispatch-detached.md").resolve()
+        for name in ("claude-dispatch", "codex-dispatch"):
+            with self.subTest(name=name):
+                skill_dir = REPO / f"agents/skills/{name}"
+                reference = skill_dir / "references/detached.md"
+                self.assertTrue(reference.is_symlink())
+                self.assertEqual(reference.resolve(), shared)
+                self.assertIn(
+                    "(references/detached.md)",
+                    (skill_dir / "SKILL.md").read_text(),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
