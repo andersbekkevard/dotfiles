@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fleet"
+  short_description: "Run commands and move files across my machines"
+  default_prompt: "Use $fleet to run this command or deliver this file on the appropriate machine."

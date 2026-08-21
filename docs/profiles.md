@@ -2,7 +2,7 @@
 
 ## `minimal`
 
-Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, links the global agent surface (`agents/` — skills + instructions for Claude Code and Codex; see `docs/architecture.md`), and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `cloudflared`, `delta`, `sesh`, `gum`, `trufflehog`, `control-europa-desktop`, `forward-to-me`, `forward-from-me`, `git-clone-subdir`, `git-credential-gh-safe`, and `git-loc`).
+Portable shell-focused environment. Stows `shell`, `git`, `nvim`, `tmux`, `scripts`, `fd`, and `btop`, links the global agent surface (`agents/` — skills + instructions for Claude Code and Codex; see `docs/architecture.md`), and establishes the base command contract (`git`, `zsh`, `stow`, `tmux`, `fzf`, `rg`, `fd`, `bat`, `zoxide`, `nvim`, `htop`, `btop`, `jq`, `ngrok`, `cloudflared`, `delta`, `sesh`, `gum`, `trufflehog`, `fleet`, `control-europa-desktop`, `forward-to-me`, `forward-from-me`, `git-clone-subdir`, `git-credential-gh-safe`, and `git-loc`).
 
 ## `full`
 

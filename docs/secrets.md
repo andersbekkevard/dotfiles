@@ -18,26 +18,27 @@ Export a symmetric key from an already-authorized clone when onboarding a new ma
 git-crypt export-key /secure/location/dotfiles-git-crypt.key
 ```
 
-## Personal Cloudflare edge
+## Application Cloudflare services
 
-The `personal-edge` agent workflow uses the account-owned Cloudflare token and
-account id from `~/.secrets` for two independent lanes: remotely managed
-`cloudflared` tunnels and DNS, and the generic inbound-email Worker plus its
-dedicated R2 bucket. Outbound mail is a third, separate lane using the existing
-`RESEND_API_KEY` and verified `bekkevard.me` Resend domain; Cloudflare Email
-Sending requires Workers Paid and is not part of the system. The application,
-mail consumer, and scheduler do not share a runtime or secret with one another.
+The `publish-web` and `application-email` workflows use the account-owned
+Cloudflare token and account id from `~/.secrets`. Publication owns remotely
+managed `cloudflared` tunnels and DNS. Application email owns the generic
+inbound-email Worker and its dedicated R2 bucket. Outbound mail uses the
+existing `RESEND_API_KEY` and verified `bekkevard.me` Resend domain. Cloudflare
+Email Sending requires Workers Paid and is not part of the system. The
+application, mail consumer, and scheduler do not share a runtime or secret with
+one another.
 
 Validate the account-owned token at
 `/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify`; the user-token verification
-endpoint is not authoritative for this token type. Required permissions and the
-safe operating procedure live in the global `personal-edge` skill. Tunnel
-tokens and workload-specific, read-only R2 credentials are derived operational
-secrets and must never be committed or echoed.
+endpoint is not authoritative for this token type. Required permissions and
+the safe operating procedures live in the global `publish-web` and
+`application-email` skills. Tunnel tokens and workload-specific, read-only R2
+credentials are derived operational secrets and must never be committed or
+echoed.
 
 Temporary public-review URLs are recorded and expired by a persistent systemd
 user timer on Europa. The timer sources Europa's local `~/.secrets` at runtime;
 expiry state and receipts live under `~/.local/state/personal-edge/` and contain
 provider resource identifiers, never the API token itself. The tracked
-implementation and operating procedure live in the global `personal-edge`
-skill.
+implementation and operating procedure live in the global `publish-web` skill.

@@ -73,10 +73,8 @@ resolve `${TMPDIR:-/tmp}` and use a descriptive timestamped filename.
 ## Deliver
 
 The artifact is delivered when it is open on Anders's Mac, not merely on the
-machine that ran the agent. On the Mac: `open -a "Comet" <absolute-path>`.
-From a remote host, read the installed `personal-edge` skill and use its Mac
-operations lane to place and open the file there. Always report the absolute
-path on the Mac.
+machine that ran the agent. Use the installed `fleet` skill to put and open it
+there. Always report the absolute path on the Mac.
 
 Verify the rendered page before handing over: wide (~1440px) and narrow
 (~390px) widths, no horizontal page overflow, no console errors, source links

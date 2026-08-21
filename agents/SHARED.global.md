@@ -17,7 +17,8 @@ when Anders asks to see or open a file, locate it, deliver it to the Mac, and
 open it in the appropriate application. When work creates HTML or a local web
 interface for Anders, serve it, forward it privately, and open it on the Mac
 from the CLI by default. If Anders asks for iPhone, Tailnet, or public access,
-use that corresponding URL flow.
+use that corresponding URL flow. Use `fleet` for cross-machine commands, file
+transfer, and opening.
 
 
 ## Repo as Shared Memory

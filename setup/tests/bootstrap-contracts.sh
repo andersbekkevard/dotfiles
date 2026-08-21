@@ -1222,6 +1222,64 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_fleet_cli() {
+  local fake_root fake_home fake_bin config wrapper capture output
+  fake_root="$(mktemp -d)"
+  fake_home="$fake_root/home"
+  fake_bin="$fake_root/bin"
+  config="$fake_root/machines.tsv"
+  wrapper="$REPO_ROOT/scripts/.local/bin/fleet"
+  capture="$fake_root/capture"
+  mkdir -p "$fake_home" "$fake_bin"
+
+  printf 'here\tdummy\t%s\t-\n' "$(hostname -s)" >"$config"
+  printf 'remote\ttest@example.test\tnowhere\topen\n' >>"$config"
+  printf 'fleet fixture\n' >"$fake_root/source.txt"
+
+  output="$(FLEET_CONFIG="$config" "$wrapper" list)"
+  grep -Fq 'test@example.test' <<<"$output" || fail "fleet list omitted a registered machine"
+
+  output="$(FLEET_CONFIG="$config" "$wrapper" here run -- printf 'fleet-run-ok')"
+  assert_eq "$output" fleet-run-ok
+
+  FLEET_CONFIG="$config" HOME="$fake_home" \
+    "$wrapper" here put "$fake_root/source.txt" inbox/ >/dev/null
+  cmp "$fake_root/source.txt" "$fake_home/inbox/source.txt" ||
+    fail "fleet put changed local file bytes"
+  if FLEET_CONFIG="$config" HOME="$fake_home" \
+      "$wrapper" here put "$fake_root/source.txt" inbox/ >/dev/null 2>&1; then
+    fail "fleet put replaced an existing file without --force"
+  fi
+  FLEET_CONFIG="$config" HOME="$fake_home" \
+    "$wrapper" here put --force "$fake_root/source.txt" inbox/ >/dev/null
+  FLEET_CONFIG="$config" HOME="$fake_home" \
+    "$wrapper" here get inbox/source.txt "$fake_root/download" >/dev/null
+  cmp "$fake_root/source.txt" "$fake_root/download/source.txt" ||
+    fail "fleet get changed local file bytes"
+
+  cat >"$fake_bin/ssh" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$@" >"$CAPTURE"
+EOF
+  chmod +x "$fake_bin/ssh"
+
+  FLEET_CONFIG="$config" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    "$wrapper" remote run -- printf 'remote ok' >/dev/null
+  grep -Fq 'test@example.test' "$capture" || fail "fleet run used the wrong SSH target"
+  grep -Fq 'printf remote\ ok' "$capture" || fail "fleet run did not preserve remote arguments"
+
+  FLEET_CONFIG="$config" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    "$wrapper" remote open https://example.com >/dev/null
+  grep -Fq '/usr/bin/open -- https://example.com' "$capture" ||
+    fail "fleet open did not use the target open capability"
+
+  if FLEET_CONFIG="$config" "$wrapper" missing check >/dev/null 2>&1; then
+    fail "fleet accepted an unregistered machine"
+  fi
+
+  rm -rf "$fake_root"
+}
+
 test_git_clone_subdir_writes_source_url() {
   local fake_root fake_bin destination wrapper
   fake_root="$(mktemp -d)"
@@ -1283,5 +1341,6 @@ test_privilege_and_manifest_guards
 test_dry_run_on_toolless_machine
 test_claudex_environment_isolation
 test_control_europa_desktop_wrapper
+test_fleet_cli
 test_git_clone_subdir_writes_source_url
 printf 'bootstrap contracts: ok\n'

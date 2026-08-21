@@ -1,0 +1,361 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly FLEET_VERSION="0.1.0"
+readonly FLEET_SSH_OPTIONS=(
+  -T
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=yes
+)
+
+usage() {
+  cat <<'EOF'
+Usage:
+  fleet list
+  fleet <machine> check
+  fleet <machine> run [--] <command> [arg ...]
+  fleet <machine> put [--open] [--force] <local-file>... <destination-directory>
+  fleet <machine> get [--force] <remote-file>... <local-directory>
+  fleet <machine> open [--app <application>] <path-or-url>...
+
+Examples:
+  fleet list
+  fleet mac check
+  fleet europa run -- systemctl --user status ingest-poller
+  fleet mac put --open report.html Desktop/
+  fleet europa get /tmp/result.json .
+  fleet mac open https://example.com
+
+Configuration:
+  ~/.config/fleet/machines.tsv
+  ~/.config/fleet/machines.local.tsv
+
+The local file overrides matching machine names from the tracked registry.
+EOF
+}
+
+die() {
+  printf 'fleet: %s\n' "$*" >&2
+  exit 1
+}
+
+usage_error() {
+  printf 'fleet: %s\n\n' "$*" >&2
+  usage >&2
+  exit 2
+}
+
+config_files() {
+  local config_home
+  config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+  if [[ -n "${FLEET_CONFIG:-}" ]]; then
+    printf '%s\n' "$FLEET_CONFIG"
+    [[ -z "${FLEET_LOCAL_CONFIG:-}" ]] || printf '%s\n' "$FLEET_LOCAL_CONFIG"
+    return
+  fi
+
+  printf '%s\n' "$config_home/fleet/machines.tsv"
+  printf '%s\n' "${FLEET_LOCAL_CONFIG:-$config_home/fleet/machines.local.tsv}"
+}
+
+effective_machines() {
+  local files=() file
+  while IFS= read -r file; do
+    [[ -f "$file" ]] && files+=("$file")
+  done < <(config_files)
+
+  ((${#files[@]})) || die "no machine registry found; expected ${FLEET_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/fleet/machines.tsv}"
+
+  awk -F '\t' '
+    /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+    NF != 4 { printf "fleet: invalid registry row at %s:%d\n", FILENAME, FNR > "/dev/stderr"; failed = 1; next }
+    $1 !~ /^[a-z0-9][a-z0-9-]*$/ { printf "fleet: invalid machine name at %s:%d\n", FILENAME, FNR > "/dev/stderr"; failed = 1; next }
+    $2 !~ /^[A-Za-z0-9_.@:-]+$/ { printf "fleet: invalid SSH target at %s:%d\n", FILENAME, FNR > "/dev/stderr"; failed = 1; next }
+    { rows[$1] = $0 }
+    END {
+      if (failed) exit 1
+      for (name in rows) print rows[name]
+    }
+  ' "${files[@]}" | LC_ALL=C sort -t $'\t' -k1,1
+}
+
+load_machine() {
+  local requested="$1" row
+  row="$(effective_machines | awk -F '\t' -v requested="$requested" '$1 == requested { print; exit }')"
+  [[ -n "$row" ]] || die "unknown machine '$requested'; run 'fleet list'"
+  IFS=$'\t' read -r MACHINE_NAME MACHINE_TARGET MACHINE_LOCAL_HOSTS MACHINE_CAPABILITIES <<<"$row"
+}
+
+is_local_machine() {
+  local local_host registered_hosts
+  local_host="$(hostname -s | tr '[:upper:]' '[:lower:]')"
+  registered_hosts="$(printf '%s' "$MACHINE_LOCAL_HOSTS" | tr '[:upper:]' '[:lower:]')"
+  [[ "$local_host" == "$MACHINE_NAME" ]] || [[ ",$registered_hosts," == *",$local_host,"* ]]
+}
+
+has_capability() {
+  [[ ",${MACHINE_CAPABILITIES}," == *",$1,"* ]]
+}
+
+remote_command() {
+  local quoted command=""
+  for argument in "$@"; do
+    printf -v quoted '%q' "$argument"
+    command+="${command:+ }$quoted"
+  done
+  printf '%s\n' "$command"
+}
+
+run_remote() {
+  local command
+  command="$(remote_command "$@")"
+  ssh "${FLEET_SSH_OPTIONS[@]}" "$MACHINE_TARGET" "$command"
+}
+
+run_on_machine() {
+  if is_local_machine; then
+    "$@"
+  else
+    run_remote "$@"
+  fi
+}
+
+normalize_home_path() {
+  case "$1" in
+    '~/'*) printf '%s\n' "${1#\~/}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+local_machine_path() {
+  local path
+  path="$(normalize_home_path "$1")"
+  case "$path" in
+    /*) printf '%s\n' "$path" ;;
+    *) printf '%s/%s\n' "$HOME" "$path" ;;
+  esac
+}
+
+join_path() {
+  local directory="${1%/}"
+  printf '%s/%s\n' "${directory:-/}" "$2"
+}
+
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum -- "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 -- "$1" | awk '{print $1}'
+  else
+    die "neither sha256sum nor shasum is available"
+  fi
+}
+
+sha256_on_machine() {
+  local path="$1" script
+  if is_local_machine; then
+    sha256_file "$(local_machine_path "$path")"
+    return
+  fi
+
+  script='if command -v sha256sum >/dev/null 2>&1; then sha256sum -- "$1" | awk '\''{print $1}'\''; elif command -v shasum >/dev/null 2>&1; then shasum -a 256 -- "$1" | awk '\''{print $1}'\''; else printf '\''fleet: neither sha256sum nor shasum is available\n'\'' >&2; exit 1; fi'
+  run_remote /bin/sh -c "$script" fleet-sha256 "$(normalize_home_path "$path")"
+}
+
+path_exists_on_machine() {
+  local path="$1"
+  if is_local_machine; then
+    [[ -e "$(local_machine_path "$path")" ]]
+  else
+    run_remote test -e "$(normalize_home_path "$path")"
+  fi
+}
+
+require_unique_basenames() {
+  local paths=("$@") left right
+  for ((left = 0; left < ${#paths[@]}; left++)); do
+    for ((right = left + 1; right < ${#paths[@]}; right++)); do
+      [[ "${paths[$left]##*/}" != "${paths[$right]##*/}" ]] ||
+        die "duplicate basename '${paths[$left]##*/}' would overwrite a transferred file"
+    done
+  done
+}
+
+open_command() {
+  local application="$1"
+  shift
+  has_capability open || die "machine '$MACHINE_NAME' does not support open"
+
+  if [[ -n "$application" ]]; then
+    run_on_machine /usr/bin/open -a "$application" -- "$@"
+  else
+    run_on_machine /usr/bin/open -- "$@"
+  fi
+}
+
+put_command() {
+  local open_after=0 force=0 destination destination_path source basename expected observed target_path
+  local arguments=("$@") sources=() copied_paths=()
+
+  while [[ "${arguments[0]:-}" == --* ]]; do
+    case "${arguments[0]}" in
+      --open) open_after=1 ;;
+      --force) force=1 ;;
+      *) usage_error "unknown put option '${arguments[0]}'" ;;
+    esac
+    arguments=("${arguments[@]:1}")
+  done
+  ((${#arguments[@]} >= 2)) || usage_error "put requires at least one file and a destination directory"
+
+  destination="${arguments[${#arguments[@]}-1]}"
+  destination="$(normalize_home_path "$destination")"
+  unset 'arguments[${#arguments[@]}-1]'
+  sources=("${arguments[@]}")
+  require_unique_basenames "${sources[@]}"
+  for source in "${sources[@]}"; do
+    [[ -f "$source" ]] || die "local file not found: $source"
+    target_path="$(join_path "$destination" "${source##*/}")"
+    if ((force == 0)) && path_exists_on_machine "$target_path"; then
+      die "$MACHINE_NAME:$target_path already exists; rerun with --force to replace it"
+    fi
+  done
+
+  if is_local_machine; then
+    destination_path="$(local_machine_path "$destination")"
+    mkdir -p -- "$destination_path"
+    cp -p -- "${sources[@]}" "$destination_path/"
+  else
+    run_remote mkdir -p -- "$destination"
+    scp -p -- "${sources[@]}" "$MACHINE_TARGET:$destination/"
+  fi
+
+  for source in "${sources[@]}"; do
+    basename="${source##*/}"
+    expected="$(sha256_file "$source")"
+    observed="$(sha256_on_machine "$(join_path "$destination" "$basename")")"
+    [[ "$expected" == "$observed" ]] || die "checksum mismatch after putting $source on $MACHINE_NAME"
+    copied_paths+=("$(join_path "$destination" "$basename")")
+    printf 'put %s -> %s:%s sha256=%s\n' "$source" "$MACHINE_NAME" "${copied_paths[${#copied_paths[@]}-1]}" "$observed"
+  done
+
+  ((open_after == 0)) || open_command "" "${copied_paths[@]}"
+}
+
+get_command() {
+  local force=0 destination source source_path basename expected observed local_path
+  local arguments=("$@") sources=()
+
+  if [[ "${arguments[0]:-}" == "--force" ]]; then
+    force=1
+    arguments=("${arguments[@]:1}")
+  elif [[ "${arguments[0]:-}" == --* ]]; then
+    usage_error "unknown get option '${arguments[0]}'"
+  fi
+  ((${#arguments[@]} >= 2)) || usage_error "get requires at least one file and a local destination directory"
+  destination="${arguments[${#arguments[@]}-1]}"
+  unset 'arguments[${#arguments[@]}-1]'
+  sources=("${arguments[@]}")
+  require_unique_basenames "${sources[@]}"
+  mkdir -p -- "$destination"
+
+  for source in "${sources[@]}"; do
+    source_path="$(normalize_home_path "$source")"
+    expected="$(sha256_on_machine "$source_path")"
+    basename="${source_path##*/}"
+    local_path="${destination%/}/$basename"
+    if ((force == 0)) && [[ -e "$local_path" ]]; then
+      die "$local_path already exists; rerun with --force to replace it"
+    fi
+
+    if is_local_machine; then
+      cp -p -- "$(local_machine_path "$source_path")" "$destination/"
+    else
+      scp -p -- "$MACHINE_TARGET:$source_path" "$destination/"
+    fi
+
+    observed="$(sha256_file "$local_path")"
+    [[ "$expected" == "$observed" ]] || die "checksum mismatch after getting $source from $MACHINE_NAME"
+    printf 'get %s:%s -> %s sha256=%s\n' "$MACHINE_NAME" "$source_path" "$local_path" "$observed"
+  done
+}
+
+list_command() {
+  printf '%-14s %-62s %s\n' NAME TARGET CAPABILITIES
+  effective_machines | while IFS=$'\t' read -r name target _ capabilities; do
+    [[ "$capabilities" == "-" ]] && capabilities=""
+    printf '%-14s %-62s %s\n' "$name" "$target" "${capabilities:--}"
+  done
+}
+
+check_command() {
+  if is_local_machine; then
+    printf '%s local host=%s user=%s\n' "$MACHINE_NAME" "$(hostname -s)" "$(id -un)"
+  else
+    printf '%s remote target=%s ' "$MACHINE_NAME" "$MACHINE_TARGET"
+    run_remote /bin/sh -c 'printf '\''host=%s user=%s\n'\'' "$(hostname -s)" "$(id -un)"'
+  fi
+}
+
+if (($# == 0)); then
+  usage
+  exit 0
+fi
+
+case "$1" in
+  -h|--help|help)
+    usage
+    exit 0
+    ;;
+  --version|version)
+    printf 'fleet %s\n' "$FLEET_VERSION"
+    exit 0
+    ;;
+  list)
+    (($# == 1)) || usage_error "list takes no arguments"
+    list_command
+    exit 0
+    ;;
+esac
+
+machine="$1"
+shift
+load_machine "$machine"
+operation="${1:-}"
+[[ -n "$operation" ]] || usage_error "missing operation for machine '$machine'"
+shift
+
+case "$operation" in
+  check)
+    (($# == 0)) || usage_error "check takes no arguments"
+    check_command
+    ;;
+  run)
+    [[ "${1:-}" != "--" ]] || shift
+    (($#)) || usage_error "run requires a command"
+    run_on_machine "$@"
+    ;;
+  put)
+    put_command "$@"
+    ;;
+  get)
+    get_command "$@"
+    ;;
+  open)
+    application=""
+    if [[ "${1:-}" == "--app" ]]; then
+      (($# >= 3)) || usage_error "open --app requires an application and at least one path or URL"
+      application="$2"
+      shift 2
+    fi
+    (($#)) || usage_error "open requires at least one path or URL"
+    open_command "$application" "$@"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    usage_error "unknown operation '$operation'"
+    ;;
+esac

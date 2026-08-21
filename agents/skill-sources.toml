@@ -353,8 +353,8 @@ tracking = "local"
 local_path = "agents/skills/tailnet-preview"
 tracking = "local"
 
-[skills.personal-edge]
-local_path = "agents/skills/personal-edge"
+[skills.fleet]
+local_path = "agents/skills/fleet"
 tracking = "local"
 
 [skills.html]
