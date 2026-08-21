@@ -305,7 +305,14 @@ local_path = "agents/skills/codex-dispatch"
 tracking = "watch"
 upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/codex-first" }
 notes = [
-  "Different skill shape (lane lifecycle vs routing); ported stdin prompt passing, -o sentinel, and the two-failed-resumes stop-loss from codex-first in 2026-07. Review upstream for new invocation mechanics, not for structure.",
+  "Different skill shape (ready-prompt dispatcher); ported stdin prompt passing, -o sentinel, detached process-group mechanics, and the two-failed-attempts stop-loss from codex-first. Review upstream for invocation mechanics, not for structure.",
+]
+
+[skills.claude-dispatch]
+local_path = "agents/skills/claude-dispatch"
+tracking = "local"
+notes = [
+  "Extracted Claude invocation, subscription-auth isolation, access modes, private run archives, and detached lifecycle from the archived fable-counsel skill on 2026-08-22.",
 ]
 
 [skills.control-europa-desktop]
@@ -322,10 +329,6 @@ notes = [
   "Intentional non-operational placeholder while the Europa persistent-credential migration is paused.",
 ]
 
-[skills.fable-counsel]
-local_path = "agents/skills/fable-counsel"
-tracking = "local"
-
 [skills.dream]
 local_path = "agents/skills/dream"
 tracking = "local"
@@ -334,9 +337,12 @@ tracking = "local"
 local_path = "agents/skills/lint"
 tracking = "local"
 
-[skills.pro-brief]
-local_path = "agents/skills/pro-brief"
+[skills.model-brief]
+local_path = "agents/skills/model-brief"
 tracking = "local"
+notes = [
+  "Extracted prompt assembly from the archived pro-brief and fable-counsel skills on 2026-08-22; preserves the exact-file bundler and decision-counsel procedure while removing model invocation.",
+]
 
 [skills.provision-hetzner-dev-server]
 local_path = "agents/skills/provision-hetzner-dev-server"

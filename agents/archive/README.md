@@ -45,3 +45,7 @@ commit message that moves it.
 - `reflect` — file-writing session retrospective. Archived 2026-08-21 after
   reflection became a conversation-only review of friction and wasted effort;
   Dream now owns its audit principles and uses transcripts as primary evidence.
+- `pro-brief`, `fable-counsel` — archived 2026-08-22 after their coupled prompt
+  assembly and model invocation were separated. Their prompt-selection and
+  decision-counsel procedures now inform `model-brief`; Claude execution,
+  isolation, and run archives now live in `claude-dispatch`.
