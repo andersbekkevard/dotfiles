@@ -9,7 +9,7 @@ rule that bears on the choice, then return to the dispatch flow.
 | Work shape | Model | Effort |
 |---|---|---|
 | High-volume, routine, or mechanical work | `gpt-5.6-luna` | `high` |
-| Scoped implementation or ordinary investigation | `gpt-5.6-terra` | `high` |
+| Simple and scoped implementation or ordinary investigation | `gpt-5.6-terra` | `high` |
 | High-judgment analysis, design review, or synthesis | `gpt-5.6-sol` | `medium` |
 | Difficult or high-stakes judgment | `gpt-5.6-sol` | `high` |
 
