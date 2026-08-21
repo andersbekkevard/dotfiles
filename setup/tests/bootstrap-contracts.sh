@@ -1259,9 +1259,42 @@ test_fleet_cli() {
 
   cat >"$fake_bin/ssh" <<'EOF'
 #!/bin/sh
-printf '%s\n' "$@" >"$CAPTURE"
+socket=""
+operation=""
+master=0
+printf '%s\n' "$@" >>"$CAPTURE"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -S)
+      shift
+      socket="$1"
+      ;;
+    -O)
+      shift
+      operation="$1"
+      ;;
+    -M)
+      master=1
+      ;;
+  esac
+  shift
+done
+case "$operation" in
+  check) [ -n "$socket" ] && [ -e "$socket" ] ;;
+  exit) rm -f -- "$socket" ;;
+  *)
+    if [ "$master" -eq 1 ]; then
+      : >"$socket"
+    fi
+    ;;
+esac
 EOF
   chmod +x "$fake_bin/ssh"
+  cat >"$fake_bin/curl" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$fake_bin/curl"
 
   FLEET_CONFIG="$config" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
     "$wrapper" remote run -- printf 'remote ok' >/dev/null
@@ -1273,9 +1306,37 @@ EOF
   grep -Fq '/usr/bin/open -- https://example.com' "$capture" ||
     fail "fleet open did not use the target open capability"
 
+  output="$(FLEET_CONFIG="$config" HOME="$fake_home" XDG_RUNTIME_DIR="$fake_root/runtime" \
+    PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    "$wrapper" remote forward --open 4100 5100)"
+  grep -Fq 'http://127.0.0.1:5100/' <<<"$output" ||
+    fail "fleet forward omitted the target URL"
+  grep -Fq '127.0.0.1:5100:127.0.0.1:4100' "$capture" ||
+    fail "fleet forward built the wrong reverse tunnel"
+  grep -Fq '/usr/bin/open -- http://127.0.0.1:5100/' "$capture" ||
+    fail "fleet forward --open did not open the Mac-loopback URL"
+  output="$(FLEET_CONFIG="$config" HOME="$fake_home" XDG_RUNTIME_DIR="$fake_root/runtime" \
+    PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    "$wrapper" remote forward-status 5100)"
+  grep -Fq 'active machine=remote source_port=4100 target_port=5100' <<<"$output" ||
+    fail "fleet forward-status omitted active tunnel state"
+  FLEET_CONFIG="$config" HOME="$fake_home" XDG_RUNTIME_DIR="$fake_root/runtime" \
+    PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+    "$wrapper" remote forward-stop 5100 >/dev/null
+  if FLEET_CONFIG="$config" HOME="$fake_home" XDG_RUNTIME_DIR="$fake_root/runtime" \
+      PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+      "$wrapper" remote forward-status 5100 >/dev/null 2>&1; then
+    fail "fleet forward-stop left the tunnel active"
+  fi
+
   if FLEET_CONFIG="$config" "$wrapper" missing check >/dev/null 2>&1; then
     fail "fleet accepted an unregistered machine"
   fi
+
+  [[ ! -e "$REPO_ROOT/scripts/.local/bin/forward-to-me" ]] ||
+    fail "standalone forward-to-me should be absorbed by fleet"
+  [[ ! -e "$REPO_ROOT/scripts/.local/bin/forward-from-me" ]] ||
+    fail "standalone forward-from-me should be absorbed by fleet"
 
   rm -rf "$fake_root"
 }

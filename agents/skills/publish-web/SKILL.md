@@ -1,6 +1,6 @@
 ---
 name: publish-web
-description: Publish a local HTTP service to the public internet for 24 hours by default. Use when Anders explicitly asks for a public URL, public web access, or an indefinite production hostname. For private Mac or iPhone access, use tailnet-preview.
+description: Publish a local HTTP service to the public internet for 24 hours by default. Use when Anders explicitly asks for a public URL, public web access, or an indefinite production hostname. For ordinary Mac-only viewing, use fleet forwarding; for iPhone or Tailnet access, use tailnet-preview.
 ---
 
 # Publish web

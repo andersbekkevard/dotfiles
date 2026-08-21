@@ -40,7 +40,7 @@ profile_packages() {
 profile_commands() {
   case "$1" in
     minimal)
-      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum trufflehog fleet control-europa-desktop forward-to-me forward-from-me git-clone-subdir git-credential-gh-safe git-loc
+      printf '%s\n' git zsh stow tmux fzf rg fd bat zoxide nvim htop btop jq ngrok cloudflared delta sesh gum trufflehog fleet control-europa-desktop git-clone-subdir git-credential-gh-safe git-loc
       ;;
     full)
       profile_commands minimal

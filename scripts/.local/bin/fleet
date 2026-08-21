@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly FLEET_VERSION="0.1.0"
+readonly FLEET_VERSION="0.2.0"
 readonly FLEET_SSH_OPTIONS=(
   -T
   -o BatchMode=yes
@@ -18,6 +18,9 @@ Usage:
   fleet <machine> put [--open] [--force] <local-file>... <destination-directory>
   fleet <machine> get [--force] <remote-file>... <local-directory>
   fleet <machine> open [--app <application>] <path-or-url>...
+  fleet <machine> forward [--open] <source-port> [target-port]
+  fleet <machine> forward-status <target-port>
+  fleet <machine> forward-stop <target-port>
 
 Examples:
   fleet list
@@ -26,6 +29,7 @@ Examples:
   fleet mac put --open report.html Desktop/
   fleet europa get /tmp/result.json .
   fleet mac open https://example.com
+  fleet mac forward --open 3000
 
 Configuration:
   ~/.config/fleet/machines.tsv
@@ -195,6 +199,122 @@ open_command() {
   fi
 }
 
+is_port() {
+  [[ "$1" =~ ^[0-9]+$ ]] && ((10#$1 >= 1 && 10#$1 <= 65535))
+}
+
+forward_paths() {
+  local target_port="$1" runtime_root
+  runtime_root="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}/fleet-$UID}"
+  FORWARD_STATE_DIR="$runtime_root/fleet-forwards"
+  mkdir -p -- "$FORWARD_STATE_DIR"
+  chmod 700 -- "$FORWARD_STATE_DIR"
+  FORWARD_SOCKET="$FORWARD_STATE_DIR/${MACHINE_NAME}-${target_port}.sock"
+  FORWARD_STATE="$FORWARD_STATE_DIR/${MACHINE_NAME}-${target_port}.tsv"
+}
+
+load_forward_state() {
+  local expected_port="$1"
+  forward_paths "$expected_port"
+  [[ -f "$FORWARD_STATE" ]] || return 1
+  IFS=$'\t' read -r FORWARD_MACHINE FORWARD_TARGET FORWARD_SOURCE_PORT \
+    FORWARD_TARGET_PORT FORWARD_URL <"$FORWARD_STATE"
+  [[ "$FORWARD_MACHINE" == "$MACHINE_NAME" ]] || die "invalid forward state for '$MACHINE_NAME'"
+  [[ "$FORWARD_TARGET_PORT" == "$expected_port" ]] || die "invalid forward state for port $expected_port"
+}
+
+forward_is_active() {
+  [[ -e "$FORWARD_SOCKET" ]] &&
+    ssh "${FLEET_SSH_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O check "$FORWARD_TARGET" \
+      >/dev/null 2>&1
+}
+
+remove_stale_forward() {
+  rm -f -- "$FORWARD_SOCKET" "$FORWARD_STATE"
+}
+
+forward_command() {
+  local open_after=0 source_port target_port url
+
+  if [[ "${1:-}" == "--open" ]]; then
+    open_after=1
+    shift
+  elif [[ "${1:-}" == --* ]]; then
+    usage_error "unknown forward option '${1:-}'"
+  fi
+  (($# >= 1 && $# <= 2)) || usage_error "forward requires a source port and optional target port"
+  source_port="$1"
+  target_port="${2:-$source_port}"
+  is_port "$source_port" || usage_error "invalid source port '$source_port'"
+  is_port "$target_port" || usage_error "invalid target port '$target_port'"
+  is_local_machine && die "machine '$MACHINE_NAME' is this host; use http://127.0.0.1:$source_port directly"
+  ((open_after == 0)) || has_capability open || die "machine '$MACHINE_NAME' does not support open"
+
+  url="http://127.0.0.1:$target_port/"
+  curl -sS -o /dev/null --max-time 5 "http://127.0.0.1:$source_port/" ||
+    die "no HTTP service answered on this host at http://127.0.0.1:$source_port/"
+
+  forward_paths "$target_port"
+  if [[ -f "$FORWARD_STATE" ]]; then
+    load_forward_state "$target_port"
+    if forward_is_active; then
+      die "$MACHINE_NAME:$target_port is already forwarded; use 'fleet $MACHINE_NAME forward-status $target_port'"
+    fi
+    remove_stale_forward
+  fi
+
+  ssh "${FLEET_SSH_OPTIONS[@]}" \
+    -M -S "$FORWARD_SOCKET" -fN \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -R "127.0.0.1:${target_port}:127.0.0.1:${source_port}" \
+    "$MACHINE_TARGET"
+
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$MACHINE_NAME" "$MACHINE_TARGET" "$source_port" "$target_port" "$url" >"$FORWARD_STATE"
+  chmod 600 -- "$FORWARD_STATE"
+  load_forward_state "$target_port"
+  if ! forward_is_active || ! run_remote /usr/bin/curl -sS -o /dev/null --max-time 5 "$url"; then
+    ssh "${FLEET_SSH_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O exit "$MACHINE_TARGET" \
+      >/dev/null 2>&1 || true
+    remove_stale_forward
+    die "forward started but $url was not reachable from $MACHINE_NAME"
+  fi
+
+  printf 'forward %s:127.0.0.1:%s -> %s:127.0.0.1:%s url=%s\n' \
+    "$(hostname -s)" "$source_port" "$MACHINE_NAME" "$target_port" "$url"
+  printf 'stop with: fleet %s forward-stop %s\n' "$MACHINE_NAME" "$target_port"
+  ((open_after == 0)) || open_command "" "$url"
+}
+
+forward_status_command() {
+  local target_port="$1"
+  is_port "$target_port" || usage_error "invalid target port '$target_port'"
+  if ! load_forward_state "$target_port"; then
+    printf 'stopped machine=%s target_port=%s\n' "$MACHINE_NAME" "$target_port"
+    return 1
+  fi
+  if ! forward_is_active; then
+    remove_stale_forward
+    printf 'stopped machine=%s target_port=%s stale_state_removed=true\n' "$MACHINE_NAME" "$target_port"
+    return 1
+  fi
+  printf 'active machine=%s source_port=%s target_port=%s url=%s\n' \
+    "$MACHINE_NAME" "$FORWARD_SOURCE_PORT" "$FORWARD_TARGET_PORT" "$FORWARD_URL"
+}
+
+forward_stop_command() {
+  local target_port="$1"
+  is_port "$target_port" || usage_error "invalid target port '$target_port'"
+  load_forward_state "$target_port" || die "no recorded forward for $MACHINE_NAME:$target_port"
+  if forward_is_active; then
+    ssh "${FLEET_SSH_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O exit "$FORWARD_TARGET" >/dev/null
+  fi
+  remove_stale_forward
+  printf 'stopped machine=%s target_port=%s\n' "$MACHINE_NAME" "$target_port"
+}
+
 put_command() {
   local open_after=0 force=0 destination destination_path source basename expected observed target_path
   local arguments=("$@") sources=() copied_paths=()
@@ -351,6 +471,17 @@ case "$operation" in
     fi
     (($#)) || usage_error "open requires at least one path or URL"
     open_command "$application" "$@"
+    ;;
+  forward)
+    forward_command "$@"
+    ;;
+  forward-status)
+    (($# == 1)) || usage_error "forward-status requires a target port"
+    forward_status_command "$1"
+    ;;
+  forward-stop)
+    (($# == 1)) || usage_error "forward-stop requires a target port"
+    forward_stop_command "$1"
     ;;
   -h|--help|help)
     usage

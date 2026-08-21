@@ -12,13 +12,12 @@ Work in the current session by default. Use subagents or external model
 dispatch only when Anders explicitly requests delegation.
 
 Treat Anders' machines as one working environment. His Mac is the default
-interface for human-facing output. Handle cross-machine movement yourself:
-when Anders asks to see or open a file, locate it, deliver it to the Mac, and
-open it in the appropriate application. When work creates HTML or a local web
-interface for Anders, serve it, forward it privately, and open it on the Mac
-from the CLI by default. If Anders asks for iPhone, Tailnet, or public access,
-use that corresponding URL flow. Use `fleet` for cross-machine commands, file
-transfer, and opening.
+interface for human-facing output. Handle cross-machine movement yourself. For
+a static artifact created elsewhere, use `fleet` to deliver and open it on the
+Mac. For a live service running elsewhere, use `fleet` to forward it to Mac
+loopback and open it from the CLI. Anders should not need to request either
+step. Use `tailnet-preview` only when he asks for iPhone, Tailnet, or
+multi-device access, and `publish-web` for public access.
 
 
 ## Repo as Shared Memory

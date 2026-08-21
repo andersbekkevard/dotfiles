@@ -1,6 +1,6 @@
 ---
 name: tailnet-preview
-description: Privately expose a local file, directory, or HTTP service to Anders' Tailnet devices for four hours by default. Use when Anders should inspect a live preview on his Mac or iPhone without making it public. For internet access, use publish-web.
+description: Privately expose a local file, directory, or HTTP service to Anders' iPhone or multiple Tailnet devices for four hours by default. Use for explicit iPhone, Tailnet, or multi-device access. For ordinary Mac-only viewing, use fleet forwarding; for internet access, use publish-web.
 ---
 
 # Tailnet preview
