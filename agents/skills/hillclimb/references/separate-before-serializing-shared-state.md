@@ -1,0 +1,1 @@
+../../../references/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md

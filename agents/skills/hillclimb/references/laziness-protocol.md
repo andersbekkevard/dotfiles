@@ -1,0 +1,1 @@
+../../../references/pstack/skills/principle-laziness-protocol/SKILL.md

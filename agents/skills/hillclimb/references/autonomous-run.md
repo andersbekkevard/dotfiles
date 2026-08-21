@@ -1,0 +1,1 @@
+../../../references/pstack/skills/poteto-mode/playbooks/autonomous-run.md

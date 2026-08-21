@@ -1,0 +1,1 @@
+../../../references/pstack/skills/how/SKILL.md

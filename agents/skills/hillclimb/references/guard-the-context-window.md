@@ -1,0 +1,1 @@
+../../../references/pstack/skills/principle-guard-the-context-window/SKILL.md

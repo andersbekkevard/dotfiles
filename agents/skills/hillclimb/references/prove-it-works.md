@@ -1,0 +1,1 @@
+../../../references/pstack/skills/principle-prove-it-works/SKILL.md
