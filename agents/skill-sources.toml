@@ -173,6 +173,13 @@ notes = [
   "Draws on Anders's gradual skill-writing preferences, Anthropic's html-effectiveness article and gallery, the 2026-08-21 research agent report, and selected public HTML-skill research with provenance retained in the visual grammar reference.",
 ]
 
+[skills.visual-design]
+local_path = "agents/skills/visual-design"
+tracking = "local"
+notes = [
+  "General visual-language preference derived from Anders's approval of the restrained Coda meeting packet design on 2026-08-21.",
+]
+
 [skills.mine-sessions]
 local_path = "agents/in-progress/mine-sessions"
 tracking = "local"

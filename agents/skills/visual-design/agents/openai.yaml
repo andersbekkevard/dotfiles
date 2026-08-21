@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visual design"
+  short_description: "Create quiet, clear visual artifacts"
+  default_prompt: "Use $visual-design to create a clear, restrained visual report."
