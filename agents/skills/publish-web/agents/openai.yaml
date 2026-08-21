@@ -1,0 +1,4 @@
+interface:
+  display_name: "Publish Web"
+  short_description: "Publish a temporary or durable public URL"
+  default_prompt: "Use $publish-web to publish this local service at a temporary public URL."

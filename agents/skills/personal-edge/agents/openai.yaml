@@ -1,4 +1,4 @@
 interface:
   display_name: "Personal Edge"
-  short_description: "Reach my Mac or publish expiring URLs"
-  default_prompt: "Use $personal-edge to reach my Mac, share this app privately, or publish a temporary URL with automatic expiry."
+  short_description: "Run commands or open files on my Mac"
+  default_prompt: "Use $personal-edge to run this task on my Mac or open the result there."

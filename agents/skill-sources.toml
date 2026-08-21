@@ -340,6 +340,14 @@ notes = [
 local_path = "agents/skills/application-email"
 tracking = "local"
 
+[skills.publish-web]
+local_path = "agents/skills/publish-web"
+tracking = "local"
+
+[skills.tailnet-preview]
+local_path = "agents/skills/tailnet-preview"
+tracking = "local"
+
 [skills.personal-edge]
 local_path = "agents/skills/personal-edge"
 tracking = "local"

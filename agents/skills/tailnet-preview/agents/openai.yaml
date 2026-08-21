@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailnet Preview"
+  short_description: "Privately preview a service on Mac or iPhone"
+  default_prompt: "Use $tailnet-preview to let me inspect this local service privately from my Tailnet devices."
