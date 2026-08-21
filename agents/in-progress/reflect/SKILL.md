@@ -9,6 +9,8 @@ disable-model-invocation: true
 Review the current conversation and tool trace. Identify where the process cost
 more time, attention, or tokens than the outcome warranted.
 
+Audit the skills that shaped the session. Surface a skill-learning signal when its guidance was incorrect, important non-obvious guidance was missing and had to be rediscovered, Anders had to correct or supplement its expected behavior, or following it produced an inadequate result. Tie the signal to exact session evidence and distinguish a skill defect from missing context, a new user decision, tool limitations, or ordinary execution error. Name the smallest plausible skill change and whether the evidence is an explicit correction, a repeated pattern, or a one-off hypothesis. Preserve the parts of the skill that worked.
+
 Look especially for repeated tool calls, avoidable context loading, retries,
 misunderstood tool behavior, weak prompts, poor context selection, unnecessary
 implementation detail, and delegation or verification that made the chief of
