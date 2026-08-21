@@ -357,3 +357,10 @@ notes = [
   "Independent in-progress candidate written without reading sibling candidates; detailed source provenance is retained in PROVENANCE.md.",
   "Synthesizes Anders's stated preferences with the html-effectiveness gallery, Shneiderman's details-on-demand, and clipboard copy-back sources.",
 ]
+
+[skills.html-minimal]
+local_path = "agents/in-progress/html/html-minimal"
+tracking = "local"
+notes = [
+  "Tournament candidate containing only HTML behavior and visual principles Anders explicitly stated in the design conversation.",
+]
