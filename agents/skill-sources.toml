@@ -21,6 +21,7 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/steipete/agent-scripts.git", ref = "main", path = "skills/create-cli" }
 preserve = [
   "Local references should stay relative to this repo's skill directory layout.",
+  "Keep create-cli user-invoked in both Claude and Codex.",
 ]
 
 [skills.define-goal]
@@ -100,11 +101,17 @@ preserve = [
 local_path = "agents/skills/codebase-design"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/codebase-design" }
+preserve = [
+  "Keep codebase-design user-invoked in both Claude and Codex.",
+]
 
 [skills.domain-modeling]
 local_path = "agents/skills/domain-modeling"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/domain-modeling" }
+preserve = [
+  "Keep domain-modeling user-invoked in both Claude and Codex.",
+]
 
 [skills.fix-merge-conflicts]
 local_path = "agents/skills/fix-merge-conflicts"
@@ -152,6 +159,9 @@ preserve = [
 local_path = "agents/skills/writing-for-agents"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/writing-for-agents" }
+preserve = [
+  "Keep writing-for-agents user-invoked in both Claude and Codex.",
+]
 
 [skills.anders-skill-writing]
 local_path = "agents/skills/anders-skill-writing"
