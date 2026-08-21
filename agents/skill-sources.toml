@@ -1,5 +1,8 @@
 version = 1
 
+[validation]
+ignore_roots = ["agents/in-progress/html"]
+
 # tracking values:
 # - tracked: check this upstream for byte-level drift and then review semantically.
 # - watch: upstream/product ecosystem to keep in mind, but no reliable file path to diff.
@@ -199,7 +202,7 @@ notes = [
 ]
 
 [skills.visual-design]
-local_path = "agents/skills/visual-design"
+local_path = "agents/in-progress/html/visual-design"
 tracking = "local"
 notes = [
   "General visual-language preference derived from Anders's approval of the restrained Coda meeting packet design on 2026-08-21.",
@@ -227,10 +230,10 @@ notes = [
 ]
 
 [skills.reflect]
-local_path = "agents/in-progress/reflect"
+local_path = "agents/skills/reflect"
 tracking = "local"
 notes = [
-  "Experimental conversation-only review of friction, wasted effort, and improvement candidates.",
+  "Conversation-only review of friction, wasted effort, and improvement candidates.",
 ]
 
 [skills.diagnosing-bugs]
@@ -268,18 +271,6 @@ tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/engineering/to-spec" }
 preserve = [
   "Minimal beads port accepted 2026-07-11: publish the full spec as a beads umbrella epic description, add high-level ## Success Criteria required by br lint, remove setup/triage-label assumptions, and keep upstream user-story and test-seam behavior unchanged.",
-]
-
-[skills.visual-plan]
-local_path = "agents/skills/visual-plan"
-tracking = "tracked"
-upstream = { type = "git", url = "https://github.com/BuilderIO/skills.git", ref = "main", path = "skills/visual-plan" }
-notes = [
-  "Agent-Native Plans ecosystem source.",
-]
-preserve = [
-  "Keep disable-model-invocation=true so visual-plan remains user-invoked in this global skill surface.",
-  "Keep installed local-files mode selection ahead of hosted connector discovery so a local-only install cannot upload plan content.",
 ]
 
 [skills.beads]
@@ -346,10 +337,6 @@ notes = [
 
 [skills.provision-hetzner-dev-server]
 local_path = "agents/skills/provision-hetzner-dev-server"
-tracking = "local"
-
-[skills.recap]
-local_path = "agents/skills/recap"
 tracking = "local"
 
 [skills.skill-audit]

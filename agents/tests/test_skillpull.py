@@ -85,6 +85,25 @@ class SkillpullValidateTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("validate: ok (1 skills mapped)", result.stdout)
 
+    def test_ignores_configured_tournament_tree_and_manifest_entries(self):
+        self.add_skill("skills/active", "active")
+        self.add_skill("in-progress/html/good/winner/html-1", "html-1")
+        (self.root / "skill-sources.toml").write_text(
+            "[validation]\n"
+            'ignore_roots = ["agents/in-progress/html"]\n\n'
+            "[skills.active]\n"
+            'local_path = "agents/skills/active"\n'
+            'tracking = "local"\n\n'
+            "[skills.html-1]\n"
+            'local_path = "agents/in-progress/html/html-1"\n'
+            'tracking = "local"\n'
+        )
+
+        result = self.run_validate()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("validate: ok (1 skills mapped)", result.stdout)
+
     def test_rejects_duplicate_candidate_names_across_collections(self):
         self.add_skill("in-progress/html/sample", "sample")
         self.add_skill("in-progress/other/sample", "sample")

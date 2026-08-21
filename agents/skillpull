@@ -56,7 +56,27 @@ def rel(path: Path) -> str:
         return str(path)
 
 
-def discover_candidate_dirs() -> tuple[dict[str, Path], dict[str, list[Path]]]:
+def configured_ignore_roots(manifest: dict) -> tuple[Path, ...]:
+    roots = []
+    for raw in manifest.get("validation", {}).get("ignore_roots", []):
+        root = Path(raw)
+        if root.is_absolute() or ".." in root.parts:
+            raise SystemExit(f"invalid validation.ignore_roots path: {raw}")
+        roots.append(root)
+    return tuple(roots)
+
+
+def logical_path(path: Path) -> Path:
+    return Path("agents") / path.relative_to(ROOT)
+
+
+def is_ignored(path: Path, ignore_roots: tuple[Path, ...]) -> bool:
+    return any(path == root or root in path.parents for root in ignore_roots)
+
+
+def discover_candidate_dirs(
+    ignore_roots: tuple[Path, ...] = (),
+) -> tuple[dict[str, Path], dict[str, list[Path]]]:
     """Find candidate skill roots beneath in-progress, allowing collections."""
     discovered: dict[str, Path] = {}
     collisions: dict[str, list[Path]] = {}
@@ -67,10 +87,14 @@ def discover_candidate_dirs() -> tuple[dict[str, Path], dict[str, list[Path]]]:
     for child in sorted(IN_PROGRESS.iterdir()):
         if not child.is_dir() or child.name.startswith("."):
             continue
+        if is_ignored(logical_path(child), ignore_roots):
+            continue
         if (child / "SKILL.md").is_file() or (child / "SKILL.off.md").is_file():
             skill_dirs.append(child)
             continue
         for candidate in sorted(child.iterdir()):
+            if is_ignored(logical_path(candidate), ignore_roots):
+                continue
             if (
                 candidate.is_dir()
                 and not candidate.name.startswith(".")
@@ -258,22 +282,30 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    data = skills(load_manifest())
+    manifest = load_manifest()
+    data = skills(manifest)
+    ignore_roots = configured_ignore_roots(manifest)
     active_root = ROOT / "skills"
     active = (
         {
             p.name
             for p in active_root.iterdir()
-            if p.is_dir() and not p.name.startswith(".")
+            if p.is_dir()
+            and not p.name.startswith(".")
+            and not is_ignored(logical_path(p), ignore_roots)
         }
         if active_root.is_dir()
         else set()
     )
-    candidate_dirs, candidate_collisions = discover_candidate_dirs()
+    candidate_dirs, candidate_collisions = discover_candidate_dirs(ignore_roots)
     candidates = set(candidate_dirs)
     duplicates = sorted(active & candidates)
     actual = active | candidates
-    declared = set(data)
+    declared = {
+        name
+        for name, config in data.items()
+        if not is_ignored(Path(config.get("local_path", "")), ignore_roots)
+    }
     missing = sorted(actual - declared)
     stale = sorted(declared - actual)
     misplaced = []
