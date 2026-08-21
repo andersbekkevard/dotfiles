@@ -128,6 +128,20 @@ preserve = [
   "Keep Architect user-invoked in both Claude and Codex.",
 ]
 
+[skills.how]
+local_path = "agents/skills/how"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/how" }
+notes = [
+  "Adapted from pstack How on 2026-08-22 with native cross-harness architectural critics.",
+]
+preserve = [
+  "Keep explanation before critique and retain the simple-versus-complex exploration split.",
+  "Default critics are Fable 5 high, GPT-5.6 Sol high, and Grok 4.6 high through their native CLI harnesses.",
+  "Give critics one identical immutable source packet and no tools or repository access so the comparison is read-only.",
+  "Keep How model-invoked in both Claude and Codex.",
+]
+
 [skills.create-verification-skill]
 local_path = "agents/skills/create-verification-skill"
 tracking = "tracked"
