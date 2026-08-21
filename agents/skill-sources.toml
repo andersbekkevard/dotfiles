@@ -226,6 +226,18 @@ preserve = [
   "Keep the upstream experiment loop intact; local changes are skill packaging, direct reference links, and the split model/effort spelling for gpt-5.6-sol max.",
 ]
 
+[skills.eval]
+local_path = "agents/skills/eval"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/poteto-mode/playbooks/eval.md" }
+notes = [
+  "Standalone adapter of the PStack Poteto Mode Eval playbook, with a harness-local Arena reference and harness-neutral scoped transcript wording.",
+]
+preserve = [
+  "Keep eval user-invoked in both Claude and Codex.",
+  "Keep the upstream blinding rules and single-pass judge calibration intact.",
+]
+
 [skills.codebase-design]
 local_path = "agents/skills/codebase-design"
 tracking = "tracked"
