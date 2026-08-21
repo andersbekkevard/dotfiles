@@ -24,9 +24,12 @@ RUN_LAYER_ONLY=""
 STOW_ONLY_PACKAGE=""
 VERIFY_PROFILE=""
 RESTOW_MODE=0
+AGENTS_ONLY=0
 DRY_RUN=0
 SKIP_INSTALL=0
+SKIP_INSTALL_EXPLICIT=0
 ALLOW_PARTIAL="${DOTFILES_ALLOW_PARTIAL:-0}"
+ALLOW_PARTIAL_EXPLICIT=0
 SHOW_HELP=0
 ARG_ERRORS=()
 
@@ -332,6 +335,7 @@ print_setup_help() {
 Usage:
   ./setup.sh <profile> [--dry-run] [--skip-install] [--allow-partial]
   ./setup.sh restow [profile] [--dry-run]
+  ./setup.sh agents [--dry-run]
   ./setup.sh --verify <profile>
   ./setup.sh --layer <layer>
   ./setup.sh --stow <package>
@@ -347,11 +351,13 @@ Examples:
   ./setup.sh linux-desktop
   ./setup.sh restow
   ./setup.sh restow linux-desktop
+  ./setup.sh agents
   ./setup.sh --verify macos
   ./setup.sh --layer full
   ./setup.sh --stow shell
 
 Normal bootstrap never auto-detects a profile. The restow shortcut defaults to full.
+The agents mode refreshes only global agent skills and instructions.
 EOF
 }
 
@@ -371,12 +377,21 @@ parse_args() {
         ;;
       --skip-install)
         SKIP_INSTALL=1
+        SKIP_INSTALL_EXPLICIT=1
         ;;
       --allow-partial|--allow-without-sudo)
         ALLOW_PARTIAL=1
+        ALLOW_PARTIAL_EXPLICIT=1
         ;;
       restow)
         RESTOW_MODE=1
+        SKIP_INSTALL=1
+        ;;
+      agents)
+        if [[ "$AGENTS_ONLY" -eq 1 ]]; then
+          record_arg_error "agents may be specified only once"
+        fi
+        AGENTS_ONLY=1
         SKIP_INSTALL=1
         ;;
       --layer)
@@ -429,7 +444,15 @@ parse_args() {
     REQUESTED_PROFILE=full
   fi
 
-  if [[ -n "$RUN_LAYER_ONLY" || -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ]]; then
+  if [[ "$AGENTS_ONLY" -eq 1 ]] &&
+     [[ "$RESTOW_MODE" -eq 1 || -n "$REQUESTED_PROFILE" || -n "$RUN_LAYER_ONLY" ||
+        -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ||
+        "$SKIP_INSTALL_EXPLICIT" -eq 1 || "$ALLOW_PARTIAL_EXPLICIT" -eq 1 ]]; then
+    record_arg_error "agents accepts only --dry-run or --help"
+    return 0
+  fi
+
+  if [[ "$AGENTS_ONLY" -eq 1 || -n "$RUN_LAYER_ONLY" || -n "$STOW_ONLY_PACKAGE" || -n "$VERIFY_PROFILE" ]]; then
     return 0
   fi
 

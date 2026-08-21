@@ -42,14 +42,15 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
 Use setup for the machine-level agent surface:
 
 ```bash
-./setup.sh --layer minimal --skip-install
+./setup.sh agents
 ```
 
-That command skips package/runtime installers but still runs `setup/agents.sh`,
-which creates or repairs `~/.claude/skills/<name>`, composes
+That command runs only `setup/agents.sh`. It creates or repairs
+`~/.claude/skills/<name>`, composes
 `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, and refreshes the flat Codex
-skill projection. On a fresh machine that still needs packages,
-run the normal explicit profile instead.
+skill projection. It does not install packages, restow unrelated dotfiles,
+refresh shell templates, or update stable command entrypoints. On a fresh
+machine that still needs packages, run the normal explicit profile instead.
 
 Machine-local instruction overlays use these optional paths:
 
@@ -59,7 +60,7 @@ agents/.local/AGENTS.md
 agents/.local/CLAUDE.md
 ```
 
-Run `./setup.sh restow` after adding, changing, or removing an overlay. The
+Run `./setup.sh agents` after adding, changing, or removing an overlay. The
 composition order is tracked shared, tracked harness, local shared, local
 harness. Later files can therefore specialize earlier rules for one machine.
 

@@ -440,6 +440,67 @@ test_restow_cli_contract() {
   )
 }
 
+test_agents_cli_contract() {
+  local fake_home fake_bin python_capture dry_home help_output
+  fake_home="$(mktemp -d)"
+  fake_bin="$fake_home/bin"
+  python_capture="$fake_home/python-capture"
+  mkdir -p "$fake_bin"
+  cat > "$fake_bin/python3" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" > "$PYTHON_CAPTURE"
+EOF
+  chmod +x "$fake_bin/python3"
+
+  (
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    parse_args agents
+    assert_eq "$AGENTS_ONLY" "1"
+    assert_eq "$SKIP_INSTALL" "1"
+    assert_eq "$REQUESTED_PROFILE" ""
+    [[ ${#ARG_ERRORS[@]} -eq 0 ]] || fail "agents arguments were rejected"
+  )
+
+  HOME="$fake_home" \
+    PATH="$fake_bin:/usr/bin:/bin" \
+    PYTHON_CAPTURE="$python_capture" \
+    bash "$REPO_ROOT/setup.sh" agents >/dev/null
+
+  [[ -f "$fake_home/.claude/CLAUDE.md" ]] || fail "agents mode did not compose Claude instructions"
+  [[ -f "$fake_home/.codex/AGENTS.md" ]] || fail "agents mode did not compose Codex instructions"
+  [[ -L "$fake_home/.claude/skills/unslop" ]] || fail "agents mode did not link Claude skills"
+  assert_eq "$(cat "$python_capture")" "$REPO_ROOT/agents/skillctl sync"
+  [[ ! -e "$fake_home/.zshrc" ]] || fail "agents mode touched shell dotfiles"
+  [[ ! -e "$fake_home/.config/zsh/local.example.zsh" ]] || fail "agents mode refreshed unrelated templates"
+  [[ ! -e "$fake_home/.local/bin" ]] || fail "agents mode refreshed stable command entrypoints"
+
+  dry_home="$(mktemp -d)"
+  HOME="$dry_home" \
+    PATH="$fake_bin:/usr/bin:/bin" \
+    PYTHON_CAPTURE="$python_capture" \
+    bash "$REPO_ROOT/setup.sh" agents --dry-run >/dev/null
+  if find "$dry_home" -mindepth 1 -print -quit | grep -q .; then
+    fail "agents dry-run mutated HOME"
+  fi
+
+  help_output="$(bash "$REPO_ROOT/setup.sh" agents --help)"
+  printf '%s\n' "$help_output" | grep -Fq './setup.sh agents [--dry-run]' ||
+    fail "setup help omits agents mode"
+
+  if bash "$REPO_ROOT/setup.sh" agents minimal >/dev/null 2>&1; then
+    fail "agents mode accepted a profile"
+  fi
+  if bash "$REPO_ROOT/setup.sh" agents agents >/dev/null 2>&1; then
+    fail "agents mode accepted a duplicate command"
+  fi
+  if bash "$REPO_ROOT/setup.sh" agents --skip-install >/dev/null 2>&1; then
+    fail "agents mode accepted an unrelated flag"
+  fi
+
+  rm -rf "$fake_home" "$dry_home"
+}
+
 test_cliproxyapi_config_contract() {
   local fake_home config_file env_file config_key env_key
   fake_home="$(mktemp -d)"
@@ -760,6 +821,7 @@ test_pnpm_dry_run
 test_agent_cli_profile_contract
 test_agent_instruction_composition
 test_restow_cli_contract
+test_agents_cli_contract
 test_claude_standalone_installer_contract
 test_codex_standalone_installer_contract
 test_cliproxyapi_config_contract

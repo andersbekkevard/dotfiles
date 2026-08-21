@@ -35,4 +35,12 @@ Idempotent repo-managed repair without package or runtime installation:
 - `./setup.sh restow macos`
 - `./setup.sh restow linux-desktop`
 
+Agent-only repair on an already working machine:
+
+- `./setup.sh agents`
+
+This maintenance mode refreshes the global skills and instructions under
+`~/.claude` and `~/.codex`. It does not run a profile layer or touch unrelated
+dotfiles.
+
 `--layer <name>` is a maintenance mode that runs one layer in isolation; it does not expand to the full additive profile chain.

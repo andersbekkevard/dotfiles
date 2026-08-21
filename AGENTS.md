@@ -41,15 +41,15 @@ If a task asks to set up, repair, or refresh global agent skills or global
 agent instructions on the current machine, use setup, not direct `skillctl`:
 
 ```bash
-./setup.sh --layer minimal --skip-install
+./setup.sh agents
 ```
 
-This is the narrow machine-repair path for the agent surface. It avoids package
-and runtime installers, but still runs the repo-managed setup work that matters:
-restow minimal dotfiles, refresh local templates, run `setup/agents.sh`, create
-or repair `~/.claude/skills/<name>`, compose `~/.claude/CLAUDE.md` and
+This is the narrow machine-repair path for the agent surface. It runs
+`setup/agents.sh` without package or runtime installers, dotfile restows, local
+template refreshes, or stable command-entrypoint updates. It creates or repairs
+`~/.claude/skills/<name>`, composes `~/.claude/CLAUDE.md` and
 `~/.codex/AGENTS.md` from the primary shared instructions plus their harness
-additions, and invoke `agents/skillctl sync` for Codex-generated state.
+additions, and invokes `agents/skillctl sync` for Codex-generated state.
 
 Use the normal first-run profile command (`./setup.sh macos`,
 `./setup.sh linux-desktop`, `./setup.sh full`, or `./setup.sh minimal`) on a new

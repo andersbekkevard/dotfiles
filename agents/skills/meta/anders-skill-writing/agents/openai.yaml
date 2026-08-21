@@ -1,0 +1,4 @@
+interface:
+  display_name: "Anders Skill Writing"
+  short_description: "Apply Anders's evolving skill preferences"
+  default_prompt: "Use $anders-skill-writing to draft this skill from Anders's current preferences without freezing open choices."

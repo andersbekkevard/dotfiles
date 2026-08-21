@@ -136,6 +136,13 @@ local_path = "agents/skills/meta/writing-for-agents"
 tracking = "tracked"
 upstream = { type = "git", url = "https://github.com/mattpocock/skills.git", ref = "main", path = "skills/productivity/writing-for-agents" }
 
+[skills.anders-skill-writing]
+local_path = "agents/skills/meta/anders-skill-writing"
+tracking = "local"
+notes = [
+  "Work-in-progress record of Anders's evolving preferences for modular skill design, gradual specificity, and selective borrowing.",
+]
+
 [skills.diagnosing-bugs]
 local_path = "agents/skills/engineering/diagnosing-bugs"
 tracking = "tracked"

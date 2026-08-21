@@ -28,9 +28,9 @@ Common maintenance:
 ```bash
 ./setup.sh restow
 ./setup.sh restow linux-desktop
+./setup.sh agents
 ./setup.sh --verify macos
 ./setup.sh --layer linux-desktop
-./setup.sh --layer minimal --skip-install
 ./setup.sh --stow shell
 ./setup.sh full --dry-run
 ./setup.sh full --skip-install
@@ -103,15 +103,22 @@ Global agent skills and instructions live under `agents/` and are linked into `~
 Set up or repair the machine-level agent surface with setup:
 
 ```bash
-./setup.sh --layer minimal --skip-install
+./setup.sh agents
 ```
 
-This skips package/runtime installers but still runs the repo-managed agent work: minimal stow packages, flat per-skill links under `~/.claude/skills/` and `~/.codex/skills/`, composed `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` files, and generated Codex skill policy. The global instruction files are composed from primary `agents/SHARED.global.md` content followed by `agents/CLAUDE.global.md` or `agents/AGENTS.global.md`. On a fresh machine that still needs packages, run the normal explicit profile instead.
+This mode runs only the repo-managed agent work: flat per-skill links under
+`~/.claude/skills/` and `~/.codex/skills/`, composed
+`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` files, and generated Codex skill
+policy. It does not install packages, restow dotfiles, refresh local shell
+templates, or update stable command entrypoints. The global instruction files
+are composed from primary `agents/SHARED.global.md` content followed by
+`agents/CLAUDE.global.md` or `agents/AGENTS.global.md`. On a fresh machine that
+still needs packages, run the normal explicit profile instead.
 
 Optional machine instructions live in the Git-ignored `agents/.local/`
 directory. Use `SHARED.md` for both harnesses, `AGENTS.md` for Codex, and
 `CLAUDE.md` for Claude. Setup appends shared local rules and then harness-local
-rules after the tracked global files. Run `./setup.sh restow` after adding,
+rules after the tracked global files. Run `./setup.sh agents` after adding,
 changing, or removing an overlay.
 
 Day-to-day invocation-mode work goes through `skillctl`:

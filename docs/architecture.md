@@ -10,7 +10,7 @@ The repository is split into three categories:
 
 The `claudex` integration follows the same tracked/runtime split: `scripts/.local/bin/claudex` and `claudex-proxy` are portable stowed commands; setup installs the versioned CLIProxyAPI binary. The generated proxy configuration, local API key, OAuth credentials, PID, and logs are machine state and never live in the repository. The proxy binds to `127.0.0.1`, and only the `claudex` process receives its endpoint and token.
 
-For normal bootstrap, `setup.sh` requires an explicit profile, expands it into an additive layer chain, installs the required packages for each layer, backs up first-run conflicts, and stows the corresponding packages with `stow --no-folding`. The `restow` maintenance mode has a fixed `full` default and skips installers; it does not infer a profile from the machine.
+For normal bootstrap, `setup.sh` requires an explicit profile, expands it into an additive layer chain, installs the required packages for each layer, backs up first-run conflicts, and stows the corresponding packages with `stow --no-folding`. The `restow` maintenance mode has a fixed `full` default and skips installers; it does not infer a profile from the machine. The `agents` maintenance mode calls only `ensure_agent_surface`, so it refreshes global agent skills and instructions without running a profile layer, restowing dotfiles, refreshing shell templates, or updating command entrypoints.
 
 Operator entrypoint rule:
 

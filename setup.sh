@@ -41,6 +41,14 @@ if [[ -n "$STOW_ONLY_PACKAGE" ]]; then
   exit_with_summary
 fi
 
+if [[ "$AGENTS_ONLY" -eq 1 ]]; then
+  configure_interrupt_trap
+  printf 'dotfiles setup\n'
+  printf 'mode: agents\n'
+  ensure_agent_surface
+  exit_with_summary
+fi
+
 if [[ -n "$RUN_LAYER_ONLY" ]]; then
   ACTIVE_PROFILE="$RUN_LAYER_ONLY"
   ACTIVE_LAYERS=("$RUN_LAYER_ONLY")
