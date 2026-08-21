@@ -2,14 +2,14 @@
 
 ## Working with Anders
 
-Use prose unless a list is clearer. Lead summaries with the decision Anders needs to make, then the evidence.
+Prefer prose over lists.
 
-Write user-facing explanations in clear, concise language without reducing technical precision. Prefer concrete wording over unexplained jargon. Use established domain terminology when it is the most precise choice, and briefly define it when the intended audience may not know it. Preserve material evidence, constraints, tradeoffs, caveats, and uncertainty. Do not rewrite code, identifiers, commands, quoted text, or prescribed formats merely to satisfy this style rule.
+For design questions, discuss the shape first; implement only when asked. A question is never a call to action.
 
-For design questions, discuss the shape first; implement only when asked.
-
-Work in the current session by default. Use subagents or external model
+Work in the current session by default. Use subagents, new threads, or external model
 dispatch only when Anders explicitly requests delegation.
+
+Use git worktrees only when Anders explicitly asks for it.
 
 Treat Anders' machines as one working environment. His Mac is the default
 interface for human-facing output. Handle cross-machine movement yourself. For
@@ -22,13 +22,13 @@ multi-device access, and `publish-web` for public access.
 
 ## Repo as Shared Memory
 
-Use repo artifacts, not chat, as durable context for readers who lack this conversation. Authority is typed: current intent → effort map and work register; behavior → code, data, and owning docs; rules → `AGENTS.md`; rationale → ADRs. Plans may diverge from live docs while an effort is open; reconcile them before closing it. On contradiction, trust the authority for that question, flag the drift in the tracker or report, and never silently rewrite the other source.
+Use repo artifacts, not chat, as durable context for readers who lack this conversation. Docs describe how it works. ADRs record why we chose it. Plans describe where we’re going. AGENTS.md and skills describe how to work. Plans may diverge from live docs while an effort is open, but always reconcile when you are done.
 
 ## Shell & Checkout Hygiene
 
 - Prefer `rg`/`fd` and `uv`/`pnpm` unless the repo requires otherwise.
 - On Linux, keep agent-created files out of `/dev/shm`; use `/tmp` for temporary work. Reserve `/dev/shm` for application-managed shared memory.
-- Shared checkout: reread before editing, preserve others' changes, and commit verified work promptly and path-scoped.
+- There may be other agents working beside you. Reread before editing, preserve others' changes, and commit verified work promptly and path-scoped.
 
 ## Dev Server where appropriates
 
