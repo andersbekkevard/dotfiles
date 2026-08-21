@@ -135,12 +135,34 @@ notes = [
   "Work-in-progress record of Anders's evolving preferences for modular skill design, gradual specificity, and selective borrowing.",
 ]
 
-[skills.html]
-local_path = "agents/in-progress/html"
+[skills.html-1]
+local_path = "agents/in-progress/html-1"
 tracking = "local"
 notes = [
-  "Work-in-progress cohesive HTML router based on Anders's observed preferences and explicit choices.",
-  "Visual-form and interaction references preserve selected patterns from Anthropic's html-effectiveness gallery, HumanLayer's Show Me skill, and Matt Pocock's Improve Codebase Architecture report guidance; quantitative judgment remains in the unchanged tufte-viz skill.",
+  "Tournament candidate: consistent Anders house style with a reusable stylesheet.",
+]
+
+[skills.html-2]
+local_path = "agents/in-progress/html-2"
+tracking = "local"
+notes = [
+  "Tournament candidate: implementation-heavy technical HTML report builder.",
+  "Preserves selected report mechanics from HumanLayer's Show Me and Matt Pocock's Improve Codebase Architecture.",
+]
+
+[skills.html-3]
+local_path = "agents/in-progress/html-3"
+tracking = "local"
+notes = [
+  "Tournament candidate: subject-shaped editorial director.",
+  "Preserves selected visual-communication patterns from Anthropic's html-effectiveness gallery without adopting one fixed layout.",
+]
+
+[skills.html-4]
+local_path = "agents/in-progress/html-4"
+tracking = "local"
+notes = [
+  "Tournament candidate: short empirical record of Anders's observed visual corrections and preferences.",
 ]
 
 [skills.mine-sessions]
