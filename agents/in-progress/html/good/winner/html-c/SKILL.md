@@ -4,10 +4,6 @@ description: Create a clear local HTML artifact for visual explanation or struct
 disable-model-invocation: true
 ---
 
-# HTML C
-
-Status: work in progress.
-
 Create one browser artifact that makes the subject easier for Anders to
 understand or act on. The work is visual communication first and web styling
 second. Derive the composition from the material instead of pouring prose into
@@ -44,26 +40,9 @@ layout helps. Use HTML, CSS, and inline SVG when the composition or annotation
 needs tighter control. Keep task-specific JavaScript in the file. Adapt when
 offline, privacy, or project constraints require local dependencies.
 
-Verify the result in a wide and narrow viewport. Exercise every control. Check
-focus states, clipping, horizontal overflow, source links, and browser errors.
-For interactive artifacts, also verify the copied output.
-
 Open the finished file on Anders's Mac with the CLI and report its absolute Mac
 path. Skip opening only when Anders asks, the work is explicitly background or
 bulk work, or opening the material would expose something sensitive.
-
-## Current boundaries
-
-`html-c` does not absorb the surrounding workflow. Show Me remains a separate,
-technical visual-explanation skill. Its code-tree and diff patterns are useful
-sources, but this skill must also handle plans, research, decisions, and other
-non-code subjects at their natural level of abstraction.
-
-The first version uses clipboard export instead of a listener or automatic
-browser-to-agent channel. A shared stylesheet or component library remains an
-open design question. Design-variant matrices and slider-heavy exploration are
-available when the task is design work, not a default part of ordinary HTML
-artifacts.
 
 Done when the artifact communicates the intended point or captures the intended
 decision, every visible control and source link works, the copied result is

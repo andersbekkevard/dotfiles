@@ -3,12 +3,6 @@ name: html-d
 description: Design and deliver a standalone HTML artifact. Use when Anders asks for an HTML page, report, comparison, or explainer, or when spatial structure, annotated figures, or an in-browser decision would communicate better than Markdown.
 ---
 
-# HTML artifacts
-
-Status: work in progress. This records Anders's current preferences plus the
-few procedures that have earned confidence. Unsettled choices stay visible
-under Open questions instead of becoming rules.
-
 One responsibility: turn one body of thinking into a single HTML file that
 communicates it visually, and put that file in front of Anders. Chart and
 dashboard design for clearly quantitative work belongs to `tufte-viz`; quick
