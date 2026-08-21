@@ -135,6 +135,14 @@ notes = [
   "Work-in-progress record of Anders's evolving preferences for modular skill design, gradual specificity, and selective borrowing.",
 ]
 
+[skills.html]
+local_path = "agents/in-progress/html"
+tracking = "local"
+notes = [
+  "Work-in-progress cohesive HTML router based on Anders's observed preferences and explicit choices.",
+  "Visual-form and interaction references preserve selected patterns from Anthropic's html-effectiveness gallery, HumanLayer's Show Me skill, and Matt Pocock's Improve Codebase Architecture report guidance; quantitative judgment remains in the unchanged tufte-viz skill.",
+]
+
 [skills.mine-sessions]
 local_path = "agents/in-progress/mine-sessions"
 tracking = "local"
