@@ -14,9 +14,9 @@ page is a project deliverable.
 Anything the page names that has a URL or a path is a link: repos, files,
 tickets, sources.
 
-The page reads like a quietly typeset document on warm paper: near-black ink,
-a serif for titles at document scale, a plain sans for reading, monospace only
-for labels and metadata. Hierarchy comes from size, weight, and whitespace,
+Warm off-white ground, near-black ink. A serif for titles at document scale,
+a plain sans for reading, never use monospace.
+Hierarchy comes from size, weight, and whitespace,
 with thin rules where a break is needed. Figures sit on a raised white surface
 with a soft border and carry their labels directly; a legend appears only when
 a grammar repeats. Color is scarce and semantic: one or two hues, each meaning

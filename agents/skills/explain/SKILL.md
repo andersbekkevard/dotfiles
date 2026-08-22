@@ -20,10 +20,7 @@ When the page exists for Anders to make a decision, read
 primarily quantitative, use `tufte-viz` for the analytical and graphical
 judgment.
 
-Give the `html` skill a content specification containing the thesis, ordered
-sections and claim headings, chosen form and exact content for each section,
-source links, caveats, and any interaction or copy-back contract. `html` owns
-rendering, browser verification, delivery, and opening the result on the Mac.
+Invoke the `html` skill for making the actual artifact
 
 Done when the opened artifact gives the reader a coherent path through the
 material and makes the intended conclusion or decision clear.
