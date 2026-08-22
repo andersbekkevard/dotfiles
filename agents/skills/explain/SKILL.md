@@ -4,23 +4,39 @@ description: Explain complex material as an HTML artifact with a clear argument,
 ---
 
 # Explain
+Answer a question from anders visually as opposed to a block of text.
+The goal is to reduce the friction of communication, and make it easier and lower friction
+for Anders to understand what you are trying to communicate.
 
-One responsibility: decide how a body of material should be communicated as an
-explanatory page. The page is an argument, not a transcript of the work.
+# Explanatory forms
 
-Name the few claims the reader should leave understanding. Give each section
-one communicative job and a heading that states its claim. Choose the form that
-makes each relationship visible, using
-[references/forms.md](references/forms.md). Match the abstraction to the
-question, lead with the finding, and keep each caveat beside the evidence it
-qualifies.
+Choose forms by the relationship the reader needs to see.
+| Subject shape | Useful form |
+|---|---|
+| Alternatives, change, recommendation | Side-by-side comparison, before/after on identical axes, take/leave pair |
+| Dependency, flow, sequence | Flow or sequence diagram |
+| Mechanism, placement, spatial relationship | Directly annotated figure |
+| Dense inventory, ranking, lookup | Linked table with direct labels |
+| A decision made in the browser | Read [interactive.md](interactive.md) |
+
+Use small multiples when the reader must compare periods or measures.
+Match abstraction to the question. A system route is usually module-to-module;
+descend to methods only when call order is the question.
+
+For a concrete code shape, file tree, call path, or diff, use `show-me` to
+select the smallest useful visual and include that result in the page
+specification.
 
 When the page exists for Anders to make a decision, read
 [references/interactive.md](references/interactive.md). When the material is
 primarily quantitative, use `tufte-viz` for the analytical and graphical
 judgment.
 
+Exact text and numbers are evidence. Preserve the relevant source material and
+put each source link beside the claim it supports. A footer may summarize
+coverage but cannot be the only place sources appear.
+
 Invoke the `html` skill for making the actual artifact
 
 Done when the opened artifact gives the reader a coherent path through the
-material and makes the intended conclusion or decision clear.
+material and makes the intended concept or decision clear.

@@ -12,7 +12,7 @@ skip the rules below. Only deliver and open the finished file.
 
 ## Rendering
 
-One file, no build step. Tailwind and Mermaid via CDN. Tailwind classes on everything you write; a style block only for what a class cannot reach: elements Mermaid or a highlighter generates, @keyframes, and one variable per hue when a color carries one meaning across the page. Mermaid for most diagrams; hand-built SVG for layouts mermaid does't support
+One file, no build step. Tailwind and Mermaid via CDN. Tailwind classes on everything you write; a style block only for what a class cannot reach: elements Mermaid or a highlighter generates, @keyframes, and one variable per hue when a color carries one meaning across the page. Mermaid for most diagrams; hand-built SVG for layouts mermaid does't support. Never use emojis; make your own illustrations and diagrams.
 Write to `${TMPDIR:-/tmp}/<name>-<timestamp>.html` unless the
 page is a project deliverable.
 
