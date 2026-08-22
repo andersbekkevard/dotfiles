@@ -181,15 +181,15 @@ preserve = [
   "Keep the proof ladder and require the safety fact to be proven or marked unproven.",
 ]
 
-[skills.principle-compound-the-improvement-loop]
-local_path = "agents/skills/principle-compound-the-improvement-loop"
+[skills.principle-invest-in-improvement-loops]
+local_path = "agents/skills/principle-invest-in-improvement-loops"
 tracking = "local"
 notes = [
-  "Anders-authored principle for systems whose gains strengthen the mechanism that produces future gains.",
+  "Anders-authored principle for investing in mechanisms that turn repeated use into lasting improvement.",
 ]
 preserve = [
-  "Keep the distinction between incremental improvement and compounding: each gain must strengthen the mechanism that produces future gains.",
-  "Treat cheaper standardized repetition, realistic simulated user stories, and better ways to view, grade, triage, and extract issues as levers for increasing each cycle's value, not as the definition of compounding.",
+  "Keep repeated improvement through use as the main principle; second-order compounding, where the improvement mechanism itself improves, is an optional stronger case.",
+  "Treat cheaper standardized repetition, realistic simulated user stories, and better ways to view, grade, triage, and extract issues as levers for increasing each cycle's value, not as the definition of an improvement loop.",
   "Keep this principle user-invoked in both Claude and Codex.",
 ]
 
