@@ -19,6 +19,15 @@ Choose forms by the relationship the reader needs to see.
 | Dense inventory, ranking, lookup | Linked table with direct labels |
 | A decision made in the browser | Read [interactive.md](interactive.md) |
 
+However, just splitting up a block of text into side by side blocks of text is not useful.
+Empathize with Anders' brain. What visual would most easily communicate the idea?
+- Figure?
+- Diagram?
+- Highlight sections?
+
+Badly written text is also high on mental load for Anders. 
+Use `unslop` to communicate clearly.
+
 Use small multiples when the reader must compare periods or measures.
 Match abstraction to the question. A system route is usually module-to-module;
 descend to methods only when call order is the question.

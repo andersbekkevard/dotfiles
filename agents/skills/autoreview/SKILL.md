@@ -12,9 +12,7 @@ Codex review is the default when no engine is set. It uses `gpt-5.6-sol` with `h
 
 The two normal Anders-facing modes are Codex review and thermonuclear review.
 Thermonuclear review uses the same helper with the
-`thermo-nuclear-code-quality-review` skill as an additional rubric and widens
-the accepted priority range to P3 so maintainability findings are not hidden by
-the normal P0-only closeout default.
+`thermo-nuclear-code-quality-review` skill as an additional rubric.
 
 For user-visible behavior, pair autoreview with `behavior-validator`. Autoreview is source-aware and judges the change bundle; behavior validation is source-blind and judges the running product or tool against a behavior contract. A clean autoreview is not proof that a UI, CLI, API, or generated artifact works from the user's perspective.
 
@@ -29,7 +27,7 @@ Do not require autoreview for a change whose entire diff is prose-only internal 
 
 ## Contract
 
-- Default output is P0 only, except thermonuclear review uses P3: report issues worth blocking the current change
+- Default output is P0 only: report issues worth blocking the current change
   because they materially break the normal flow, outcome, or safety boundary.
   Use `--max-priority P1`, `P2`, or `P3` only when the caller explicitly asks
   for a wider review.
