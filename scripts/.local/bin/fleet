@@ -247,6 +247,15 @@ install_client_key_command() {
   trap - EXIT
 }
 
+render_client_key_installer() {
+  local machine_name="$1" key_file="$2"
+  printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail'
+  declare -f die usage_error valid_machine_name read_public_key install_client_key_command
+  printf '\ninstall_client_key_command %q <<'\''FLEET_PUBLIC_KEY'\''\n' "$machine_name"
+  cat -- "$key_file"
+  printf '%s\n' 'FLEET_PUBLIC_KEY'
+}
+
 authorize_enrollment_command() {
   (($# == 0)) || usage_error "enroll-authorize takes no arguments"
   [[ -n "${SSH_CONNECTION:-}" ]] || die "enroll-authorize must arrive through Tailscale SSH"
@@ -273,8 +282,8 @@ authorize_enrollment_command() {
   fingerprint="$(ssh-keygen -l -f "$key_file" | awk '{ print $2 }')"
 
   "$0" enroll-install-key --check
-  fleet mac run -- fleet enroll-install-key --check
-  fleet mac run -- fleet enroll-install-key "$machine_name" <"$key_file"
+  fleet mac run -- /bin/bash -c 'command -v ssh-keygen >/dev/null && test -d "$HOME" && test -w "$HOME"'
+  render_client_key_installer "$machine_name" "$key_file" | fleet mac run -- /bin/bash
   "$0" enroll-install-key "$machine_name" <"$key_file"
   printf 'enrollment authorized machine=%s fingerprint=%s targets=europa,mac\n' "$machine_name" "$fingerprint"
   rm -f -- "$key_file"

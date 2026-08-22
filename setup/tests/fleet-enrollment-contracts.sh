@@ -69,16 +69,17 @@ EOF
 }
 
 test_registrar_verifies_tailnet_owner_before_installing() {
-  local home="$TEST_ROOT/registrar-home" key="$TEST_ROOT/registrar-key" fake_bin="$TEST_ROOT/registrar-bin"
-  mkdir -p "$home" "$fake_bin"
+  local home="$TEST_ROOT/registrar-home" mac_home="$TEST_ROOT/registrar-mac-home" key="$TEST_ROOT/registrar-key" fake_bin="$TEST_ROOT/registrar-bin"
+  mkdir -p "$home" "$mac_home" "$fake_bin"
   make_key "$key"
   write_fake_tailscale "$fake_bin"
   cat >"$fake_bin/fleet" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >>"$FLEET_TEST_FLEET_LOG"
-if [[ "$*" == "mac run -- fleet enroll-install-key devbox-test" ]]; then
-  cat >"$FLEET_TEST_MAC_KEY"
+if [[ "$1" == "mac" && "$2" == "run" && "$3" == "--" ]]; then
+  shift 3
+  HOME="$FLEET_TEST_MAC_HOME" "$@"
 fi
 EOF
   chmod +x "$fake_bin/fleet"
@@ -87,10 +88,12 @@ EOF
     PATH="$fake_bin:/usr/bin:/bin" \
     SSH_CONNECTION="100.64.0.9 54321 100.100.56.45 22" \
     FLEET_TEST_FLEET_LOG="$TEST_ROOT/registrar-fleet.log" \
-    FLEET_TEST_MAC_KEY="$TEST_ROOT/registrar-mac-key" \
+    FLEET_TEST_MAC_HOME="$mac_home" \
     "$FLEET" enroll-authorize <"$key.pub" >/dev/null
 
-  cmp -s "$key.pub" "$TEST_ROOT/registrar-mac-key" || fail "registrar did not send the exact key to the Mac"
+  [[ "$(awk '{ print $2 }' "$key.pub")" == "$(awk '{ print $3 }' "$mac_home/.ssh/authorized_keys")" ]] ||
+    fail "registrar did not install the exact key on the Mac"
+  grep -Fq 'fleet:devbox-test' "$mac_home/.ssh/authorized_keys" || fail "registrar did not label the Mac key"
   grep -Fq 'fleet:devbox-test' "$home/.ssh/authorized_keys" || fail "registrar did not install the key locally"
 
   if HOME="$TEST_ROOT/rejected-home" \
@@ -98,7 +101,7 @@ EOF
     SSH_CONNECTION="100.64.0.10 54321 100.100.56.45 22" \
     FLEET_TEST_WHOIS_USER=99 \
     FLEET_TEST_FLEET_LOG="$TEST_ROOT/rejected-fleet.log" \
-    FLEET_TEST_MAC_KEY="$TEST_ROOT/rejected-mac-key" \
+    FLEET_TEST_MAC_HOME="$TEST_ROOT/rejected-mac-home" \
     "$FLEET" enroll-authorize <"$key.pub" >"$TEST_ROOT/rejected.out" 2>&1; then
     fail "registrar accepted a key from another Tailnet owner"
   fi
