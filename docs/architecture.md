@@ -10,6 +10,11 @@ The repository is split into three categories:
 
 The `claudex` integration follows the same tracked/runtime split: `scripts/.local/bin/claudex` and `claudex-proxy` are portable stowed commands; setup installs the versioned CLIProxyAPI binary. The generated proxy configuration, local API key, OAuth credentials, PID, and logs are machine state and never live in the repository. The proxy binds to `127.0.0.1`, and only the `claudex` process receives its endpoint and token.
 
+Fleet's tracked registry and verified public SSH host identities live under
+`scripts/.config/fleet/`. The stowed `fleet` CLI uses that dedicated trust file
+for both SSH and SCP with strict host-key checking; a missing or changed host
+key fails closed without altering the user's general SSH trust store.
+
 `dotfiles.sh install` requires an explicit profile, expands it into an additive
 layer chain, fills missing prerequisites without upgrading working providers,
 and applies the corresponding Stow packages. `update` traverses the same chain

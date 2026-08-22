@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly FLEET_VERSION="0.2.0"
-readonly FLEET_SSH_OPTIONS=(
-  -T
+readonly FLEET_VERSION="0.3.0"
+readonly FLEET_KNOWN_HOSTS="${FLEET_KNOWN_HOSTS:-${XDG_CONFIG_HOME:-$HOME/.config}/fleet/known_hosts}"
+readonly FLEET_HOST_OPTIONS=(
   -o BatchMode=yes
   -o ConnectTimeout=10
   -o StrictHostKeyChecking=yes
+  -o "UserKnownHostsFile=$FLEET_KNOWN_HOSTS"
+)
+readonly FLEET_SSH_OPTIONS=(
+  -T
+  "${FLEET_HOST_OPTIONS[@]}"
 )
 
 usage() {
@@ -34,8 +39,10 @@ Examples:
 Configuration:
   ~/.config/fleet/machines.tsv
   ~/.config/fleet/machines.local.tsv
+  ~/.config/fleet/known_hosts
 
-The local file overrides matching machine names from the tracked registry.
+The local registry overrides matching machine names. Fleet uses its tracked
+known-hosts file for strict SSH and SCP host verification.
 EOF
 }
 
@@ -348,7 +355,7 @@ put_command() {
     cp -p -- "${sources[@]}" "$destination_path/"
   else
     run_remote mkdir -p -- "$destination"
-    scp -p -- "${sources[@]}" "$MACHINE_TARGET:$destination/"
+    scp "${FLEET_HOST_OPTIONS[@]}" -p -- "${sources[@]}" "$MACHINE_TARGET:$destination/"
   fi
 
   for source in "${sources[@]}"; do
@@ -392,7 +399,7 @@ get_command() {
     if is_local_machine; then
       cp -p -- "$(local_machine_path "$source_path")" "$destination/"
     else
-      scp -p -- "$MACHINE_TARGET:$source_path" "$destination/"
+      scp "${FLEET_HOST_OPTIONS[@]}" -p -- "$MACHINE_TARGET:$source_path" "$destination/"
     fi
 
     observed="$(sha256_file "$local_path")"

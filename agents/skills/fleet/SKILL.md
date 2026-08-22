@@ -8,6 +8,11 @@ description: Run commands, transfer files, open artifacts, or forward live servi
 Use the `fleet` CLI. It gives every machine the same command and transfer
 interface, backed by the Git-synced machine registry.
 
+Fleet verifies SSH and SCP against its tracked public host keys. Treat a missing
+or changed key as an identity failure. Read the host's ED25519 public key through
+an existing trusted session or console before updating the trust file;
+`ssh-keyscan` may discover a key but cannot verify it.
+
 Start with `fleet list` when the target name is unclear and `fleet <machine>
 check` when reachability matters. Then use the CLI's own help:
 

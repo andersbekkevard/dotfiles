@@ -1223,18 +1223,25 @@ EOF
 }
 
 test_fleet_cli() {
-  local fake_root fake_home fake_bin config wrapper capture output
+  local fake_root fake_home fake_bin config known_hosts wrapper capture output expected_sha
   fake_root="$(mktemp -d)"
   fake_home="$fake_root/home"
   fake_bin="$fake_root/bin"
   config="$fake_root/machines.tsv"
+  known_hosts="$fake_root/known_hosts"
   wrapper="$REPO_ROOT/scripts/.local/bin/fleet"
   capture="$fake_root/capture"
   mkdir -p "$fake_home" "$fake_bin"
 
   printf 'here\tdummy\t%s\t-\n' "$(hostname -s)" >"$config"
   printf 'remote\ttest@example.test\tnowhere\topen\n' >>"$config"
+  : >"$known_hosts"
   printf 'fleet fixture\n' >"$fake_root/source.txt"
+  if command -v sha256sum >/dev/null 2>&1; then
+    expected_sha="$(sha256sum "$fake_root/source.txt" | awk '{print $1}')"
+  else
+    expected_sha="$(shasum -a 256 "$fake_root/source.txt" | awk '{print $1}')"
+  fi
 
   output="$(FLEET_CONFIG="$config" "$wrapper" list)"
   grep -Fq 'test@example.test' <<<"$output" || fail "fleet list omitted a registered machine"
@@ -1262,6 +1269,7 @@ test_fleet_cli() {
 socket=""
 operation=""
 master=0
+arguments="$*"
 printf '%s\n' "$@" >>"$CAPTURE"
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -1285,21 +1293,37 @@ case "$operation" in
   *)
     if [ "$master" -eq 1 ]; then
       : >"$socket"
+    elif printf '%s\n' "$arguments" | grep -q sha256sum; then
+      printf '%s\n' "$EXPECTED_SHA"
     fi
     ;;
 esac
 EOF
   chmod +x "$fake_bin/ssh"
+  cat >"$fake_bin/scp" <<'EOF'
+#!/bin/sh
+printf 'scp:%s\n' "$*" >>"$CAPTURE"
+EOF
+  chmod +x "$fake_bin/scp"
   cat >"$fake_bin/curl" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
   chmod +x "$fake_bin/curl"
 
-  FLEET_CONFIG="$config" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
+  FLEET_CONFIG="$config" FLEET_KNOWN_HOSTS="$known_hosts" \
+    PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
     "$wrapper" remote run -- printf 'remote ok' >/dev/null
   grep -Fq 'test@example.test' "$capture" || fail "fleet run used the wrong SSH target"
   grep -Fq 'printf remote\ ok' "$capture" || fail "fleet run did not preserve remote arguments"
+  grep -Fq "UserKnownHostsFile=$known_hosts" "$capture" ||
+    fail "fleet SSH did not use its tracked known-hosts file"
+
+  FLEET_CONFIG="$config" FLEET_KNOWN_HOSTS="$known_hosts" \
+    PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" EXPECTED_SHA="$expected_sha" \
+    "$wrapper" remote put --force "$fake_root/source.txt" inbox/ >/dev/null
+  grep -Fq "scp:-o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$known_hosts" "$capture" ||
+    fail "fleet SCP did not use its tracked known-hosts file"
 
   FLEET_CONFIG="$config" PATH="$fake_bin:/usr/bin:/bin" CAPTURE="$capture" \
     "$wrapper" remote open https://example.com >/dev/null
