@@ -59,9 +59,11 @@ scheduled wakeup or monitor mechanism when the owning session must return.
 
 ## Harvest and recover
 
-Read `result.md` and the log tail. For an agentic coding run, review the
-path-scoped diff and run the requested verification before integrating the
-result; the dispatcher proves execution, not correctness.
+Read `result.md` and the log tail. A successful run also prints
+`Transcript: <absolute path>` for the native parent session; `result.md`
+remains the handoff. For an agentic coding run, review the path-scoped diff
+and run the requested verification before integrating the result; the
+dispatcher proves execution, not correctness.
 
 Classify incomplete lanes before acting:
 

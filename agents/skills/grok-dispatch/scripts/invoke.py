@@ -5,10 +5,16 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+
+_AGENTS_LIB = Path(__file__).resolve().parents[3] / "lib"
+if str(_AGENTS_LIB) not in sys.path:
+    sys.path.insert(0, str(_AGENTS_LIB))
+import agent_dispatch_state as dispatch_state
 
 
 EFFORTS = ("low", "medium", "high", "xhigh")
@@ -83,15 +89,18 @@ def validate_root(args: argparse.Namespace) -> Path | None:
     return root
 
 
-def sanitized_environment() -> dict[str, str]:
+def sanitized_environment(grok_home: Path) -> dict[str, str]:
     environment = os.environ.copy()
     for name in SANITIZED_ENV:
         environment.pop(name, None)
     environment["GROK_DISABLE_API_KEY_AUTH"] = "1"
+    environment["GROK_HOME"] = str(grok_home)
     return environment
 
 
-def command_for(args: argparse.Namespace, prompt: Path, cwd: Path) -> list[str]:
+def command_for(
+    args: argparse.Namespace, prompt: Path, cwd: Path, session_id: str
+) -> list[str]:
     command = [
         "grok",
         "--prompt-file",
@@ -105,6 +114,8 @@ def command_for(args: argparse.Namespace, prompt: Path, cwd: Path) -> list[str]:
         "--verbatim",
         "--cwd",
         str(cwd),
+        "--session-id",
+        session_id,
     ]
     if args.access == "closed":
         command.extend(("--tools", "", "--no-subagents", "--disable-web-search"))
@@ -127,16 +138,6 @@ def verify_subscription(environment: dict[str, str], cwd: Path) -> None:
         fail("grok is not available on PATH")
     if result.returncode != 0 or "logged in with grok.com" not in result.stdout.lower():
         fail("Grok must use grok.com authentication")
-
-
-def seed_closed_home(destination: Path) -> None:
-    configured = os.environ.get("GROK_HOME")
-    source = Path(configured).expanduser() if configured else Path.home() / ".grok"
-    for name in ("auth.json", "agent_id"):
-        candidate = source / name
-        if candidate.is_file() and not candidate.is_symlink():
-            shutil.copyfile(candidate, destination / name)
-            (destination / name).chmod(0o600)
 
 
 def invoke(
@@ -166,6 +167,24 @@ def invoke(
         raise
 
 
+def dispatch(
+    args: argparse.Namespace,
+    prompt: Path,
+    output: Path,
+    cwd: Path,
+    grok_home: Path,
+) -> Path:
+    session_id = dispatch_state.new_session_id()
+    environment = sanitized_environment(grok_home)
+    verify_subscription(environment, cwd)
+    invoke(command_for(args, prompt, cwd, session_id), output, environment, cwd)
+    try:
+        return dispatch_state.resolve_grok_session(grok_home, cwd, session_id)
+    except FileNotFoundError as exc:
+        fail(str(exc))
+        raise
+
+
 def main() -> int:
     args = parse_args()
     prompt = validate_file(args.prompt_file)
@@ -176,24 +195,23 @@ def main() -> int:
         print(f"Working root: {root if root is not None else 'isolated temporary directory'}")
         print(f"Model: {args.model}")
         print(f"Effort: {args.effort}")
+        print(f"Transcript root: {dispatch_state.dispatch_root() / 'grok'}")
         print("Dry run: Grok not invoked")
         return 0
 
-    environment = sanitized_environment()
+    try:
+        grok_home = dispatch_state.prepare_grok_home()
+    except OSError as exc:
+        fail(f"cannot create dispatch Grok home: {exc}")
     if args.access == "closed":
         with tempfile.TemporaryDirectory(prefix="grok-dispatch.") as neutral_name:
-            neutral = Path(neutral_name)
-            home = neutral / "home"
-            home.mkdir(mode=0o700)
-            seed_closed_home(home)
-            environment["GROK_HOME"] = str(home)
-            verify_subscription(environment, neutral)
-            invoke(command_for(args, prompt, neutral), output, environment, neutral)
+            cwd = Path(neutral_name)
+            transcript = dispatch(args, prompt, output, cwd, grok_home)
     else:
         assert root is not None
-        verify_subscription(environment, root)
-        invoke(command_for(args, prompt, root), output, environment, root)
+        transcript = dispatch(args, prompt, output, root, grok_home)
     print(f"Grok result: {output}")
+    print(f"{dispatch_state.TRANSCRIPT_PREFIX}{transcript}")
     print(f"Grok dispatch: {args.model} | effort: {args.effort} | access: {args.access}")
     return 0
 

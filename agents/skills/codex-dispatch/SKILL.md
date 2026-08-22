@@ -16,9 +16,10 @@ Choose the access boundary independently of the prompt:
 
 - `closed` (default): prompt-in/result-out. Codex exposes no hard tool-off
   switch, so the runner uses an isolated temporary directory, a read-only
-  sandbox, ephemeral state, ignored local config and rules, and a leading
-  instruction to avoid tools. This is best-effort isolation, unlike Claude's
-  hard-disabled closed mode.
+  sandbox, ignored local config and rules, and a leading instruction to
+  avoid tools. This is best-effort isolation, unlike Claude's hard-disabled
+  closed mode. Native rollouts persist under the dispatch root, not
+  `~/.codex/sessions/`.
 - `agentic`: unrestricted execution with permission and sandbox bypass. Require
   an explicit `--root` as the starting directory, but do not treat it as a
   containment boundary. Selecting `agentic` authorizes unrestricted execution;
@@ -43,6 +44,12 @@ python3 "$SKILL_DIR/scripts/invoke.py" /absolute/path/prompt.md \
 
 For `agentic`, also pass `--root /absolute/repo`. The dispatch is complete when
 the runner exits successfully and the output file is nonempty.
+
+Delegated Codex rollouts live under `~/.local/state/agent-dispatch/codex/`.
+The runner prints `Transcript: <absolute path>` for the parent rollout. Child
+rollouts sit in the same `sessions/YYYY/MM/DD/` tree when Codex creates them.
+`result.md` remains the handoff; inspect the transcript only for a debrief.
+Native layout: [transcripts](references/transcripts.md).
 
 For a run that must survive the current session or join a multi-run wave, read
 [the shared detached lifecycle](references/detached.md).

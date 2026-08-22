@@ -6,8 +6,15 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+
+_AGENTS_LIB = Path(__file__).resolve().parents[3] / "lib"
+if str(_AGENTS_LIB) not in sys.path:
+    sys.path.insert(0, str(_AGENTS_LIB))
+import agent_dispatch_state as dispatch_state
 
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max", "ultra")
@@ -102,13 +109,14 @@ def command_for(
     command = [
         "codex",
         "exec",
-        "--ephemeral",
         "-C",
         str(cwd),
         "-m",
         args.model,
         "-c",
         f'model_reasoning_effort="{args.effort}"',
+        "-c",
+        'cli_auth_credentials_store="file"',
         "-o",
         temporary_output,
     ]
@@ -122,13 +130,18 @@ def command_for(
     return command
 
 
-def run(args: argparse.Namespace, prompt: Path, output: Path, root: Path | None) -> None:
+def run(
+    args: argparse.Namespace,
+    prompt: Path,
+    output: Path,
+    root: Path | None,
+    environment: dict[str, str],
+) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=f".{output.name}.", dir=output.parent)
     os.close(fd)
     os.unlink(temp_name)
     try:
-        environment = sanitized_environment()
         if args.access == "closed":
             with tempfile.TemporaryDirectory(prefix="codex-dispatch.") as neutral:
                 cwd = Path(neutral)
@@ -174,12 +187,24 @@ def main() -> int:
         print(f"Working root: {root if root is not None else 'isolated temporary directory'}")
         print(f"Model: {args.model}")
         print(f"Effort: {args.effort}")
+        print(f"Transcript root: {dispatch_state.dispatch_root() / 'codex'}")
         if args.access == "closed":
             print("Closed-mode note: Codex has no hard tool-off flag; isolation, read-only sandboxing, ignored local rules, and an execution-boundary instruction are applied.")
         print("Dry run: Codex not invoked")
         return 0
-    run(args, prompt, output, root)
+    try:
+        codex_home = dispatch_state.prepare_codex_home()
+    except OSError as exc:
+        fail(f"cannot create isolated Codex home: {exc}")
+    environment = sanitized_environment()
+    environment["CODEX_HOME"] = str(codex_home)
+    run(args, prompt, output, root, environment)
+    try:
+        transcript = dispatch_state.resolve_codex_parent_rollout(codex_home)
+    except FileNotFoundError as exc:
+        fail(str(exc))
     print(f"Codex result: {output}")
+    print(f"{dispatch_state.TRANSCRIPT_PREFIX}{transcript}")
     print(f"Codex dispatch: {args.model} | effort: {args.effort} | access: {args.access}")
     return 0
 
