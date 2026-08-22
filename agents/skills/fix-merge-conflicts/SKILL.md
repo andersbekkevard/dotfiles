@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 1. **See the current state** of the merge/rebase. Check git history and the conflicting files. Identify the commits behind each side rather than relying on "ours" and "theirs": during a rebase, those labels are reversed from their usual intuitive meaning.
 
-2. **Find the primary sources** for each conflict. Understand deeply why each change was made and what the original intent was. Read the commit messages, check the PRs, check original issues/tickets, and consult the repo's owning docs. Determine whether the local change, remote change, or a combination best matches the merge/rebase goal.
+2. **Find the primary sources** for each conflict. Determine why each change was made and what the original intent was. Read the commit messages, check the PRs, check original issues/tickets, and consult the repo's owning docs. Determine whether the local change, remote change, or a combination best matches the merge/rebase goal.
 
 3. **Resolve each hunk.** Preserve both intents where possible. Where incompatible, pick the one matching the merge's stated goal and note the trade-off. When evidence is otherwise tied, preserve the merge/rebase target.
 
@@ -21,7 +21,7 @@ disable-model-invocation: true
 
    Do **not** invent new behaviour. Always resolve; never `--abort`.
 
-4. Discover the project's **automated checks** and run them -- typically typecheck, then tests, then format. For a resolved Beads file, also verify that every line parses, IDs are unique, conflict markers are absent, and the dependency graph has no cycles:
+4. Discover the project's **automated checks** and run them, typically typecheck, then tests, then format. For a resolved Beads file, also verify that every line parses, IDs are unique, conflict markers are absent, and the dependency graph has no cycles:
 
    ```bash
    jq -s 'all(.[]; (.id | type) == "string")

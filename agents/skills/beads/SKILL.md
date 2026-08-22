@@ -5,19 +5,19 @@ description: Beads (`br`) CLI reference and concurrency invariants. Use when cre
 
 # Beads
 
-Beads (`br`) is the cross-session coordination substrate. State lives in
-`.beads/` at the repo root, not in a thread's context, so any actor reads the
-same truth. Beads is the one shared file that is safe to co-write concurrently
-— SQLite + JSONL handle the locking.
+Beads (`br`) coordinates work across sessions. State lives in `.beads/` at the
+repo root, not in a thread's context, so every session reads the same state.
+Multiple sessions can write Beads state concurrently because SQLite and JSONL
+handle locking.
 
-Authoring work items — specs, tickets, and `## Success Criteria` — is owned by
-`/to-spec` and `/to-tickets`. The execution lifecycle (claim → work → close
-with evidence) is this skill's own contract: the CLI and the invariants below.
+`/to-spec` and `/to-tickets` own work-item authoring, including specs, tickets,
+and `## Success Criteria`. This skill covers the execution lifecycle: claim →
+work → close with evidence. The CLI and invariants below define that lifecycle.
 
 ## Invariants
 
 - **Beads exist for cross-session persistence.** Never create a bead and close
-  it within the same session — do the work and report it in chat. Bead only
+  it within the same session. Do the work and report it in chat. Bead only
   when state must outlive the session: planning now and executing later,
   handoffs, dependencies, parallel ownership, persistent follow-up.
 - **Claim is the lock.** `br update <id> --claim` (atomic: assignee=me +
@@ -42,10 +42,10 @@ open ──claim──> in_progress ──implemented & verified──> closed
 ## Hierarchy
 
 Beads form a **forest**, not one tree; epics nest by dotted ID (`<prefix>-7` →
-`<prefix>-7.9`). An epic with child epics is an **umbrella** — organizational,
-never claimed directly. The grabbable unit is a childless epic with
-`## Success Criteria` (`br lint` flags epics missing one; `## Acceptance
-Criteria` is the equivalent for tasks).
+`<prefix>-7.9`). An epic with child epics is an **umbrella**. It is
+organizational and never claimed directly. The grabbable unit is a childless
+epic with `## Success Criteria` (`br lint` flags epics missing one; `##
+Acceptance Criteria` is the equivalent for tasks).
 
 `/to-spec` publishes the full spec, including its high-level `## Success
 Criteria`, as an umbrella epic's description. `/to-tickets` creates its

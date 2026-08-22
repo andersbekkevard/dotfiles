@@ -5,7 +5,7 @@ description: Build and sharpen a project's domain model: ubiquitous language, du
 
 # Domain Modeling
 
-Actively build and sharpen the project's domain model as you design. This is the *active* discipline — challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `CONTEXT.md` for vocabulary is not this skill — that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
+Actively build and sharpen the project's domain model as you design. This is the *active* discipline of challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. Merely *reading* `CONTEXT.md` for vocabulary is a one-line habit any skill can do. Use this skill when you're changing the model, not just consuming it.
 
 ## File structure
 
@@ -37,17 +37,17 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 │       └── docs/adr/
 ```
 
-Create files lazily — only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no ADR directory exists, create it when the first ADR is needed. When a repo has local ADR conventions (e.g. `docs/adr-conventions.md`), follow those instead of assuming a generic ADR format; for app-local decisions, also respect the app's ADR policy.
+Create files lazily, only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no ADR directory exists, create it when the first ADR is needed. When a repo has local ADR conventions, such as `docs/adr-conventions.md`, follow those instead of assuming a generic ADR format. For app-local decisions, also respect the app's ADR policy.
 
 ## During the session
 
 ### Challenge against the glossary
 
-When the user uses a term that conflicts with the existing language in `CONTEXT.md`, call it out immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y — which is it?"
+When the user uses a term that conflicts with the existing language in `CONTEXT.md`, call it out immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y. Which is it?"
 
 ### Sharpen fuzzy language
 
-When the user uses vague or overloaded terms, propose a precise canonical term. "You're saying 'account' — do you mean the Customer or the User? Those are different things."
+When the user uses vague or overloaded terms, propose a precise canonical term. "You're saying 'account.' Do you mean the Customer or the User? Those are different things."
 
 ### Discuss concrete scenarios
 
@@ -55,11 +55,11 @@ When domain relationships are being discussed, stress-test them with specific sc
 
 ### Cross-reference with code
 
-When the user states how something works, check whether the code agrees. If you find a contradiction, surface it: "Your code cancels entire Orders, but you just said partial cancellation is possible — which is right?"
+When the user states how something works, check whether the code agrees. If you find a contradiction, surface it. "Your code cancels entire Orders, but you just said partial cancellation is possible. Which is right?"
 
 ### Update CONTEXT.md inline
 
-When a term is resolved, update `CONTEXT.md` right there. Don't batch these up — capture them as they happen. Use the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
+When a term is resolved, update `CONTEXT.md` right there. Don't batch these up. Capture them as they happen. Use the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
 
 `CONTEXT.md` should be totally devoid of implementation details. Do not treat `CONTEXT.md` as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
 
@@ -67,8 +67,8 @@ When a term is resolved, update `CONTEXT.md` right there. Don't batch these up �
 
 Only offer to create an ADR when all three are true:
 
-1. **Hard to reverse** — the cost of changing your mind later is meaningful
-2. **Surprising without context** — a future reader will wonder "why did they do it this way?"
-3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
+1. **Hard to reverse.** The cost of changing your mind later is meaningful
+2. **Surprising without context.** A future reader will wonder "why did they do it this way?"
+3. **The result of a real trade-off.** There were genuine alternatives and you picked one for specific reasons
 
-If any of the three is missing, skip the ADR. Before creating an ADR, read the repo's ADR convention document if one exists — it is the format source of truth — and use context-specific ADR directories only when the repo has explicitly created that policy.
+If any of the three is missing, skip the ADR. Before creating an ADR, read the repo's ADR convention document if one exists. It is the format source of truth. Use context-specific ADR directories only when the repo has explicitly created that policy.
