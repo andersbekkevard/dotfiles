@@ -19,6 +19,9 @@ mechanics, including context pointers, information hierarchy, invocation,
 completion criteria, and pruning. Apply those mechanics in proportion to the
 skill's maturity rather than using every available technique by default.
 
+Delegate to an existing owner by path instead of restating its guidance. When
+one skill cannot invoke the other, point both to a shared reference.
+
 Before editing, identify:
 
 - the skill's coherent responsibility;
@@ -36,6 +39,8 @@ Make the smallest change supported by current understanding and evidence.
 Revise the existing source of truth and remove superseded guidance instead of
 stacking another rule beside it. Treat a one-off result as evidence or a
 hypothesis until repeated use earns a durable instruction.
+
+When in doubt, delete. Prose earns its keep by changing a decision.
 
 ## Review the result
 
