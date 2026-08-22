@@ -606,7 +606,7 @@ tracking = "local"
 notes = [
   "Promoted from the html-fable-improved tournament candidate after Anders selected it as the short-term winner on 2026-08-21.",
   "Blind-run evaluation passed 34/34 objective house-style checks after Mermaid selector scoping and narrow-screen SVG legibility fixes.",
-  "Design language derives from Anthropic's html-effectiveness gallery. HTML now owns only rendering, verification, delivery, and the browser medium.",
+  "Cut to a model-invoked medium skill on 2026-08-22: one file, links, the house style stated in words only, and fleet delivery. Stylesheet, skeleton, verification steps, and interactive reference removed so callers (explain, show-me, tufte-viz) keep all visual judgment.",
 ]
 
 [skills.explain]

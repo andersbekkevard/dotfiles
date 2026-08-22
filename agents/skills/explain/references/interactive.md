@@ -12,7 +12,14 @@ on demand without moving Anders away from his current focus.
 Treat the page as a disposable decision surface, not an application. It needs
 no accounts, settings, or persistence beyond the page.
 
-Specify the return state in the content contract: chosen values plus the
-minimum identifiers needed to act. Choose Markdown for prose-shaped outcomes,
-compact JSON for structured state, and TSV for tabular state. Also specify the
-expected behavior of each control so the renderer can verify the journey.
+The return channel is one copy button that serializes the current state to
+the clipboard: chosen values plus the minimum identifiers needed to act, never
+the page or the full option catalog. Choose Markdown for prose-shaped outcomes,
+compact JSON for structured state, and TSV for tabular state, and name the
+format beside the button. Use `navigator.clipboard.writeText` with a
+hidden-textarea `execCommand` fallback, because the clipboard API fails on
+`file://` in some browsers; show a brief copied state. Each control changes the
+state that depends on it, not merely its label, and updates preserve keyboard
+focus and the current selection. The clipboard is the whole channel; a
+listener, local server, or publishing hook appears only when the task
+explicitly needs one.
