@@ -37,6 +37,13 @@ For `agentic`, also pass `--root /absolute/repo`. Honor a model or effort Anders
 names; otherwise use the script defaults. The dispatch is complete when the
 runner exits successfully and the output file is nonempty.
 
-For a run that must survive the current session or join a multi-run wave, read
+In Codex, keep a long Grok invocation inside a harness-owned execution session:
+start the foreground command with a short yield, retain the returned session
+ID, and poll that session until it exits. This is the proven lifecycle. An
+OS-detached child launched from a short Codex command cell can disappear with
+an empty log even after `setsid`.
+
+Outside a harness with persistent execution sessions, or when a run must
+outlive its owning session, read
 [the shared detached lifecycle](references/detached.md).
 Prompt construction remains outside this skill in both lifecycles.
