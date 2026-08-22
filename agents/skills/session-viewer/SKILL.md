@@ -9,16 +9,7 @@ Use when asked to view, export, inspect, or share a Codex, Claude Code, OpenClaw
 
 ## Commands
 
-When the session path is not known and the `agent-transcript` skill is available, use it first to find the likely JSONL session:
-
-```bash
-.agents/skills/agent-transcript/scripts/agent-transcript find \
-  --query "$USER_GOAL_OR_TITLE $BRANCH_OR_URL" \
-  --cwd "$PWD" \
-  --since-days 14
-```
-
-Pick the highest-confidence `file` result, then render it with `session-viewer`.
+Find the likely JSONL session, then render it with `session-viewer`.
 
 From a repo that has this skill:
 
