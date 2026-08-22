@@ -1,11 +1,12 @@
 ---
 name: session-viewer
-description: "Render Codex, Claude Code, OpenClaw, or Pi session JSONL transcripts as a searchable, shareable single-file HTML viewer."
+description: "Render Codex, Claude Code, Grok, OpenClaw, or Pi session transcripts as a searchable, shareable single-file HTML viewer."
 ---
 
 # Session Viewer
 
-Use when asked to view, export, inspect, or share a Codex, Claude Code, OpenClaw, or Pi session transcript in a browser.
+Use when asked to view, export, inspect, or share a Codex, Claude Code, Grok,
+OpenClaw, or Pi session transcript in a browser.
 
 ## Commands
 
@@ -18,14 +19,14 @@ rendered file, delivers it to Anders's Mac with Fleet, and opens it there.
 From a repo that has this skill:
 
 ```bash
-node skills/session-viewer/scripts/session-viewer.ts <session.jsonl> --open
+node skills/session-viewer/scripts/session-viewer.ts <session> --open
 ```
 
 Useful modes:
 
 ```bash
-node skills/session-viewer/scripts/session-viewer.ts <session.jsonl> --out session.html
-node skills/session-viewer/scripts/session-viewer.ts <session.jsonl> --raw --out session.html
+node skills/session-viewer/scripts/session-viewer.ts <session> --out session.html
+node skills/session-viewer/scripts/session-viewer.ts <session> --raw --out session.html
 node skills/session-viewer/scripts/session-viewer.ts --blank --out viewer.html --open
 ```
 
@@ -34,7 +35,8 @@ In a downstream repo that syncs shared skills under `.agents/skills`, replace
 
 Defaults:
 
-- detects `codex`, `claude`, or `pi-openclaw`
+- detects `codex`, `claude`, `grok`, or `pi-openclaw`
+- accepts a Grok session directory, its `summary.json`, or `chat_history.jsonl`
 - embeds normalized session data into one HTML file
 - writes to a timestamped file in the OS temp directory unless `--out` is set
 - keeps tool input/output text in the DOM so browser search can find it
@@ -70,6 +72,17 @@ ls -t "$HOME/.claude/projects"/**/*.jsonl | head
 
 Some Claude installs also keep exported JSON/JSONL under project-specific cache folders; prefer the newest JSONL with the target repo path in its parent folder.
 
+Grok:
+
+```bash
+find "${GROK_HOME:-$HOME/.grok}/sessions" -name summary.json -type f | sort
+```
+
+Native Grok sessions live under `${GROK_HOME:-$HOME/.grok}/sessions/`.
+For `grok-dispatch`, render the `Transcript:` path it prints. The dispatch
+skill's [transcript reference](../grok-dispatch/references/transcripts.md) owns
+its storage layout.
+
 ## Development
 
 Scripts are native Node TypeScript. Keep them erasable:
@@ -82,6 +95,7 @@ Importer ownership:
 
 - `scripts/importers/codex.ts`: Codex rollout JSONL
 - `scripts/importers/claude.ts`: Claude Code JSONL
+- `scripts/importers/grok.ts`: native and dispatched Grok sessions
 - `scripts/importers/pi-openclaw.ts`: Pi/OpenClaw session JSONL
 
 Validate:

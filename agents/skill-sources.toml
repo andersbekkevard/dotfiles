@@ -67,6 +67,7 @@ upstream = { type = "git", url = "https://github.com/openclaw/agent-skills.git",
 preserve = [
   "Keep the upstream transcript importers and rendered viewer design intact; local HTML integration owns only output location and Mac delivery.",
   "Keep --open as an awaited Fleet handoff through fleet mac put --open, not a browser launch on the producing machine.",
+  "Keep one Grok importer for both native ~/.grok sessions and isolated grok-dispatch sessions; accept the directory, summary.json, or chat_history.jsonl.",
 ]
 
 [skills.obsidian-markdown]

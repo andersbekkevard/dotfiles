@@ -721,6 +721,7 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
   const detect = (records) => {
     if (records.some((r) => isObject(r.value) && (r.value.type === "session_meta" || r.value.type === "response_item"))) return "codex";
     if (records.some((r) => isObject(r.value) && (r.value.type === "session" || (r.value.type === "message" && isObject(r.value.message))))) return "pi-openclaw";
+    if (records.some((r) => isObject(r.value) && (typeof r.value.prompt_index === "number" || (r.value.type === "system" && String(r.value.content ?? "").includes("You are Grok")) || (r.value.type === "reasoning" && "encrypted_content" in r.value) || (r.value.type === "tool_result" && "tool_call_id" in r.value) || (r.value.type === "assistant" && Array.isArray(r.value.tool_calls))))) return "grok";
     if (records.some((r) => isObject(r.value) && ["summary", "user", "assistant"].includes(String(r.value.type)) || (isObject(r.value?.message) && ["user", "assistant"].includes(String(r.value.message.role))))) return "claude";
     return "unknown";
   };
@@ -729,6 +730,8 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
     const format = detect(records);
     const events = [];
     const meta = {};
+    const grokHasIndexedPrompt = records.some((record) => isObject(record.value) && typeof record.value.prompt_index === "number");
+    const grokLastUserLine = records.findLast((record) => isObject(record.value) && record.value.type === "user")?.line;
     for (const record of records) {
       const v = record.value;
       if (!isObject(v)) continue;
@@ -776,6 +779,37 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
             if (isObject(block) && block.type === "thinking" && (block.thinking ?? block.text)) events.push({ id: String(v.id ?? "e" + record.line) + "-thinking-" + events.length, kind: "reasoning", title: "thinking", text: block.thinking ?? block.text, timestamp: v.timestamp, raw: block });
             if (isObject(block) && block.type === "toolCall") events.push({ id: String(v.id ?? "e" + record.line) + "-tool-" + events.length, kind: "tool_call", title: "tool call: " + (block.name ?? "tool"), text: pretty(block.arguments ?? block.input), timestamp: v.timestamp, callId: block.id, toolName: block.name, status: "running", raw: block });
           }
+        }
+        continue;
+      }
+      if (format === "grok") {
+        if (v.type === "system" || v.type === "user") {
+          const text = textBlocks(v.content);
+          if (!text) continue;
+          const isPrompt = typeof v.prompt_index === "number" || (!grokHasIndexedPrompt && record.line === grokLastUserLine);
+          const isContext = v.type === "system" || !isPrompt;
+          events.push({ id: "e" + record.line, kind: isContext ? "system" : "message", role: isContext ? "system" : "user", title: v.synthetic_reason ? String(v.synthetic_reason).replaceAll("_", " ") : isPrompt ? "user" : "session context", text, raw: v });
+          continue;
+        }
+        if (v.type === "reasoning") {
+          const text = Array.isArray(v.summary) ? compact(v.summary.map((item) => isObject(item) ? item.text : "")) : "";
+          if (text) events.push({ id: String(v.id ?? "e" + record.line), kind: "reasoning", title: "reasoning", text, raw: v });
+          continue;
+        }
+        if (v.type === "assistant") {
+          if (v.model_id) meta.model = v.model_id;
+          if (v.reasoning_effort) meta.reasoning_effort = v.reasoning_effort;
+          const text = textBlocks(v.content);
+          if (text) events.push({ id: "e" + record.line + "-text", kind: "message", role: "assistant", title: "assistant", text, raw: v });
+          for (const [index, call] of (Array.isArray(v.tool_calls) ? v.tool_calls : []).entries()) {
+            if (!isObject(call)) continue;
+            events.push({ id: "e" + record.line + "-tool-" + index, kind: "tool_call", title: "tool call: " + (call.name ?? "tool"), text: pretty(call.arguments), callId: call.id, toolName: call.name, status: "running", raw: call });
+          }
+          continue;
+        }
+        if (v.type === "tool_result") {
+          const images = imageBlocks(v.content);
+          events.push({ id: "e" + record.line, kind: "tool_result", title: "tool result" + (v.tool_call_id ? ": " + v.tool_call_id : ""), text: textBlocks(v.content) || (images.length ? "" : pretty(v.content)), images: images.length ? images : undefined, callId: v.tool_call_id, status: "unknown", raw: v });
         }
         continue;
       }

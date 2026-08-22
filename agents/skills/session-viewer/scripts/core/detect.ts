@@ -1,9 +1,15 @@
 import { claudeImporter } from "../importers/claude.ts";
 import { codexImporter } from "../importers/codex.ts";
+import { grokImporter } from "../importers/grok.ts";
 import { piOpenClawImporter } from "../importers/pi-openclaw.ts";
 import type { JsonlRecord, SessionDocument, SessionImporter } from "./types.ts";
 
-const importers: SessionImporter[] = [codexImporter, piOpenClawImporter, claudeImporter];
+const importers: SessionImporter[] = [
+  codexImporter,
+  piOpenClawImporter,
+  grokImporter,
+  claudeImporter,
+];
 
 export function parseSessionDocument(records: JsonlRecord[], sourcePath?: string): SessionDocument {
   const importer = importers.find((candidate) => candidate.detect(records));

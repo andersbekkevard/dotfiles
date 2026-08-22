@@ -423,6 +423,93 @@ test("keeps Claude thinking content blocks", () => {
   assert.equal(doc.events.find((event) => event.kind === "reasoning")?.text, "visible thinking");
 });
 
+test("parses native and dispatched Grok chat history", () => {
+  const doc = parse(
+    [
+      JSON.stringify({ type: "system", content: "Grok system prompt" }),
+      JSON.stringify({
+        type: "user",
+        synthetic_reason: "system_reminder",
+        content: [{ type: "text", text: "Injected context" }],
+      }),
+      JSON.stringify({
+        type: "user",
+        prompt_index: 0,
+        content: [{ type: "text", text: "Inspect the transcript" }],
+      }),
+      JSON.stringify({
+        type: "reasoning",
+        id: "rs-1",
+        summary: [{ type: "summary_text", text: "I should inspect it." }],
+        encrypted_content: "must-not-render",
+        status: "completed",
+      }),
+      JSON.stringify({
+        type: "assistant",
+        content: "I will read the file.",
+        tool_calls: [
+          {
+            id: "call-1",
+            name: "read_file",
+            arguments: JSON.stringify({ target_file: "session.jsonl" }),
+          },
+        ],
+        model_id: "grok-4.6-build",
+        reasoning_effort: "high",
+      }),
+      JSON.stringify({
+        type: "tool_result",
+        tool_call_id: "call-1",
+        content: "file contents",
+      }),
+      JSON.stringify({ type: "assistant", content: "The transcript is readable." }),
+    ].join("\n"),
+  );
+
+  assert.equal(doc.format, "grok");
+  assert.equal(doc.meta.model, "grok-4.6-build");
+  assert.equal(doc.meta.reasoning_effort, "high");
+  assert.equal(
+    doc.events.some(
+      (event) => event.kind === "message" && event.role === "user" && event.text.includes("Inspect"),
+    ),
+    true,
+  );
+  assert.equal(doc.events.filter((event) => event.kind === "tool_call").length, 1);
+  assert.equal(doc.events.filter((event) => event.kind === "tool_result").length, 1);
+  assert.equal(doc.events.filter((event) => event.kind === "reasoning").length, 1);
+  assert.equal(
+    doc.events.some((event) => event.text.includes("must-not-render")),
+    false,
+  );
+});
+
+test("recognizes an incomplete native Grok session before an indexed prompt exists", () => {
+  const doc = parse(
+    [
+      JSON.stringify({
+        type: "system",
+        content: "You are Grok 4.6 released by xAI.",
+      }),
+      JSON.stringify({
+        type: "user",
+        content: [{ type: "text", text: "Build the requested feature" }],
+      }),
+    ].join("\n"),
+  );
+
+  assert.equal(doc.format, "grok");
+  assert.equal(
+    doc.events.some(
+      (event) =>
+        event.kind === "message" &&
+        event.role === "user" &&
+        event.text === "Build the requested feature",
+    ),
+    true,
+  );
+});
+
 test("parses Pi/OpenClaw message and tool result entries", () => {
   const doc = parse(
     [
@@ -836,6 +923,57 @@ test("CLI writes a one-file HTML export", async () => {
   )?.[1];
   assert.ok(payload);
   assert.equal(JSON.parse(payload).kind, "normalized");
+});
+
+test("CLI accepts Grok directories, summaries, and chat history", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "session-viewer-grok-"));
+  const sessionDir = path.join(dir, "grok-session-id");
+  const summaryPath = path.join(sessionDir, "summary.json");
+  const chatPath = path.join(sessionDir, "chat_history.jsonl");
+  await fs.mkdir(sessionDir);
+  await fs.writeFile(
+    summaryPath,
+    JSON.stringify({ info: { id: "grok-session-id", cwd: dir } }),
+    "utf8",
+  );
+  await fs.writeFile(
+    chatPath,
+    [
+      JSON.stringify({ type: "system", content: "Grok system prompt" }),
+      JSON.stringify({
+        type: "user",
+        prompt_index: 0,
+        content: [{ type: "text", text: "Find this Grok prompt" }],
+      }),
+      JSON.stringify({ type: "assistant", content: "Find this Grok response" }),
+    ].join("\n"),
+    "utf8",
+  );
+
+  for (const [index, input] of [sessionDir, summaryPath, chatPath].entries()) {
+    const output = path.join(dir, `grok-${index}.html`);
+    await execFileAsync(process.execPath, [
+      "agents/skills/session-viewer/scripts/session-viewer.ts",
+      input,
+      "--out",
+      output,
+    ]);
+    const html = await fs.readFile(output, "utf8");
+    const payload = /<script id="viewer-payload" type="application\/json">([^<]*)<\/script>/u.exec(
+      html,
+    )?.[1];
+    assert.ok(payload);
+    const encoded = JSON.parse(payload).data;
+    const document = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
+    assert.equal(document.format, "grok");
+    assert.equal(document.title, "grok-session-id");
+    assert.equal(
+      document.events.some(
+        (event: { text: string }) => event.text.includes("Find this Grok response"),
+      ),
+      true,
+    );
+  }
 });
 
 test("CLI defaults to temp output and waits for Fleet delivery on --open", async () => {

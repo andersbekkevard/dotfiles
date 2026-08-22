@@ -15,6 +15,11 @@ type Options = {
   raw: boolean;
 };
 
+type SessionInput = {
+  chatPath: string;
+  sourcePath: string;
+};
+
 function usage(): string {
   return [
     "Usage:",
@@ -81,6 +86,18 @@ function defaultOutputPath(timestamp: string): string {
   return path.join(os.tmpdir(), `session-viewer-${timestamp}.html`);
 }
 
+async function resolveSessionInput(rawPath: string): Promise<SessionInput> {
+  const sourcePath = path.resolve(rawPath);
+  const stat = await fs.stat(sourcePath);
+  if (stat.isDirectory()) {
+    return { sourcePath, chatPath: path.join(sourcePath, "chat_history.jsonl") };
+  }
+  if (path.basename(sourcePath) === "summary.json") {
+    return { sourcePath, chatPath: path.join(path.dirname(sourcePath), "chat_history.jsonl") };
+  }
+  return { sourcePath, chatPath: sourcePath };
+}
+
 async function deliverAndOpen(filePath: string, timestamp: string): Promise<void> {
   const command = resolveFleetDeliveryCommand(filePath, timestamp);
   await new Promise<void>((resolve, reject) => {
@@ -120,10 +137,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  const inputPath = path.resolve(options.inputPath ?? "");
-  const rawText = await fs.readFile(inputPath, "utf8");
+  const input = await resolveSessionInput(options.inputPath ?? "");
+  const rawText = await fs.readFile(input.chatPath, "utf8");
   const { records, warnings } = parseJsonl(rawText);
-  const document = parseSessionDocument(records, inputPath);
+  const document = parseSessionDocument(records, input.sourcePath);
   document.warnings.unshift(...warnings);
   const html = buildSessionViewerHtml(document, {
     embedMode: options.raw ? "raw" : "normalized",
