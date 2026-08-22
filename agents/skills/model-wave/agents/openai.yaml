@@ -1,0 +1,4 @@
+interface:
+  display_name: "Model Wave"
+  short_description: "Run explicit model lanes concurrently"
+  default_prompt: "Use $model-wave to run these ready prompts through the requested provider dispatchers."

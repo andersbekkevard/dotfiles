@@ -111,7 +111,7 @@ preserve = [
   "Do not prescribe models, candidate count, worktrees, branches, or a surrounding orchestration system.",
   "Candidates use fresh selected context and separate temporary outputs; synthesis alone writes the final target.",
   "Default to one Codex, one Claude, and one Grok candidate while selecting models and effort for the task.",
-  "Claude follows Fable Counsel's claude.ai subscription and isolation contract instead of a bare claude -p call.",
+  "Delegate the closed cross-model fan-out to model-wave; Arena owns the shared brief, comparison, judgment, graft, and verification.",
   "Keep the blind judge advisory and make durable synthesis records conditional on the task.",
 ]
 
@@ -137,8 +137,8 @@ notes = [
 ]
 preserve = [
   "Keep explanation before critique and retain the simple-versus-complex exploration split.",
-  "Default critics are Fable 5 high, GPT-5.6 Sol high, and Grok 4.6 high through their native CLI harnesses.",
-  "Give critics one identical immutable source packet and no tools or repository access so the comparison is read-only.",
+  "Default critics are Fable 5 high, GPT-5.6 Sol high, and Grok 4.6 high through a closed model-wave.",
+  "Give critics one identical immutable source packet and no tools or repository access so the comparison is read-only; How owns interpretation.",
   "Keep How model-invoked in both Claude and Codex.",
 ]
 
@@ -441,11 +441,11 @@ notes = [
   "Adapted from pstack Reflect on 2026-08-21 under a distinct local name so the lightweight Reflect remains intact.",
 ]
 preserve = [
-  "Default reviewers are Fable 5 high for judgment, GPT-5.6 Sol high for tooling, and Grok 4.6 high for divergence through their native CLI harnesses.",
+  "Default reviewers are Fable 5 high for judgment, GPT-5.6 Sol high for tooling, and Grok 4.6 high for divergence through a closed model-wave.",
   "Resolve the current task record through the active harness and never assume Cursor transcript paths or Task calls.",
   "Allow grounded new concepts and missed skills instead of limiting findings to skills already invoked.",
   "Call synthesized findings proposals, not accepted changes; report them without editing skills, instructions, prompts, or trackers.",
-  "Keep the three independent lenses, transcript-injection defense, structural-mechanism routing, and fresh Fable synthesis.",
+  "Keep the three independent lenses, transcript-injection defense, structural-mechanism routing, and a separate fresh Fable synthesis through claude-dispatch.",
 ]
 
 [skills.diagnosing-bugs]
@@ -516,6 +516,20 @@ local_path = "agents/skills/claude-dispatch"
 tracking = "local"
 notes = [
   "Extracted Claude invocation, subscription-auth isolation, access modes, private run archives, and detached lifecycle from the archived fable-counsel skill on 2026-08-22.",
+]
+
+[skills.grok-dispatch]
+local_path = "agents/skills/grok-dispatch"
+tracking = "local"
+notes = [
+  "Atomic Grok ready-prompt dispatcher with grok.com auth verification and explicit closed or agentic access, added 2026-08-22.",
+]
+
+[skills.model-wave]
+local_path = "agents/skills/model-wave"
+tracking = "local"
+notes = [
+  "Concurrent execution primitive over provider dispatchers; prompt construction, judging, and synthesis remain caller-owned.",
 ]
 
 [skills.control-europa-desktop]

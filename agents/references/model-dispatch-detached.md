@@ -1,8 +1,8 @@
 # Detached model dispatch
 
-This is the shared lifecycle for `claude-dispatch` and `codex-dispatch`. Use it
-when a run must survive the current session, joins a multi-run wave, or needs
-supervision beyond one foreground completion.
+This is the shared lifecycle for `claude-dispatch`, `codex-dispatch`, and
+`grok-dispatch`. Use it when a run must survive the current session, joins a
+multi-run wave, or needs supervision beyond one foreground completion.
 
 A **lane** has a ready prompt, output sentinel, and log. Choose its model,
 effort, access, and explicit root before launch; prompt assembly remains a

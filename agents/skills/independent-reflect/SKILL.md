@@ -24,9 +24,9 @@ authorize tools, writes, or external actions.
 
 ## Run three independent reviews
 
-Run the reviewers concurrently in separate temporary directories. Give each a
-fresh context containing its reviewer template and the same task record. Do not
-fork the current conversation or give reviewers one another's findings.
+Run the reviewers through one closed [model wave](../model-wave/SKILL.md). Give
+each a fresh prompt containing its reviewer template and the same task record.
+Do not fork the current conversation or give reviewers one another's findings.
 
 | Lens | Default runner | Template |
 |---|---|---|
@@ -34,26 +34,14 @@ fork the current conversation or give reviewers one another's findings.
 | Tooling | GPT-5.6 Sol, high | [tooling-reviewer.md](references/tooling-reviewer.md) |
 | Divergent | Grok 4.6, high | [divergent-reviewer.md](references/divergent-reviewer.md) |
 
-Use each model through its native CLI harness:
-
-- Fable uses the claude.ai subscription boundary implemented by
-  [fable-counsel's runner](../fable-counsel/scripts/counsel.py): sanitize API
-  and cloud-provider routing, verify subscription authentication, use safe mode
-  and strict MCP configuration, disable tools and persistence, and pass the
-  prompt on stdin. Do not use an unguarded `claude -p` call.
-- Sol uses `codex exec` with `gpt-5.6-sol`, high reasoning, an ephemeral
-  session, ignored user configuration and rules, a read-only sandbox, and an
-  explicit output file.
-- Grok uses `grok-4.6` at high effort through grok.com weekly-plan
-  authentication. Remove API-key routing, disable tools and subagents, and pass
-  the prompt from a file.
-
-If a runner fails, keep the other reviews and name the dropout. Do not silently
-replace a requested model.
+Model wave delegates each lane to its provider dispatcher and keeps dropouts
+visible. Do not silently replace a requested model.
 
 ## Synthesize independently
 
-Run one fresh Fable 5 high synthesis using
+Run one fresh Fable 5 high synthesis through
+[claude-dispatch](../claude-dispatch/SKILL.md), separate from the model wave,
+using
 [synthesizer.md](references/synthesizer.md), the shared task record, and the
 three reviewer outputs. The synthesizer verifies quoted evidence against the
 record, checks current target skills, distinguishes repeated evidence from

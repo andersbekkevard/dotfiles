@@ -13,6 +13,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 CLAUDE = REPO / "agents/skills/claude-dispatch/scripts/invoke.py"
 CODEX = REPO / "agents/skills/codex-dispatch/scripts/invoke.py"
+GROK = REPO / "agents/skills/grok-dispatch/scripts/invoke.py"
 
 
 class DispatcherTests(unittest.TestCase):
@@ -40,14 +41,19 @@ class DispatcherTests(unittest.TestCase):
             "log = pathlib.Path(os.environ['FAKE_LOG'])\n"
             "with log.open('a') as h:\n"
             "  h.write(json.dumps({'args': sys.argv[1:], 'cwd': os.getcwd(), "
-            "'sensitive': [k for k in ('ANTHROPIC_API_KEY','ANTHROPIC_BASE_URL') if k in os.environ]}) + '\\n')\n"
+            "'sensitive': [k for k in ('ANTHROPIC_API_KEY','ANTHROPIC_BASE_URL','XAI_API_KEY','XAI_API_BASE_URL','GROK_CODE_XAI_API_KEY','GROK_CLI_CHAT_PROXY_BASE_URL') if k in os.environ]}) + '\\n')\n"
             "if sys.argv[1:3] == ['auth', 'status']:\n"
             "  print(json.dumps({'loggedIn': True, 'authMethod': 'claude.ai', 'subscriptionType': 'max'}))\n"
+            "  raise SystemExit(0)\n"
+            "if sys.argv[1:] == ['models']:\n"
+            "  print('You are logged in with grok.com.')\n"
             "  raise SystemExit(0)\n"
             "data = sys.stdin.buffer.read()\n"
             "if os.environ.get('FAKE_FAIL') == '1': raise SystemExit(7)\n"
             "if pathlib.Path(sys.argv[0]).name == 'codex':\n"
             "  out = pathlib.Path(sys.argv[sys.argv.index('-o') + 1]); out.write_text('codex result')\n"
+            "elif pathlib.Path(sys.argv[0]).name == 'grok':\n"
+            "  sys.stdout.write('grok result')\n"
             "else:\n"
             "  sys.stdout.write('claude result')\n"
         )
@@ -61,6 +67,10 @@ class DispatcherTests(unittest.TestCase):
                 "HOME": str(self.base / "home"),
                 "ANTHROPIC_API_KEY": "must-not-reach-child",
                 "ANTHROPIC_BASE_URL": "https://wrong.example",
+                "XAI_API_KEY": "must-not-reach-child",
+                "XAI_API_BASE_URL": "https://wrong.example",
+                "GROK_CODE_XAI_API_KEY": "must-not-reach-child",
+                "GROK_CLI_CHAT_PROXY_BASE_URL": "https://wrong.example",
             }
         )
         return env, log
@@ -184,8 +194,66 @@ class DispatcherTests(unittest.TestCase):
         self.assertIn("--dangerously-bypass-approvals-and-sandbox", args)
         self.assertNotIn("--approve-for-me", args)
 
+    def test_grok_closed_is_tool_off_isolated_and_subscription_routed(self) -> None:
+        env, log = self.fake_cli("grok")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(GROK),
+                str(self.prompt),
+                "--output",
+                str(self.output),
+            ],
+            text=True,
+            capture_output=True,
+            env=env,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), "grok result")
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0]["args"], ["models"])
+        self.assertEqual(calls[0]["sensitive"], [])
+        self.assertEqual(calls[1]["sensitive"], [])
+        self.assertNotEqual(calls[1]["cwd"], str(self.root))
+        invocation = calls[1]["args"]
+        self.assertEqual(invocation[invocation.index("--tools") + 1], "")
+        self.assertIn("--no-subagents", invocation)
+        self.assertIn("--disable-web-search", invocation)
+        self.assertIn("--verbatim", invocation)
+        self.assertNotIn("--always-approve", invocation)
+
+    def test_grok_agentic_is_unrestricted(self) -> None:
+        env, log = self.fake_cli("grok")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(GROK),
+                str(self.prompt),
+                "--output",
+                str(self.output),
+                "--access",
+                "agentic",
+                "--root",
+                str(self.root),
+            ],
+            text=True,
+            capture_output=True,
+            env=env,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        invocation = calls[1]["args"]
+        self.assertEqual(Path(calls[1]["cwd"]), self.root.resolve())
+        self.assertIn("--always-approve", invocation)
+        self.assertIn("bypassPermissions", invocation)
+        self.assertNotIn("--no-subagents", invocation)
+        self.assertNotIn("--disable-web-search", invocation)
+
     def test_removed_unrestricted_mode_is_rejected(self) -> None:
-        for script in (CLAUDE, CODEX):
+        for script in (CLAUDE, CODEX, GROK):
             with self.subTest(script=script):
                 result = subprocess.run(
                     [
@@ -204,17 +272,24 @@ class DispatcherTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("invalid choice", result.stderr)
 
-    def test_both_skills_are_user_invoked_and_prompt_only(self) -> None:
-        for name in ("claude-dispatch", "codex-dispatch"):
-            skill = (REPO / f"agents/skills/{name}/SKILL.md").read_text()
-            policy = (REPO / f"agents/skills/{name}/agents/openai.yaml").read_text()
-            self.assertIn("disable-model-invocation: true", skill)
+    def test_dispatchers_are_prompt_only_and_native_surface_aware(self) -> None:
+        claude = (REPO / "agents/skills/claude-dispatch/SKILL.md").read_text()
+        codex = (REPO / "agents/skills/codex-dispatch/SKILL.md").read_text()
+        grok = (REPO / "agents/skills/grok-dispatch/SKILL.md").read_text()
+
+        for skill in (claude, codex, grok):
             self.assertIn("ready prompt file", skill)
-            self.assertIn("allow_implicit_invocation: false", policy)
+
+        self.assertIn("disable-model-invocation: true", claude)
+        self.assertIn("disable-codex-model-invocation: false", claude)
+        self.assertNotIn("disable-model-invocation: true", codex)
+        self.assertIn("disable-codex-model-invocation: true", codex)
+        self.assertNotIn("disable-model-invocation", grok)
+        self.assertNotIn("disable-codex-model-invocation", grok)
 
     def test_detached_reference_resolves_inside_each_projected_skill(self) -> None:
         shared = (REPO / "agents/references/model-dispatch-detached.md").resolve()
-        for name in ("claude-dispatch", "codex-dispatch"):
+        for name in ("claude-dispatch", "codex-dispatch", "grok-dispatch"):
             with self.subTest(name=name):
                 skill_dir = REPO / f"agents/skills/{name}"
                 reference = skill_dir / "references/detached.md"

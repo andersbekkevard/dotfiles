@@ -69,8 +69,9 @@ Create one immutable critic packet containing:
 3. [The architectural rubric](references/critique-rubric.md).
 4. [The critic prompt](references/critic-prompt.md).
 
-Launch all three critics concurrently in fresh native CLI sessions with the
-same packet and no tools or repository access:
+Launch all three critics through one closed
+[model wave](../model-wave/SKILL.md) with the same packet and no tools or
+repository access:
 
 | Harness | Model | Effort |
 |---|---|---|
@@ -81,11 +82,8 @@ same packet and no tools or repository access:
 These are minimum reasoning levels. Increase effort when the architecture
 warrants it. Do not substitute another model silently when a runner fails.
 
-Fable runs through the subscription-safe `claude-dispatch` contract, not an
-unguarded `claude -p`. Sol runs through `codex-dispatch` with an ephemeral
-session. Grok uses grok.com weekly-plan authentication with API-key routing
-removed. Keep the runs prompt-only, isolated, and independent; a dropout remains
-visible.
+Model wave delegates each lane to its provider dispatcher. Keep the runs
+prompt-only and independent; a dropout remains visible.
 
 ### Judge
 

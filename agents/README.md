@@ -130,6 +130,27 @@ taxonomy and sync rules stay repo-owned. `/lint` is the scheduled garbage
 collector of the repo's shared memory; `/dream` proposes instruction-surface
 edits from observed historical behavior.
 
+## Cross-model dispatch
+
+Provider dispatchers are one-ready-prompt-to-one-result primitives. Each owns
+its provider's authentication, `closed` or unrestricted `agentic` boundary,
+lifecycle, and result capture. Prompt assembly and workflow judgment stay with
+the caller.
+
+| Primitive | Claude invocation | Codex invocation | Responsibility |
+|---|---|---|---|
+| `claude-dispatch` | user | model | One Claude run |
+| `codex-dispatch` | model | user | One Codex run |
+| `grok-dispatch` | model | model | One Grok run |
+| `model-wave` | model | model | Concurrent explicit lanes and visible dropouts |
+
+This asymmetry keeps each harness's native subagent surface primary while still
+letting the other harness call it deliberately. `model-wave` composes the
+provider dispatchers; it does not construct prompts, choose reviewers, judge,
+or synthesize. Skills such as Arena, How critique, and Independent Reflect own
+those semantics and use model-wave only for execution. A later single-provider
+synthesis remains a direct provider dispatch, not another wave.
+
 ## Invocation modes
 
 Frontmatter in `SKILL.md` is the source of truth. Claude reads

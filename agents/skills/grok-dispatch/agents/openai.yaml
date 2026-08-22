@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grok Dispatch"
+  short_description: "Run a ready prompt through Grok"
+  default_prompt: "Use $grok-dispatch to run this ready prompt with the access boundary I specify."

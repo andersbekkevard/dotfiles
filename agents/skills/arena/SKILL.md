@@ -22,16 +22,10 @@ Keep candidate work independent: return artifacts or use distinct temporary
 paths; the synthesis is the sole writer to the final target.
 
 Unless Anders chooses another shape, run one Codex, one Claude, and one Grok
-candidate through their native CLIs. Select models and effort for the task
-rather than fixing them in this skill. Give all three the exact same brief and
-run them concurrently from separate temporary directories.
-
-Codex runs with an ephemeral session, isolated user configuration, and a
-read-only sandbox. Grok uses its grok.com weekly-plan authentication with API
-key routing removed. Claude follows the claude.ai subscription, environment
-sanitization, safe-mode, strict-MCP, no-session-persistence contract implemented
-by [`fable-counsel/scripts/counsel.py`](../fable-counsel/scripts/counsel.py).
-Use that contract instead of a bare `claude -p` call.
+candidate through a closed [model wave](../model-wave/SKILL.md). Select models
+and effort for the task rather than fixing them in this skill. Give all three
+the exact same brief. Model wave owns concurrent execution, provider access
+boundaries, result capture, and visible dropouts; Arena owns the comparison.
 
 ## Fan out
 

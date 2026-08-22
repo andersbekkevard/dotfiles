@@ -2,6 +2,7 @@
 name: claude-dispatch
 description: Run a ready prompt through Claude Code with an explicit access boundary.
 disable-model-invocation: true
+disable-codex-model-invocation: false
 ---
 
 # Claude dispatch

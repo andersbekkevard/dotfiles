@@ -12,6 +12,21 @@ from pathlib import Path
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max", "ultra")
 ACCESS_MODES = ("closed", "agentic")
+SANITIZED_ENV = (
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDE_CODE_USE_BEDROCK",
+    "CLAUDE_CODE_USE_VERTEX",
+    "CLAUDE_CODE_USE_FOUNDRY",
+    "XAI_API_KEY",
+    "XAI_API_BASE_URL",
+    "GROK_CODE_XAI_API_KEY",
+    "GROK_XAI_API_BASE_URL",
+    "GROK_CLI_BASE_URL",
+    "CLI_CHAT_PROXY_BASE_URL",
+    "GROK_CLI_CHAT_PROXY_BASE_URL",
+)
 CLOSED_BOUNDARY = b"""<execution_boundary>
 Answer only from the supplied prompt and your model priors. Do not call tools,
 browse, inspect the filesystem, or run commands. If the prompt lacks evidence,
@@ -46,6 +61,13 @@ def parse_args() -> argparse.Namespace:
 
 def fail(message: str) -> None:
     raise SystemExit(f"codex-dispatch: {message}")
+
+
+def sanitized_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    for name in SANITIZED_ENV:
+        environment.pop(name, None)
+    return environment
 
 
 def validate_file(raw_path: str) -> Path:
@@ -106,6 +128,7 @@ def run(args: argparse.Namespace, prompt: Path, output: Path, root: Path | None)
     os.close(fd)
     os.unlink(temp_name)
     try:
+        environment = sanitized_environment()
         if args.access == "closed":
             with tempfile.TemporaryDirectory(prefix="codex-dispatch.") as neutral:
                 cwd = Path(neutral)
@@ -114,6 +137,7 @@ def run(args: argparse.Namespace, prompt: Path, output: Path, root: Path | None)
                 result = subprocess.run(
                     command,
                     input=prompt_bytes,
+                    env=environment,
                     stdout=subprocess.DEVNULL,
                     check=False,
                 )
@@ -123,6 +147,7 @@ def run(args: argparse.Namespace, prompt: Path, output: Path, root: Path | None)
             result = subprocess.run(
                 command,
                 input=prompt.read_bytes(),
+                env=environment,
                 stdout=subprocess.DEVNULL,
                 check=False,
             )
