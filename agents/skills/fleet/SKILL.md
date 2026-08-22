@@ -26,6 +26,9 @@ fleet <machine> forward-status <target-port>
 fleet <machine> forward-stop <target-port>
 ```
 
+Use `fleet enroll` only while onboarding the current machine. The
+`onboard-devbox` skill owns the full fresh-machine journey.
+
 Use `put --open` for the common handoff where Anders should receive and see an
 artifact on his Mac. The CLI verifies transferred files by SHA-256 and reports
 the exact destination. Transfers fail rather than replace an existing file;

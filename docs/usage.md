@@ -8,6 +8,25 @@ cd ~/dotfiles
 ./dotfiles.sh install macos
 ```
 
+Fresh headless devbox:
+
+```bash
+# Install Tailscale locally and complete `tailscale up` in Anders's browser first.
+git clone <repo-url> ~/dotfiles
+cd ~/dotfiles
+./dotfiles.sh install full
+fleet enroll
+./dotfiles.sh agents verify
+```
+
+`fleet enroll` creates a dedicated client identity at
+`~/.ssh/fleet_ed25519`. Europa verifies that the request came from an
+authorized, untagged node owned by the same Tailnet user before it installs the
+public key on Europa and the Mac. The private key never leaves the devbox. The
+installed authorization accepts the key only over Tailnet addresses and
+disables agent forwarding, X11 forwarding, and PTYs while retaining Fleet's
+noninteractive commands, transfers, and tunnels.
+
 Explicit profile selection:
 
 - `./dotfiles.sh` is the only root management entrypoint.

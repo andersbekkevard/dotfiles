@@ -1,0 +1,4 @@
+interface:
+  display_name: "Onboard Devbox"
+  short_description: "Join a fresh devbox to dotfiles and Fleet"
+  default_prompt: "Use $onboard-devbox to set up this fresh development machine end to end."

@@ -13,7 +13,11 @@ The `claudex` integration follows the same tracked/runtime split: `scripts/.loca
 Fleet's tracked registry and verified public SSH host identities live under
 `scripts/.config/fleet/`. The stowed `fleet` CLI uses that dedicated trust file
 for both SSH and SCP with strict host-key checking; a missing or changed host
-key fails closed without altering the user's general SSH trust store.
+key fails closed without altering the user's general SSH trust store. Fresh
+devboxes use Tailscale SSH only as the bootstrap channel: Europa checks the
+requesting node's Tailnet owner, authorization state, and untagged machine
+identity before distributing its dedicated public client key to Europa and the
+Mac. Normal Fleet work then returns to OpenSSH with the tracked host identities.
 
 `dotfiles.sh install` requires an explicit profile, expands it into an additive
 layer chain, fills missing prerequisites without upgrading working providers,

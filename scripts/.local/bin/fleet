@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly FLEET_VERSION="0.3.0"
+readonly FLEET_VERSION="0.4.0"
 readonly FLEET_KNOWN_HOSTS="${FLEET_KNOWN_HOSTS:-${XDG_CONFIG_HOME:-$HOME/.config}/fleet/known_hosts}"
-readonly FLEET_HOST_OPTIONS=(
+readonly FLEET_IDENTITY="${FLEET_IDENTITY:-$HOME/.ssh/fleet_ed25519}"
+FLEET_HOST_OPTIONS=(
   -o BatchMode=yes
   -o ConnectTimeout=10
   -o StrictHostKeyChecking=yes
   -o "UserKnownHostsFile=$FLEET_KNOWN_HOSTS"
 )
-readonly FLEET_SSH_OPTIONS=(
-  -T
-  "${FLEET_HOST_OPTIONS[@]}"
-)
+
+activate_fleet_identity() {
+  [[ -f "$FLEET_IDENTITY" ]] || return 0
+  [[ " ${FLEET_HOST_OPTIONS[*]} " == *" IdentityFile=$FLEET_IDENTITY "* ]] ||
+    FLEET_HOST_OPTIONS+=(
+      -o "IdentityFile=$FLEET_IDENTITY"
+      -o IdentitiesOnly=yes
+    )
+}
+
+activate_fleet_identity
 
 usage() {
   cat <<'EOF'
 Usage:
   fleet list
+  fleet enroll
   fleet <machine> check
   fleet <machine> run [--] <command> [arg ...]
   fleet <machine> put [--open] [--force] <local-file>... <destination-directory>
@@ -40,9 +49,12 @@ Configuration:
   ~/.config/fleet/machines.tsv
   ~/.config/fleet/machines.local.tsv
   ~/.config/fleet/known_hosts
+  ~/.ssh/fleet_ed25519
 
 The local registry overrides matching machine names. Fleet uses its tracked
-known-hosts file for strict SSH and SCP host verification.
+known-hosts file for strict SSH and SCP host verification. `fleet enroll`
+authorizes this machine's dedicated client key on Europa and the Mac after
+Europa verifies that the request came from Anders's Tailnet identity.
 EOF
 }
 
@@ -122,7 +134,168 @@ remote_command() {
 run_remote() {
   local command
   command="$(remote_command "$@")"
-  ssh "${FLEET_SSH_OPTIONS[@]}" "$MACHINE_TARGET" "$command"
+  ssh -T "${FLEET_HOST_OPTIONS[@]}" "$MACHINE_TARGET" "$command"
+}
+
+valid_machine_name() {
+  [[ "$1" =~ ^[a-z0-9][a-z0-9-]*$ ]]
+}
+
+tailscale_identity() {
+  command -v tailscale >/dev/null 2>&1 || die "Tailscale is not installed"
+  command -v jq >/dev/null 2>&1 || die "jq is required"
+
+  local status
+  status="$(tailscale status --json)" || die "Tailscale is not running or signed in"
+  [[ "$(jq -r '.BackendState // empty' <<<"$status")" == "Running" ]] ||
+    die "Tailscale is not running or signed in"
+  printf '%s\n' "$status"
+}
+
+ensure_client_identity() {
+  local machine_name="$1" ssh_dir public_key temporary_public
+  ssh_dir="${FLEET_IDENTITY%/*}"
+  public_key="$FLEET_IDENTITY.pub"
+  mkdir -p -- "$ssh_dir"
+  chmod 700 -- "$ssh_dir"
+
+  if [[ -f "$FLEET_IDENTITY" ]]; then
+    chmod 600 -- "$FLEET_IDENTITY"
+    if [[ ! -f "$public_key" ]]; then
+      temporary_public="$(mktemp "$ssh_dir/fleet-public.XXXXXX")"
+      ssh-keygen -y -f "$FLEET_IDENTITY" >"$temporary_public"
+      printf ' fleet-client:%s\n' "$machine_name" >>"$temporary_public"
+      chmod 644 -- "$temporary_public"
+      mv -- "$temporary_public" "$public_key"
+    fi
+  elif [[ -e "$public_key" ]]; then
+    die "$public_key exists without its private key"
+  else
+    ssh-keygen -q -t ed25519 -N '' -C "fleet-client:$machine_name" -f "$FLEET_IDENTITY"
+  fi
+
+  chmod 644 -- "$public_key"
+  activate_fleet_identity
+}
+
+read_public_key() {
+  local destination="$1" key_line remainder fields key_type
+  IFS= read -r key_line || die "expected one SSH public key on stdin"
+  remainder="$(cat)"
+  [[ -z "$(printf '%s' "$remainder" | tr -d '[:space:]')" ]] ||
+    die "expected exactly one SSH public key"
+  fields="$(awk '{ print NF }' <<<"$key_line")"
+  ((fields == 2 || fields == 3)) || die "expected one ed25519 public key"
+  key_type="${key_line%% *}"
+  [[ "$key_type" == "ssh-ed25519" ]] || die "only ed25519 client keys are accepted"
+  printf '%s\n' "$key_line" >"$destination"
+  chmod 600 -- "$destination"
+  ssh-keygen -l -f "$destination" >/dev/null 2>&1 || die "invalid SSH public key"
+}
+
+install_client_key_command() {
+  if [[ "${1:-}" == "--check" ]]; then
+    (($# == 1)) || usage_error "enroll-install-key --check takes no other arguments"
+    command -v ssh-keygen >/dev/null 2>&1 || die "ssh-keygen is required"
+    [[ -d "$HOME" && -w "$HOME" ]] || die "home directory is not writable"
+    return
+  fi
+
+  (($# == 1)) || usage_error "enroll-install-key requires the verified machine name"
+  local machine_name="$1" ssh_dir authorized_keys lock_dir key_file key_body canonical temporary fingerprint
+  valid_machine_name "$machine_name" || die "invalid machine name '$machine_name'"
+  ssh_dir="$HOME/.ssh"
+  authorized_keys="$ssh_dir/authorized_keys"
+  lock_dir="$ssh_dir/.fleet-authorized-keys.lock"
+  mkdir -p -- "$ssh_dir"
+  chmod 700 -- "$ssh_dir"
+  key_file="$(mktemp "${TMPDIR:-/tmp}/fleet-public-key.XXXXXX")"
+  trap "rm -f -- $(printf '%q' "$key_file")" EXIT
+  read_public_key "$key_file"
+  key_body="$(awk '{ print $2 }' "$key_file")"
+  canonical="from=\"100.64.0.0/10,fd7a:115c:a1e0::/48\",no-agent-forwarding,no-X11-forwarding,no-pty ssh-ed25519 $key_body fleet:$machine_name"
+  fingerprint="$(ssh-keygen -l -f "$key_file" | awk '{ print $2 }')"
+
+  mkdir -- "$lock_dir" 2>/dev/null || die "authorized_keys is being updated by another process"
+  (
+    trap 'rm -rf -- "$lock_dir"' EXIT
+    touch -- "$authorized_keys"
+    chmod 600 -- "$authorized_keys"
+
+    if grep -Fqx -- "$canonical" "$authorized_keys"; then
+      printf 'client-key unchanged machine=%s fingerprint=%s\n' "$machine_name" "$fingerprint"
+      exit 0
+    fi
+    if awk -v key="$key_body" '{ for (i = 1; i <= NF; i++) if ($i == key) found = 1 } END { exit !found }' "$authorized_keys"; then
+      die "the client key already exists under a different authorization policy"
+    fi
+    if grep -Eq "(^|[[:space:]])fleet:${machine_name}([[:space:]]|$)" "$authorized_keys"; then
+      die "machine '$machine_name' already has a different enrolled key"
+    fi
+
+    temporary="$(mktemp "$ssh_dir/authorized_keys.fleet.XXXXXX")"
+    cat -- "$authorized_keys" >"$temporary"
+    if [[ -s "$temporary" ]] && ! tail -c 1 "$temporary" | grep -q '^$'; then
+      printf '\n' >>"$temporary"
+    fi
+    printf '%s\n' "$canonical" >>"$temporary"
+    chmod 600 -- "$temporary"
+    mv -- "$temporary" "$authorized_keys"
+    printf 'client-key installed machine=%s fingerprint=%s\n' "$machine_name" "$fingerprint"
+  )
+  rm -f -- "$key_file"
+  trap - EXIT
+}
+
+authorize_enrollment_command() {
+  (($# == 0)) || usage_error "enroll-authorize takes no arguments"
+  [[ -n "${SSH_CONNECTION:-}" ]] || die "enroll-authorize must arrive through Tailscale SSH"
+  command -v tailscale >/dev/null 2>&1 || die "Tailscale is not installed on the registrar"
+  command -v jq >/dev/null 2>&1 || die "jq is required on the registrar"
+
+  local source_ip status whois owner_id machine_name tags key_file fingerprint
+  source_ip="${SSH_CONNECTION%% *}"
+  status="$(tailscale status --json)"
+  whois="$(tailscale whois --json "$source_ip")" || die "the requesting Tailnet node could not be identified"
+  owner_id="$(jq -r '.Self.UserID // empty' <<<"$status")"
+  [[ -n "$owner_id" && "$(jq -r '.Node.User // empty' <<<"$whois")" == "$owner_id" ]] ||
+    die "the requesting node is not owned by the registrar's Tailnet user"
+  [[ "$(jq -r '.Node.MachineAuthorized // false' <<<"$whois")" == "true" ]] ||
+    die "the requesting Tailnet node is not authorized"
+  tags="$(jq -r '(.Node.Tags // []) | length' <<<"$whois")"
+  [[ "$tags" == "0" ]] || die "tagged Tailnet nodes cannot enroll client keys"
+  machine_name="$(jq -r '.Node.Hostinfo.Hostname // .Node.ComputedName // empty' <<<"$whois" | tr '[:upper:]' '[:lower:]')"
+  valid_machine_name "$machine_name" || die "the Tailnet hostname '$machine_name' is not a valid Fleet machine name"
+
+  key_file="$(mktemp "${TMPDIR:-/tmp}/fleet-enrollment.XXXXXX")"
+  trap "rm -f -- $(printf '%q' "$key_file")" EXIT
+  read_public_key "$key_file"
+  fingerprint="$(ssh-keygen -l -f "$key_file" | awk '{ print $2 }')"
+
+  "$0" enroll-install-key --check
+  fleet mac run -- fleet enroll-install-key --check
+  fleet mac run -- fleet enroll-install-key "$machine_name" <"$key_file"
+  "$0" enroll-install-key "$machine_name" <"$key_file"
+  printf 'enrollment authorized machine=%s fingerprint=%s targets=europa,mac\n' "$machine_name" "$fingerprint"
+  rm -f -- "$key_file"
+  trap - EXIT
+}
+
+enroll_command() {
+  (($# == 0)) || usage_error "enroll takes no arguments"
+  command -v ssh-keygen >/dev/null 2>&1 || die "ssh-keygen is required"
+  local status machine_name public_key
+  status="$(tailscale_identity)"
+  machine_name="$(jq -r '.Self.HostName // empty' <<<"$status" | tr '[:upper:]' '[:lower:]')"
+  valid_machine_name "$machine_name" || die "the local Tailnet hostname '$machine_name' is not a valid Fleet machine name"
+  ensure_client_identity "$machine_name"
+  public_key="$FLEET_IDENTITY.pub"
+
+  load_machine europa
+  tailscale ssh "$MACHINE_TARGET" "/bin/sh -lc 'fleet enroll-authorize'" <"$public_key"
+  "$0" europa check
+  "$0" mac check
+  printf 'enrolled machine=%s identity=%s targets=europa,mac\n' "$machine_name" "$FLEET_IDENTITY"
 }
 
 run_on_machine() {
@@ -232,7 +405,7 @@ load_forward_state() {
 
 forward_is_active() {
   [[ -e "$FORWARD_SOCKET" ]] &&
-    ssh "${FLEET_SSH_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O check "$FORWARD_TARGET" \
+    ssh -T "${FLEET_HOST_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O check "$FORWARD_TARGET" \
       >/dev/null 2>&1
 }
 
@@ -270,7 +443,7 @@ forward_command() {
     remove_stale_forward
   fi
 
-  ssh "${FLEET_SSH_OPTIONS[@]}" \
+  ssh -T "${FLEET_HOST_OPTIONS[@]}" \
     -M -S "$FORWARD_SOCKET" -fN \
     -o ExitOnForwardFailure=yes \
     -o ServerAliveInterval=30 \
@@ -283,7 +456,7 @@ forward_command() {
   chmod 600 -- "$FORWARD_STATE"
   load_forward_state "$target_port"
   if ! forward_is_active || ! run_remote /usr/bin/curl -sS -o /dev/null --max-time 5 "$url"; then
-    ssh "${FLEET_SSH_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O exit "$MACHINE_TARGET" \
+    ssh -T "${FLEET_HOST_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O exit "$MACHINE_TARGET" \
       >/dev/null 2>&1 || true
     remove_stale_forward
     die "forward started but $url was not reachable from $MACHINE_NAME"
@@ -316,7 +489,7 @@ forward_stop_command() {
   is_port "$target_port" || usage_error "invalid target port '$target_port'"
   load_forward_state "$target_port" || die "no recorded forward for $MACHINE_NAME:$target_port"
   if forward_is_active; then
-    ssh "${FLEET_SSH_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O exit "$FORWARD_TARGET" >/dev/null
+    ssh -T "${FLEET_HOST_OPTIONS[@]}" -S "$FORWARD_SOCKET" -O exit "$FORWARD_TARGET" >/dev/null
   fi
   remove_stale_forward
   printf 'stopped machine=%s target_port=%s\n' "$MACHINE_NAME" "$target_port"
@@ -442,6 +615,21 @@ case "$1" in
   list)
     (($# == 1)) || usage_error "list takes no arguments"
     list_command
+    exit 0
+    ;;
+  enroll)
+    shift
+    enroll_command "$@"
+    exit 0
+    ;;
+  enroll-authorize)
+    shift
+    authorize_enrollment_command "$@"
+    exit 0
+    ;;
+  enroll-install-key)
+    shift
+    install_client_key_command "$@"
     exit 0
     ;;
 esac

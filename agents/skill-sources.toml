@@ -201,6 +201,46 @@ notes = [
   "Imported from pstack on 2026-08-21 as a standalone design principle.",
 ]
 
+[skills.principle-encode-lessons-in-structure]
+local_path = "agents/skills/principle-encode-lessons-in-structure"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-encode-lessons-in-structure" }
+
+[skills.principle-exhaust-the-design-space]
+local_path = "agents/skills/principle-exhaust-the-design-space"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-exhaust-the-design-space" }
+
+[skills.principle-guard-the-context-window]
+local_path = "agents/skills/principle-guard-the-context-window"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-guard-the-context-window" }
+
+[skills.principle-make-operations-idempotent]
+local_path = "agents/skills/principle-make-operations-idempotent"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-make-operations-idempotent" }
+
+[skills.principle-migrate-callers-then-delete-legacy-apis]
+local_path = "agents/skills/principle-migrate-callers-then-delete-legacy-apis"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-migrate-callers-then-delete-legacy-apis" }
+
+[skills.principle-never-block-on-the-human]
+local_path = "agents/skills/principle-never-block-on-the-human"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-never-block-on-the-human" }
+
+[skills.principle-outcome-oriented-execution]
+local_path = "agents/skills/principle-outcome-oriented-execution"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-outcome-oriented-execution" }
+
+[skills.principle-subtract-before-you-add]
+local_path = "agents/skills/principle-subtract-before-you-add"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/cursor/plugins.git", ref = "main", path = "pstack/skills/principle-subtract-before-you-add" }
+
 [skills.show-me-your-work]
 local_path = "agents/skills/show-me-your-work"
 tracking = "tracked"
@@ -526,6 +566,13 @@ tracking = "local"
 [skills.fleet]
 local_path = "agents/skills/fleet"
 tracking = "local"
+
+[skills.onboard-devbox]
+local_path = "agents/skills/onboard-devbox"
+tracking = "local"
+notes = [
+  "Fresh-machine orchestration stays short; Fleet owns Tailnet-verified client-key enrollment and connection proof.",
+]
 
 [skills.html]
 local_path = "agents/skills/html"
