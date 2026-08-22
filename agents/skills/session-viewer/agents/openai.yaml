@@ -1,4 +1,4 @@
 interface:
   display_name: "Session Viewer"
   short_description: "Render agent sessions as searchable HTML"
-  default_prompt: "Use $session-viewer to render this Codex, Claude, Grok, OpenClaw, or Pi session as searchable, shareable HTML."
+  default_prompt: "Use $session-viewer to render this Codex, Claude, Cursor, Grok, OpenClaw, or Pi session as searchable, shareable HTML."

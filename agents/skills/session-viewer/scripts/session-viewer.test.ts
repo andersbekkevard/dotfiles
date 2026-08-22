@@ -423,6 +423,127 @@ test("keeps Claude thinking content blocks", () => {
   assert.equal(doc.events.find((event) => event.kind === "reasoning")?.text, "visible thinking");
 });
 
+test("parses native Cursor Agent messages and tool blocks", () => {
+  const doc = parse(
+    [
+      JSON.stringify({
+        role: "user",
+        message: { content: [{ type: "text", text: "Inspect the file" }] },
+      }),
+      JSON.stringify({
+        role: "assistant",
+        message: {
+          content: [
+            { type: "text", text: "I will inspect it." },
+            { type: "tool_use", id: "cursor-call-1", name: "Read", input: { path: "README.md" } },
+          ],
+        },
+      }),
+      JSON.stringify({
+        role: "user",
+        message: {
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "cursor-call-1",
+              tool_use_result: { summary: "# dotfiles" },
+            },
+          ],
+        },
+      }),
+      JSON.stringify({ type: "turn_ended", status: "success" }),
+    ].join("\n"),
+  );
+  assert.equal(doc.format, "cursor");
+  assert.equal(doc.events.filter((event) => event.kind === "message").length, 2);
+  assert.equal(doc.events.find((event) => event.kind === "tool_call")?.toolName, "Read");
+  assert.equal(doc.events.find((event) => event.kind === "tool_result")?.callId, "cursor-call-1");
+  assert.equal(doc.events.find((event) => event.title === "turn ended")?.status, "ok");
+});
+
+test("parses Cursor stream-json metadata, thinking deltas, and tool lifecycle", () => {
+  const sessionId = "cursor-session-id";
+  const doc = parse(
+    [
+      JSON.stringify({
+        type: "system",
+        subtype: "init",
+        apiKeySource: "login",
+        cwd: "/tmp/project",
+        model: "Auto",
+        permissionMode: "default",
+        session_id: sessionId,
+      }),
+      JSON.stringify({
+        type: "user",
+        session_id: sessionId,
+        message: { role: "user", content: [{ type: "text", text: "Read the file" }] },
+      }),
+      JSON.stringify({
+        type: "thinking",
+        subtype: "delta",
+        text: "Inspect ",
+        timestamp_ms: 1_788_000_000_000,
+        session_id: sessionId,
+      }),
+      JSON.stringify({
+        type: "thinking",
+        subtype: "delta",
+        text: "the file.",
+        timestamp_ms: 1_788_000_000_100,
+        session_id: sessionId,
+      }),
+      JSON.stringify({
+        type: "thinking",
+        subtype: "completed",
+        timestamp_ms: 1_788_000_000_200,
+        session_id: sessionId,
+      }),
+      JSON.stringify({
+        type: "tool_call",
+        subtype: "started",
+        session_id: sessionId,
+        tool_call: {
+          readToolCall: { args: { path: "README.md" } },
+          toolCallId: "cursor-tool-1",
+        },
+      }),
+      JSON.stringify({
+        type: "tool_call",
+        subtype: "completed",
+        session_id: sessionId,
+        tool_call: {
+          readToolCall: {
+            args: { path: "README.md" },
+            result: { success: { content: "# dotfiles" } },
+          },
+          toolCallId: "cursor-tool-1",
+        },
+      }),
+      JSON.stringify({
+        type: "assistant",
+        session_id: sessionId,
+        message: { role: "assistant", content: [{ type: "text", text: "# dotfiles" }] },
+      }),
+      JSON.stringify({
+        type: "result",
+        subtype: "success",
+        is_error: false,
+        duration_ms: 1200,
+        usage: { inputTokens: 100, outputTokens: 20 },
+        session_id: sessionId,
+      }),
+    ].join("\n"),
+  );
+  assert.equal(doc.format, "cursor");
+  assert.equal(doc.title, sessionId);
+  assert.equal(doc.meta.cwd, "/tmp/project");
+  assert.equal(doc.meta.input_tokens, 100);
+  assert.equal(doc.events.find((event) => event.kind === "reasoning")?.text, "Inspect the file.");
+  assert.equal(doc.events.filter((event) => event.kind === "tool_call").length, 1);
+  assert.equal(doc.events.find((event) => event.kind === "tool_result")?.status, "ok");
+});
+
 test("parses native and dispatched Grok chat history", () => {
   const doc = parse(
     [
@@ -974,6 +1095,52 @@ test("CLI accepts Grok directories, summaries, and chat history", async () => {
       true,
     );
   }
+});
+
+test("CLI accepts a native Cursor transcript directory", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "session-viewer-cursor-"));
+  const sessionId = "cursor-session-id";
+  const sessionDir = path.join(root, sessionId);
+  const transcriptPath = path.join(sessionDir, `${sessionId}.jsonl`);
+  const output = path.join(root, "cursor.html");
+  await fs.mkdir(sessionDir);
+  await fs.writeFile(
+    transcriptPath,
+    [
+      JSON.stringify({
+        role: "user",
+        message: { content: [{ type: "text", text: "Find this Cursor prompt" }] },
+      }),
+      JSON.stringify({
+        role: "assistant",
+        message: { content: [{ type: "text", text: "Find this Cursor response" }] },
+      }),
+      JSON.stringify({ type: "turn_ended", status: "success" }),
+    ].join("\n"),
+    "utf8",
+  );
+
+  await execFileAsync(process.execPath, [
+    "agents/skills/session-viewer/scripts/session-viewer.ts",
+    sessionDir,
+    "--out",
+    output,
+  ]);
+  const html = await fs.readFile(output, "utf8");
+  const payload = /<script id="viewer-payload" type="application\/json">([^<]*)<\/script>/u.exec(
+    html,
+  )?.[1];
+  assert.ok(payload);
+  const encoded = JSON.parse(payload).data;
+  const document = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
+  assert.equal(document.format, "cursor");
+  assert.equal(document.title, sessionId);
+  assert.equal(
+    document.events.some(
+      (event: { text: string }) => event.text.includes("Find this Cursor response"),
+    ),
+    true,
+  );
 });
 
 test("CLI defaults to temp output and waits for Fleet delivery on --open", async () => {

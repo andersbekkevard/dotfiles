@@ -1,12 +1,12 @@
 ---
 name: session-viewer
-description: "Render Codex, Claude Code, Grok, OpenClaw, or Pi session transcripts as a searchable, shareable single-file HTML viewer."
+description: "Render Codex, Claude Code, Cursor Agent, Grok, OpenClaw, or Pi session transcripts as a searchable, shareable single-file HTML viewer."
 ---
 
 # Session Viewer
 
-Use when asked to view, export, inspect, or share a Codex, Claude Code, Grok,
-OpenClaw, or Pi session transcript in a browser.
+Use when asked to view, export, inspect, or share a Codex, Claude Code, Cursor
+Agent, Grok, OpenClaw, or Pi session transcript in a browser.
 
 ## Commands
 
@@ -35,7 +35,8 @@ In a downstream repo that syncs shared skills under `.agents/skills`, replace
 
 Defaults:
 
-- detects `codex`, `claude`, `grok`, or `pi-openclaw`
+- detects `codex`, `claude`, `cursor`, `grok`, or `pi-openclaw`
+- accepts a Cursor transcript directory, native JSONL, or `stream-json` output
 - accepts a Grok session directory, its `summary.json`, or `chat_history.jsonl`
 - embeds normalized session data into one HTML file
 - writes to a timestamped file in the OS temp directory unless `--out` is set
@@ -72,6 +73,17 @@ ls -t "$HOME/.claude/projects"/**/*.jsonl | head
 
 Some Claude installs also keep exported JSON/JSONL under project-specific cache folders; prefer the newest JSONL with the target repo path in its parent folder.
 
+Cursor Agent:
+
+```bash
+find "$HOME/.cursor/projects" -path '*/agent-transcripts/*/*.jsonl' -type f | sort
+ls -t "$HOME/.cursor/projects"/*/agent-transcripts/*/*.jsonl | head
+```
+
+You can also render JSONL captured from `cursor-agent -p --output-format
+stream-json`. Native Cursor transcript directories contain one same-named
+JSONL file, so either the directory or that file is accepted.
+
 Grok:
 
 ```bash
@@ -95,6 +107,7 @@ Importer ownership:
 
 - `scripts/importers/codex.ts`: Codex rollout JSONL
 - `scripts/importers/claude.ts`: Claude Code JSONL
+- `scripts/importers/cursor.ts`: native and streamed Cursor Agent JSONL
 - `scripts/importers/grok.ts`: native and dispatched Grok sessions
 - `scripts/importers/pi-openclaw.ts`: Pi/OpenClaw session JSONL
 

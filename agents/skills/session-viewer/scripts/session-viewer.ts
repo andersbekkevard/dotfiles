@@ -90,12 +90,39 @@ async function resolveSessionInput(rawPath: string): Promise<SessionInput> {
   const sourcePath = path.resolve(rawPath);
   const stat = await fs.stat(sourcePath);
   if (stat.isDirectory()) {
-    return { sourcePath, chatPath: path.join(sourcePath, "chat_history.jsonl") };
+    const grokChatPath = path.join(sourcePath, "chat_history.jsonl");
+    try {
+      if ((await fs.stat(grokChatPath)).isFile()) {
+        return { sourcePath, chatPath: grokChatPath };
+      }
+    } catch (error) {
+      if (!isMissingPath(error)) throw error;
+    }
+
+    const cursorPath = path.join(sourcePath, `${path.basename(sourcePath)}.jsonl`);
+    try {
+      if ((await fs.stat(cursorPath)).isFile()) {
+        return { sourcePath, chatPath: cursorPath };
+      }
+    } catch (error) {
+      if (!isMissingPath(error)) throw error;
+    }
+
+    const jsonlFiles = (await fs.readdir(sourcePath, { withFileTypes: true }))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"));
+    if (jsonlFiles.length === 1) {
+      return { sourcePath, chatPath: path.join(sourcePath, jsonlFiles[0].name) };
+    }
+    throw new Error(`session directory does not contain one recognizable JSONL transcript: ${sourcePath}`);
   }
   if (path.basename(sourcePath) === "summary.json") {
     return { sourcePath, chatPath: path.join(path.dirname(sourcePath), "chat_history.jsonl") };
   }
   return { sourcePath, chatPath: sourcePath };
+}
+
+function isMissingPath(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
 
 async function deliverAndOpen(filePath: string, timestamp: string): Promise<void> {

@@ -1,5 +1,6 @@
 import { claudeImporter } from "../importers/claude.ts";
 import { codexImporter } from "../importers/codex.ts";
+import { cursorImporter } from "../importers/cursor.ts";
 import { grokImporter } from "../importers/grok.ts";
 import { piOpenClawImporter } from "../importers/pi-openclaw.ts";
 import type { JsonlRecord, SessionDocument, SessionImporter } from "./types.ts";
@@ -8,6 +9,7 @@ const importers: SessionImporter[] = [
   codexImporter,
   piOpenClawImporter,
   grokImporter,
+  cursorImporter,
   claudeImporter,
 ];
 

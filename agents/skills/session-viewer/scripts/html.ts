@@ -722,8 +722,22 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
     if (records.some((r) => isObject(r.value) && (r.value.type === "session_meta" || r.value.type === "response_item"))) return "codex";
     if (records.some((r) => isObject(r.value) && (r.value.type === "session" || (r.value.type === "message" && isObject(r.value.message))))) return "pi-openclaw";
     if (records.some((r) => isObject(r.value) && (typeof r.value.prompt_index === "number" || (r.value.type === "system" && String(r.value.content ?? "").includes("You are Grok")) || (r.value.type === "reasoning" && "encrypted_content" in r.value) || (r.value.type === "tool_result" && "tool_call_id" in r.value) || (r.value.type === "assistant" && Array.isArray(r.value.tool_calls))))) return "grok";
+    if (records.some((r) => isObject(r.value) && (r.value.type === "turn_ended" || (typeof r.value.role === "string" && isObject(r.value.message)) || (r.value.type === "tool_call" && isObject(r.value.tool_call)) || (r.value.type === "system" && r.value.subtype === "init" && typeof r.value.session_id === "string" && "apiKeySource" in r.value)))) return "cursor";
     if (records.some((r) => isObject(r.value) && ["summary", "user", "assistant"].includes(String(r.value.type)) || (isObject(r.value?.message) && ["user", "assistant"].includes(String(r.value.message.role))))) return "claude";
     return "unknown";
+  };
+  const cursorStreamTool = (value) => {
+    if (!isObject(value.tool_call)) return null;
+    const envelope = value.tool_call;
+    const entry = Object.entries(envelope).find(([key, item]) => key.endsWith("ToolCall") && isObject(item));
+    const payload = entry && isObject(entry[1]) ? entry[1] : null;
+    const rawName = entry ? entry[0].replace(/ToolCall$/u, "") : "tool";
+    return {
+      callId: typeof envelope.toolCallId === "string" ? envelope.toolCallId : undefined,
+      input: payload?.args ?? {},
+      name: rawName.replace(/([a-z0-9])([A-Z])/gu, "$1 $2").toLowerCase(),
+      output: payload?.result ?? payload,
+    };
   };
   const parseRaw = (text, name = "session") => {
     const records = parseJsonl(text);
@@ -732,6 +746,15 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
     const meta = {};
     const grokHasIndexedPrompt = records.some((record) => isObject(record.value) && typeof record.value.prompt_index === "number");
     const grokLastUserLine = records.findLast((record) => isObject(record.value) && record.value.type === "user")?.line;
+    const cursorStartedCalls = new Set();
+    let cursorThinking = "";
+    let cursorThinkingLine = 0;
+    const flushCursorThinking = () => {
+      if (!cursorThinking) return;
+      events.push({ id: "e" + cursorThinkingLine + "-thinking", kind: "reasoning", title: "thinking", text: cursorThinking });
+      cursorThinking = "";
+      cursorThinkingLine = 0;
+    };
     for (const record of records) {
       const v = record.value;
       if (!isObject(v)) continue;
@@ -813,6 +836,68 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
         }
         continue;
       }
+      if (format === "cursor") {
+        if (typeof v.session_id === "string") meta.id = v.session_id;
+        if (v.type === "thinking") {
+          if (v.subtype === "delta") {
+            cursorThinkingLine ||= record.line;
+            cursorThinking += typeof v.text === "string" ? v.text : "";
+          } else if (v.subtype === "completed") {
+            flushCursorThinking();
+          }
+          continue;
+        }
+        flushCursorThinking();
+        if (v.type === "system" && v.subtype === "init") {
+          if (typeof v.cwd === "string") meta.cwd = v.cwd;
+          if (typeof v.model === "string") meta.model = v.model;
+          if (typeof v.permissionMode === "string") meta.permission_mode = v.permissionMode;
+          continue;
+        }
+        if (v.type === "tool_call") {
+          const tool = cursorStreamTool(v);
+          if (!tool) continue;
+          if (v.subtype === "started" || !tool.callId || !cursorStartedCalls.has(tool.callId)) {
+            events.push({ id: "e" + record.line + "-tool", kind: "tool_call", title: "tool call: " + tool.name, text: pretty(tool.input), callId: tool.callId, toolName: tool.name, status: "running", raw: v });
+            if (tool.callId) cursorStartedCalls.add(tool.callId);
+          }
+          if (v.subtype === "completed") {
+            events.push({ id: "e" + record.line + "-result", kind: "tool_result", title: "tool result" + (tool.callId ? ": " + tool.callId : ""), text: pretty(tool.output), callId: tool.callId, toolName: tool.name, status: isObject(tool.output) && "error" in tool.output ? "error" : "ok", raw: v });
+          }
+          continue;
+        }
+        const m = isObject(v.message) ? v.message : null;
+        const role = v.role ?? m?.role;
+        if (m && typeof role === "string") {
+          const content = m.content;
+          const images = imageBlocks(content);
+          const messageContent = Array.isArray(content) ? content.filter((block) => !(isObject(block) && ["thinking", "tool_use", "server_tool_use", "tool_result", "tool_use_result"].includes(String(block.type)))) : content;
+          const messageText = textBlocks(messageContent);
+          if (messageText || images.length) events.push({ id: "e" + record.line + "-text", kind: "message", role, title: role, text: messageText, images: images.length ? images : undefined, timestamp: v.timestamp, raw: v });
+          for (const block of Array.isArray(content) ? content : []) {
+            if (!isObject(block)) continue;
+            const blockType = String(block.type ?? "unknown");
+            if (blockType === "thinking" && (block.thinking ?? block.text ?? block.content)) events.push({ id: "e" + record.line + "-thinking-" + events.length, kind: "reasoning", title: "thinking", text: block.thinking ?? block.text ?? block.content, timestamp: v.timestamp, raw: block });
+            if (blockType === "tool_result" || blockType === "tool_use_result") {
+              const output = block.content ?? block.output ?? block.tool_use_result ?? block;
+              const resultImages = imageBlocks(output);
+              events.push({ id: "e" + record.line + "-result-" + events.length, kind: "tool_result", title: "tool result" + (block.tool_use_id ? ": " + block.tool_use_id : ""), text: textBlocks(output) || (resultImages.length ? "" : pretty(output)), images: resultImages.length ? resultImages : undefined, callId: block.tool_use_id ?? block.id, toolName: block.name, status: block.is_error ? "error" : "ok", raw: block });
+            } else if (blockType === "tool_use" || blockType.toLowerCase().includes("tool")) {
+              const toolName = block.name ?? blockType;
+              events.push({ id: "e" + record.line + "-tool-" + events.length, kind: "tool_call", title: "tool call: " + toolName, text: pretty(block.input ?? block.arguments ?? {}), callId: block.id ?? block.tool_use_id, toolName, status: "running", raw: block });
+            }
+          }
+          continue;
+        }
+        if (v.type === "result") {
+          if (isObject(v.usage) && typeof v.usage.inputTokens === "number") meta.input_tokens = v.usage.inputTokens;
+          if (isObject(v.usage) && typeof v.usage.outputTokens === "number") meta.output_tokens = v.usage.outputTokens;
+          if (typeof v.duration_ms === "number") meta.duration_ms = v.duration_ms;
+          continue;
+        }
+        if (v.type === "turn_ended") events.push({ id: "e" + record.line + "-end", kind: "event", title: "turn ended", text: String(v.status ?? "unknown"), status: v.status === "success" ? "ok" : v.status === "error" ? "error" : "unknown", raw: v });
+        continue;
+      }
       if (format === "claude") {
         const m = isObject(v.message) ? v.message : v;
         const role = m.role ?? v.type ?? "message";
@@ -832,6 +917,7 @@ mark { background: var(--mark); color: var(--ink); padding: 0 1px; }
         }
       }
     }
+    if (format === "cursor") flushCursorThinking();
     return { format, title: meta.id || meta.summary || name, meta, events: expandMemoryCitations(events), warnings: [] };
   };
   const indexEvent = (event) => {

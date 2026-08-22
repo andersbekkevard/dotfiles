@@ -1,4 +1,4 @@
-export type SessionFormat = "codex" | "claude" | "grok" | "pi-openclaw" | "unknown";
+export type SessionFormat = "codex" | "claude" | "cursor" | "grok" | "pi-openclaw" | "unknown";
 
 export type SessionEventKind =
   | "event"
