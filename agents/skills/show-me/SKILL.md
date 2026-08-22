@@ -114,9 +114,9 @@ function expandSkill(command: string): string {
 }
 ```
 
-- For a visual UI, layout, state comparison, or concrete concept too dense for
-  Mermaid, choose one focused browser form — a diagram, infographic, or short
-  slide deck — and pass that selection and exact content to the `html` skill.
+- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file — a diagram, an infographic,  or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data 
+  if this is needed invoke the `html` skill.
+
 
 ### guidance
 
