@@ -23,6 +23,18 @@ into a small lasting improvement. Better skill behavior can then make later
 uses more productive and support better refinements. This is one way to build
 the loop, not the definition of it.
 
+**Increase the value of the cycle.** Ask, "How can you increase the value of the
+cycle?" Possible levers include:
+
+- Lower the friction of starting a run, and standardize how runs work, so you
+  can run the cycle more often.
+- Make simulated runs resemble the user's real story so their lessons transfer
+  to actual use.
+- Increase the incremental improvement from each run. Make results easier to
+  view and grade, triage what matters, and identify issues worth fixing.
+
+These are ways to strengthen the loop, not the definition of it.
+
 **The rule.** Repetition alone does not compound. Each gain must make later gains
 easier, faster, more likely, or more valuable. Prefer spending effort on this
 mechanism over squeezing a little more quality out of the current instance. The

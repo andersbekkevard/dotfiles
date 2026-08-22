@@ -189,6 +189,7 @@ notes = [
 ]
 preserve = [
   "Keep the distinction between incremental improvement and compounding: each gain must strengthen the mechanism that produces future gains.",
+  "Treat cheaper standardized repetition, realistic simulated user stories, and better ways to view, grade, triage, and extract issues as levers for increasing each cycle's value, not as the definition of compounding.",
   "Keep this principle user-invoked in both Claude and Codex.",
 ]
 
