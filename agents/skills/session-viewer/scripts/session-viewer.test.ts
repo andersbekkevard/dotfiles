@@ -7,7 +7,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 import { parseSessionDocument } from "./core/detect.ts";
 import { parseJsonl } from "./core/jsonl.ts";
-import { resolveOpenBrowserCommand } from "./open-browser.ts";
+import { resolveFleetDeliveryCommand } from "./deliver-html.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -16,16 +16,22 @@ function parse(text: string) {
   return parseSessionDocument(records, "fixture.jsonl");
 }
 
-test("opens hostile Windows paths without a command shell", () => {
+test("passes hostile paths to Fleet without a command shell", () => {
   for (const filePath of [
     "C:\\Reports\\session & calc.exe.html",
     "C:\\Reports\\session | whoami.html",
     "C:\\Reports\\%COMSPEC%.html",
     "C:\\Reports\\session ^& echo injected.html",
   ]) {
-    assert.deepEqual(resolveOpenBrowserCommand("win32", filePath), {
-      executable: "explorer.exe",
-      args: [filePath],
+    assert.deepEqual(resolveFleetDeliveryCommand(filePath, "20260822T120000123Z"), {
+      executable: "fleet",
+      args: [
+        "mac",
+        "put",
+        "--open",
+        filePath,
+        "/tmp/session-viewer-20260822T120000123Z",
+      ],
     });
   }
 });
@@ -817,7 +823,7 @@ test("CLI writes a one-file HTML export", async () => {
     "utf8",
   );
   await execFileAsync(process.execPath, [
-    "skills/session-viewer/scripts/session-viewer.ts",
+    "agents/skills/session-viewer/scripts/session-viewer.ts",
     input,
     "--out",
     output,
@@ -830,4 +836,44 @@ test("CLI writes a one-file HTML export", async () => {
   )?.[1];
   assert.ok(payload);
   assert.equal(JSON.parse(payload).kind, "normalized");
+});
+
+test("CLI defaults to temp output and waits for Fleet delivery on --open", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "session-viewer-fleet-"));
+  const fleetLog = path.join(dir, "fleet.log");
+  const fleetPath = path.join(dir, "fleet");
+  await fs.writeFile(
+    fleetPath,
+    '#!/bin/sh\nprintf "%s\\n" "$@" > "$FLEET_LOG"\n',
+    "utf8",
+  );
+  await fs.chmod(fleetPath, 0o755);
+
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ["agents/skills/session-viewer/scripts/session-viewer.ts", "--blank", "--open"],
+    {
+      env: {
+        ...process.env,
+        FLEET_LOG: fleetLog,
+        PATH: `${dir}${path.delimiter}${process.env.PATH ?? ""}`,
+      },
+    },
+  );
+
+  const outputPath = /^wrote: (.+)$/mu.exec(stdout)?.[1];
+  assert.ok(outputPath);
+  assert.equal(path.dirname(outputPath), os.tmpdir());
+  const timestamp = /^session-viewer-(\d{8}T\d{9}Z)\.html$/u.exec(
+    path.basename(outputPath),
+  )?.[1];
+  assert.ok(timestamp);
+  assert.match(await fs.readFile(outputPath, "utf8"), /Session Viewer/);
+  assert.deepEqual((await fs.readFile(fleetLog, "utf8")).trim().split("\n"), [
+    "mac",
+    "put",
+    "--open",
+    outputPath,
+    `/tmp/session-viewer-${timestamp}`,
+  ]);
 });

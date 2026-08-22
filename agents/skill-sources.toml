@@ -60,6 +60,15 @@ preserve = [
   "Keep Show Me close to HumanLayer's concrete visualizer: it selects diffs, trees, flows, and other focused views; HTML only renders a browser form it supplies.",
 ]
 
+[skills.session-viewer]
+local_path = "agents/skills/session-viewer"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/openclaw/agent-skills.git", ref = "main", path = "skills/session-viewer" }
+preserve = [
+  "Keep the upstream transcript importers and rendered viewer design intact; local HTML integration owns only output location and Mac delivery.",
+  "Keep --open as an awaited Fleet handoff through fleet mac put --open, not a browser launch on the producing machine.",
+]
+
 [skills.obsidian-markdown]
 local_path = "agents/skills/obsidian-markdown"
 tracking = "tracked"

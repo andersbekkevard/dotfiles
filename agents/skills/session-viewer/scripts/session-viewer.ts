@@ -1,10 +1,11 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { parseSessionDocument } from "./core/detect.ts";
 import { parseJsonl } from "./core/jsonl.ts";
 import { buildSessionViewerHtml } from "./html.ts";
-import { resolveOpenBrowserCommand } from "./open-browser.ts";
+import { resolveFleetDeliveryCommand } from "./deliver-html.ts";
 
 type Options = {
   blank: boolean;
@@ -17,13 +18,13 @@ type Options = {
 function usage(): string {
   return [
     "Usage:",
-    "  node session-viewer.ts <session.jsonl> --out session.html [--open] [--raw]",
-    "  node session-viewer.ts --blank --out viewer.html [--open]",
+    "  node session-viewer.ts <session.jsonl> [--out session.html] [--open] [--raw]",
+    "  node session-viewer.ts --blank [--out viewer.html] [--open]",
     "",
     "Options:",
     "  --blank        Write reusable file-picker viewer",
     "  --out PATH     Output HTML path",
-    "  --open         Open output path in the browser",
+    "  --open         Deliver to Anders's Mac with Fleet and open it",
     "  --raw          Embed raw JSONL instead of normalized data",
     "  -h, --help     Show help",
   ].join("\n");
@@ -72,23 +73,40 @@ function parseArgs(argv: string[]): Options {
   return options;
 }
 
-function defaultOutputPath(inputPath: string | undefined, blank: boolean): string {
-  if (blank || !inputPath) {
-    return path.resolve("session-viewer.html");
-  }
-  const parsed = path.parse(inputPath);
-  return path.join(parsed.dir, `${parsed.name}.html`);
+function createTimestamp(): string {
+  return new Date().toISOString().replace(/[-:.]/gu, "");
 }
 
-async function openBrowser(filePath: string): Promise<void> {
-  const command = resolveOpenBrowserCommand(process.platform, filePath);
-  spawn(command.executable, command.args, { detached: true, stdio: "ignore" }).unref();
+function defaultOutputPath(timestamp: string): string {
+  return path.join(os.tmpdir(), `session-viewer-${timestamp}.html`);
+}
+
+async function deliverAndOpen(filePath: string, timestamp: string): Promise<void> {
+  const command = resolveFleetDeliveryCommand(filePath, timestamp);
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(command.executable, command.args, { stdio: "inherit" });
+    child.once("error", reject);
+    child.once("close", (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(
+        new Error(
+          signal
+            ? `fleet delivery stopped by signal ${signal}`
+            : `fleet delivery exited with status ${code ?? "unknown"}`,
+        ),
+      );
+    });
+  });
 }
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  const timestamp = createTimestamp();
   const outputPath = path.resolve(
-    options.outPath ?? defaultOutputPath(options.inputPath, options.blank),
+    options.outPath ?? defaultOutputPath(timestamp),
   );
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
@@ -97,7 +115,7 @@ async function main(): Promise<void> {
     await fs.writeFile(outputPath, html, "utf8");
     console.log(`wrote: ${outputPath}`);
     if (options.open) {
-      await openBrowser(outputPath);
+      await deliverAndOpen(outputPath, timestamp);
     }
     return;
   }
@@ -119,7 +137,7 @@ async function main(): Promise<void> {
     console.log(`warnings: ${document.warnings.length}`);
   }
   if (options.open) {
-    await openBrowser(outputPath);
+    await deliverAndOpen(outputPath, timestamp);
   }
 }
 

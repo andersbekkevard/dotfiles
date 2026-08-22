@@ -11,10 +11,14 @@ Use when asked to view, export, inspect, or share a Codex, Claude Code, OpenClaw
 
 Find the likely JSONL session, then render it with `session-viewer`.
 
+Session Viewer owns transcript parsing and the viewer's existing visual design.
+For delivery, follow [`html`](../html/SKILL.md#delivery). `--open` preserves the
+rendered file, delivers it to Anders's Mac with Fleet, and opens it there.
+
 From a repo that has this skill:
 
 ```bash
-node skills/session-viewer/scripts/session-viewer.ts <session.jsonl> --out /tmp/session.html --open
+node skills/session-viewer/scripts/session-viewer.ts <session.jsonl> --open
 ```
 
 Useful modes:
@@ -32,6 +36,7 @@ Defaults:
 
 - detects `codex`, `claude`, or `pi-openclaw`
 - embeds normalized session data into one HTML file
+- writes to a timestamped file in the OS temp directory unless `--out` is set
 - keeps tool input/output text in the DOM so browser search can find it
 - `--raw` embeds the original JSONL and lets the browser parse it
 - `--blank` creates a reusable file-picker viewer
