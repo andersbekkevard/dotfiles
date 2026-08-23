@@ -38,7 +38,7 @@ class EvalSkillTests(unittest.TestCase):
 
     def test_arena_reference_resolves(self) -> None:
         reference = SKILL_DIR / "references/arena.md"
-        expected = REPO / "agents/references/pstack/skills/arena/SKILL.md"
+        expected = REPO / "agents/skills/arena/SKILL.md"
         self.assertTrue(reference.is_symlink())
         self.assertEqual(reference.resolve(), expected.resolve())
         self.assertIn("(references/arena.md)", SKILL.read_text())

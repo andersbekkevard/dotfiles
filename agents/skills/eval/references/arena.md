@@ -1,1 +1,1 @@
-../../../references/pstack/skills/arena/SKILL.md
+../../arena/SKILL.md
