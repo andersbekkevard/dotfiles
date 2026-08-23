@@ -71,6 +71,18 @@ preserve = [
   "Keep one Grok importer for both native ~/.grok sessions and isolated grok-dispatch sessions; accept the directory, summary.json, or chat_history.jsonl.",
 ]
 
+[skills.compress-agent-transcript]
+local_path = "agents/skills/compress-agent-transcript"
+tracking = "local"
+notes = [
+  "Anders-authored mechanical native-transcript compressor for Codex, Claude Code, Grok Agent, and Cursor Agent.",
+]
+preserve = [
+  "Keep this user-invoked and purely mechanical: compression never performs sanitization or semantic summarization.",
+  "Retain native messages, reasoning, instructions, and tool calls while replacing result bodies with checksum-bound markers.",
+  "Keep provider-specific adapters and fail closed when the input provider cannot be identified.",
+]
+
 [skills.obsidian-markdown]
 local_path = "agents/skills/obsidian-markdown"
 tracking = "tracked"
