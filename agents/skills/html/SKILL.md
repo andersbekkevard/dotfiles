@@ -20,13 +20,12 @@ Anything the page names that has a URL or a path is a link: repos, files,
 tickets, sources.
 
 Warm off-white ground, near-black ink. A serif for titles at document scale,
-a plain sans for reading, never use monospace.
+a plain sans for reading, never use monospace. Never use caps-lock.
 Hierarchy comes from size, weight, and whitespace,
 with thin rules where a break is needed. Figures sit on a raised white surface
-with a soft border and carry their labels directly; a legend appears only when
-a grammar repeats. Color is scarce and semantic: one or two hues, each meaning
-one thing for the whole page, everything else in ink and gray. No gradients,
-shadows, or decoration. The subject decides the form.
+with a soft border and carry their labels directly.
+Color is only used if it carries meaning, and must mean the same across the entire page.
+No gradients, shadows, or decoration. The subject decides the form.
 
 ## Delivery
 
