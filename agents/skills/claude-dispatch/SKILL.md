@@ -13,6 +13,8 @@ not assemble or improve the prompt.
 
 ## Dispatch
 
+Unset `ANTHROPIC_API_KEY` before checking Claude auth so the Max subscription wins.
+
 Choose the access boundary independently of the prompt:
 
 - `closed` (default): prompt-in/result-out. The runner uses an isolated
