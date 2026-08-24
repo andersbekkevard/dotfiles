@@ -624,6 +624,13 @@ notes = [
 local_path = "agents/skills/application-email"
 tracking = "local"
 
+[skills.audio-transcription]
+local_path = "agents/skills/audio-transcription"
+tracking = "local"
+notes = [
+  "Anders-authored global procedure adapted minimally from Seatankers tools/audio-transcribe/transcribe_groq.py; Groq owns transcription while project ingestion stays with the project.",
+]
+
 [skills.raindrop]
 local_path = "agents/skills/raindrop"
 tracking = "local"
