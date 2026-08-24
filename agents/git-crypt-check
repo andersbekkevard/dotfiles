@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Fail-closed checks for git-crypt-protected repository paths."""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+GIT_CRYPT_MAGIC = b"\x00GITCRYPT\x00"
+
+
+class CheckError(RuntimeError):
+    pass
+
+
+def run_git(
+    repo: Path,
+    *args: str,
+    input_bytes: bytes | None = None,
+    check: bool = True,
+) -> subprocess.CompletedProcess[bytes]:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        input=input_bytes,
+        capture_output=True,
+        check=False,
+    )
+    if check and result.returncode != 0:
+        detail = (result.stderr or result.stdout).decode(errors="replace").strip()
+        raise CheckError(f"git {' '.join(args)} failed: {detail}")
+    return result
+
+
+def repository() -> Path:
+    result = subprocess.run(
+        ["git", "-C", str(Path(__file__).resolve().parent), "rev-parse", "--show-toplevel"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise CheckError("git-crypt-check must live inside a Git working tree")
+    return Path(result.stdout.strip()).resolve()
+
+
+def normalize(repo: Path, raw: str) -> str:
+    candidate = Path(raw)
+    if not candidate.is_absolute():
+        from_cwd = (Path.cwd() / candidate).resolve()
+        candidate = from_cwd if from_cwd == repo or repo in from_cwd.parents else repo / candidate
+    candidate = candidate.resolve()
+    try:
+        relative = candidate.relative_to(repo)
+    except ValueError as exc:
+        raise CheckError(f"path is outside the repository: {raw}") from exc
+    return relative.as_posix()
+
+
+def selected(paths: list[str], targets: list[str]) -> list[str]:
+    if not targets:
+        return paths
+    return [
+        path
+        for path in paths
+        if any(path == target or path.startswith(target.rstrip("/") + "/") for target in targets)
+    ]
+
+
+def attributes(repo: Path, paths: list[str]) -> dict[str, str]:
+    if not paths:
+        return {}
+    payload = b"\x00".join(path.encode() for path in paths) + b"\x00"
+    output = run_git(
+        repo, "check-attr", "-z", "--stdin", "filter", input_bytes=payload
+    ).stdout.split(b"\x00")
+    values: dict[str, str] = {}
+    for index in range(0, len(output) - 2, 3):
+        path, attribute, value = output[index : index + 3]
+        if attribute == b"filter":
+            values[path.decode()] = value.decode()
+    return values
+
+
+def ensure_filter_active(repo: Path) -> None:
+    def config(name: str) -> str:
+        return run_git(repo, "config", "--get", name, check=False).stdout.decode().strip()
+
+    required = config("filter.git-crypt.required")
+    clean = config("filter.git-crypt.clean")
+    smudge = config("filter.git-crypt.smudge")
+    if required.lower() != "true" or "git-crypt" not in clean or "git-crypt" not in smudge:
+        raise CheckError("this checkout is not unlocked with git-crypt")
+
+
+def ensure_protected(repo: Path, paths: list[str]) -> None:
+    values = attributes(repo, paths)
+    unprotected = [path for path in paths if values.get(path) != "git-crypt"]
+    if unprotected:
+        raise CheckError("path is not protected by git-crypt: " + ", ".join(unprotected))
+
+
+def ready(repo: Path, raw_targets: list[str]) -> int:
+    if not raw_targets:
+        raise CheckError("ready requires at least one private path")
+    ensure_filter_active(repo)
+    targets = [normalize(repo, raw) for raw in raw_targets]
+    probes = [
+        target
+        if (repo / target).is_file()
+        else target.rstrip("/") + "/.git-crypt-check-probe"
+        for target in targets
+    ]
+    ensure_protected(repo, probes)
+    print(f"git-crypt-check: ready ({len(targets)} private path(s))")
+    return 0
+
+
+def staged(repo: Path, raw_targets: list[str]) -> int:
+    ensure_filter_active(repo)
+    targets = [normalize(repo, raw) for raw in raw_targets]
+    output = run_git(
+        repo, "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"
+    ).stdout
+    paths = [item.decode() for item in output.split(b"\x00") if item]
+    paths = selected(paths, targets)
+    values = attributes(repo, paths)
+    encrypted = [path for path in paths if values.get(path) == "git-crypt"]
+    if raw_targets:
+        ensure_protected(repo, paths)
+    if not encrypted:
+        raise CheckError("no staged git-crypt-protected files matched")
+    plaintext = []
+    for path in encrypted:
+        blob = run_git(repo, "show", f":{path}", check=False)
+        if blob.returncode != 0 or not blob.stdout.startswith(GIT_CRYPT_MAGIC):
+            plaintext.append(path)
+    if plaintext:
+        raise CheckError("staged blob is plaintext: " + ", ".join(plaintext))
+    print(f"git-crypt-check: staged ok ({len(encrypted)} encrypted file(s))")
+    return 0
+
+
+def tree(repo: Path, revision: str, raw_targets: list[str]) -> int:
+    targets = [normalize(repo, raw) for raw in raw_targets]
+    output = run_git(repo, "ls-tree", "-r", "-z", "--name-only", revision).stdout
+    paths = [item.decode() for item in output.split(b"\x00") if item]
+    paths = selected(paths, targets)
+    values = attributes(repo, paths)
+    encrypted = [path for path in paths if values.get(path) == "git-crypt"]
+    if raw_targets:
+        ensure_protected(repo, paths)
+    if not encrypted:
+        raise CheckError(f"no git-crypt-protected files matched in {revision}")
+    plaintext = []
+    for path in encrypted:
+        blob = run_git(repo, "show", f"{revision}:{path}", check=False)
+        if blob.returncode != 0 or not blob.stdout.startswith(GIT_CRYPT_MAGIC):
+            plaintext.append(path)
+    if plaintext:
+        raise CheckError(
+            f"{revision} contains plaintext protected blobs: " + ", ".join(plaintext)
+        )
+    print(f"git-crypt-check: {revision} ok ({len(encrypted)} encrypted file(s))")
+    return 0
+
+
+def parser() -> argparse.ArgumentParser:
+    command = argparse.ArgumentParser(description=__doc__)
+    subcommands = command.add_subparsers(dest="command", required=True)
+    ready_parser = subcommands.add_parser("ready", help="verify paths and the local filter before writing")
+    ready_parser.add_argument("paths", nargs="+")
+    staged_parser = subcommands.add_parser("staged", help="verify staged protected blobs are ciphertext")
+    staged_parser.add_argument("paths", nargs="*")
+    tree_parser = subcommands.add_parser("tree", help="verify protected blobs in a commit or remote ref")
+    tree_parser.add_argument("revision")
+    tree_parser.add_argument("paths", nargs="*")
+    return command
+
+
+def main() -> int:
+    args = parser().parse_args()
+    repo = repository()
+    if args.command == "ready":
+        return ready(repo, args.paths)
+    if args.command == "staged":
+        return staged(repo, args.paths)
+    return tree(repo, args.revision, args.paths)
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except CheckError as exc:
+        print(f"git-crypt-check: {exc}", file=sys.stderr)
+        raise SystemExit(1)

@@ -63,6 +63,20 @@ die() {
   exit 1
 }
 
+is_git_crypt_ciphertext() {
+  local file="$1" prefix
+  [[ -f "$file" ]] || return 1
+  prefix="$(LC_ALL=C od -An -tx1 -N10 "$file" 2>/dev/null | tr -d '[:space:]')"
+  [[ "$prefix" == "00474954435259505400" ]]
+}
+
+require_known_hosts() {
+  if is_git_crypt_ciphertext "$FLEET_KNOWN_HOSTS"; then
+    die "private host identities are locked; run git-crypt unlock or set FLEET_KNOWN_HOSTS"
+  fi
+  [[ -f "$FLEET_KNOWN_HOSTS" ]] || die "known-hosts file not found: $FLEET_KNOWN_HOSTS"
+}
+
 usage_error() {
   printf 'fleet: %s\n\n' "$*" >&2
   usage >&2
@@ -84,11 +98,19 @@ config_files() {
 }
 
 effective_machines() {
-  local files=() file
+  local files=() file locked=0
   while IFS= read -r file; do
-    [[ -f "$file" ]] && files+=("$file")
+    [[ -f "$file" ]] || continue
+    if is_git_crypt_ciphertext "$file"; then
+      locked=1
+      continue
+    fi
+    files+=("$file")
   done < <(config_files)
 
+  if ((${#files[@]} == 0 && locked == 1)); then
+    die "private machine registry is locked; run git-crypt unlock or set FLEET_CONFIG"
+  fi
   ((${#files[@]})) || die "no machine registry found; expected ${FLEET_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/fleet/machines.tsv}"
 
   awk -F '\t' '
@@ -109,6 +131,7 @@ load_machine() {
   row="$(effective_machines | awk -F '\t' -v requested="$requested" '$1 == requested { print; exit }')"
   [[ -n "$row" ]] || die "unknown machine '$requested'; run 'fleet list'"
   IFS=$'\t' read -r MACHINE_NAME MACHINE_TARGET MACHINE_LOCAL_HOSTS MACHINE_CAPABILITIES <<<"$row"
+  is_local_machine || require_known_hosts
 }
 
 is_local_machine() {

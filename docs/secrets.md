@@ -1,8 +1,19 @@
 # Secrets
 
-Secrets are tracked with `git-crypt` in `shell/.secrets`, which stows to
-`~/.secrets`. Private skill evidence under `agents/skill-uses/` and skill-usage
-telemetry batches under `agents/skill-usage-batches/` use the same encryption filter.
+Private repository content uses `git-crypt`. It includes:
+
+- `shell/.secrets`, which stows to `~/.secrets`;
+- skill evidence under `agents/skill-uses/` and usage batches under
+  `agents/skill-usage-batches/`;
+- the private MCP registry;
+- the complete `application-email`, `control-europa-desktop`, and
+  `cycle-codex-account` skills;
+- Fleet's machine registry and verified host identities; and
+- benchmark cases reconstructed from Anders's real sessions.
+
+Reusable procedures, runners, and sanitized examples remain public. Private
+keys, the git-crypt key, raw credentials, and access tokens stay outside Git
+even when a path is encrypted.
 
 Skill-usage batch paths expose only an opaque replica id and sequence. Their
 contents include skill names, harness, invocation type, UTC day, and counts.
@@ -14,7 +25,21 @@ They never include prompts, transcript paths, hostnames, or session text.
 git-crypt unlock <keyfile>
 ```
 
-`dotfiles.sh` does not fail if the repository is still locked. It prints a reminder and continues with non-secret work.
+`dotfiles.sh` does not fail if the repository is still locked. It prints a reminder and continues with public work. Agent setup skips locked private skills, and Fleet rejects its locked private configuration with an unlock instruction.
+
+Before committing protected content, verify the index rather than trusting the
+attribute declaration:
+
+```bash
+agents/git-crypt-check staged
+```
+
+After committing or fetching, verify a tree or remote ref:
+
+```bash
+agents/git-crypt-check tree HEAD
+agents/git-crypt-check tree origin/main
+```
 
 `shell/.zshrc` only sources `~/.secrets` when the file exists and looks like readable text.
 

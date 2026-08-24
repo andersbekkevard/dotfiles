@@ -68,6 +68,10 @@ class RecordSkillUseTests(unittest.TestCase):
         )
         self.assertIn("commit it immediately", skill.lower())
         self.assertIn("git commit --only", skill)
+        self.assertIn("git-crypt-check\" ready", skill)
+        self.assertIn("git-crypt-check\" staged", skill)
+        self.assertIn("git-crypt-check\" tree HEAD", skill)
+        self.assertIn("git restore --staged", skill)
         self.assertIn(
             'skill-use: <skill> @ <UTC timestamp>', skill
         )

@@ -43,6 +43,8 @@ Harness, model, session, and transcript values are optional labels. The script
 does not read or sanitize transcripts.
 
 ```bash
+REPO="$(git -C "$SKILL_DIR" rev-parse --show-toplevel)"
+"$REPO/agents/git-crypt-check" ready -- "$REPO/agents/skill-uses"
 python3 "$SKILL_DIR/scripts/record_skill_use.py" create \
   --skill <primary-skill> \
   --evidence /absolute/path/evidence.md \
@@ -73,12 +75,17 @@ timestamp directory, even when unrelated changes are dirty or staged:
 
 ```bash
 git add -- "$PACKET"
+if ! "$REPO/agents/git-crypt-check" staged -- "$PACKET"; then
+  git restore --staged -- "$PACKET"
+  exit 1
+fi
 git commit --only -m "skill-use: <skill> @ <UTC timestamp>" -- "$PACKET"
+"$REPO/agents/git-crypt-check" tree HEAD -- "$PACKET"
 ```
 
 Inspect the commit's file list and confirm every path is inside `$PACKET`.
 Then push immediately. Do not batch the packet with later work or leave it for
 a later push.
 
-Done when the packet validates, its commit contains only that packet, and the
-commit is on the upstream remote.
+Done when the packet validates, its commit contains only encrypted packet
+blobs, and the commit is on the upstream remote.

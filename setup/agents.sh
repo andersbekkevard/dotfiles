@@ -20,6 +20,25 @@ agent_mkdir_p() {
   mkdir -p "$dir"
 }
 
+is_locked_git_crypt_file() {
+  local file="$1" prefix
+  [[ -f "$file" ]] || return 1
+  prefix="$(LC_ALL=C od -An -tx1 -N10 "$file" 2>/dev/null | tr -d '[:space:]')"
+  [[ "$prefix" == "00474954435259505400" ]]
+}
+
+available_agent_skill_dir() {
+  local skill_dir="$1" skill_file
+  if [[ -f "$skill_dir/SKILL.md" ]]; then
+    skill_file="$skill_dir/SKILL.md"
+  elif [[ -f "$skill_dir/SKILL.off.md" ]]; then
+    skill_file="$skill_dir/SKILL.off.md"
+  else
+    return 1
+  fi
+  ! is_locked_git_crypt_file "$skill_file"
+}
+
 render_agent_file() {
   local shared_source="$1" harness_source="$2"
   local shared_local_source="${3:-}" harness_local_source="${4:-}"
@@ -178,7 +197,8 @@ prune_stale_claude_skill_links() {
       "$managed_skills_dir"/*)
         name="$(basename "$target")"
         expected="$claude_skills_dir/$name"
-        [[ -e "$target" && "$link" == "$expected" ]] && continue
+        [[ -e "$target" && "$link" == "$expected" ]] && \
+          available_agent_skill_dir "$target" && continue
         if [[ "$DRY_RUN" -eq 1 ]]; then
           log_info "[dry-run] Prune stale Claude skill link $link"
         else
@@ -206,7 +226,13 @@ sync_claude_skill_links() {
   # skills/.local/<name> namespace.
   for skill_dir in "$managed_skills_dir"/* "$managed_skills_dir"/.local/*; do
     [[ -d "$skill_dir" ]] || continue
-    [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
+    if ! available_agent_skill_dir "$skill_dir"; then
+      if is_locked_git_crypt_file "$skill_dir/SKILL.md" || \
+         is_locked_git_crypt_file "$skill_dir/SKILL.off.md"; then
+        log_info "Skipping locked private Claude skill $(basename "$skill_dir")"
+      fi
+      continue
+    fi
     link_claude_skill "$skill_dir" "$claude_skills_dir"
   done
 }
@@ -217,7 +243,7 @@ agent_skill_dirs() {
 
   for skill_dir in "$managed_skills_dir"/* "$managed_skills_dir"/.local/*; do
     [[ -d "$skill_dir" ]] || continue
-    [[ -f "$skill_dir/SKILL.md" || -f "$skill_dir/SKILL.off.md" ]] || continue
+    available_agent_skill_dir "$skill_dir" || continue
     printf '%s\n' "$skill_dir"
   done
 }
@@ -253,7 +279,7 @@ verify_agent_skill_links() {
         "$managed_skills_dir"/*)
           name="$(basename "$target")"
           if [[ "$link" != "$HOME/.$harness/skills/$name" || ! -d "$target" ]] ||
-             [[ ! -f "$target/SKILL.md" && ! -f "$target/SKILL.off.md" ]]; then
+             ! available_agent_skill_dir "$target"; then
             printf 'stale managed %s skill link: %s -> %s\n' "$harness" "$link" "$target"
             failures=1
           fi

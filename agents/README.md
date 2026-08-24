@@ -18,6 +18,9 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   children at `~/.claude/skills/<name>` and
   `~/.codex/skills/<name>`. Per-skill symlinks let root-level user and
   third-party skills plus Codex-managed `.system/` skills survive beside them.
+  Entire Anders-specific operational skills may be git-crypt protected in this
+  same namespace. Locked private skills are skipped and unlinked; after
+  `git-crypt unlock`, the normal agent sync installs them.
 - `in-progress/<name>/` or `in-progress/<collection>/<name>/` — candidate
   skills under deliberate development. Collection directories contain no
   `SKILL.md`; they exist only to organize related experiments. Candidates are
@@ -50,6 +53,9 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   SQLite, recognizes Codex, Claude, Cursor, and Grok transcripts, and publishes
   encrypted immutable batches under `skill-usage-batches/`. No device edits a
   shared counter file.
+- `git-crypt-check` — fail-closed verification that private paths are protected,
+  staged private blobs are ciphertext, and committed or remote trees contain no
+  plaintext at protected paths.
 
 ## Setup and Repair
 

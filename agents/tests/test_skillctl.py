@@ -33,6 +33,9 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         (self.candidate / "SKILL.md").write_text(
             "---\nname: candidate\ndescription: Candidate skill.\n---\n\n# Candidate\n"
         )
+        self.locked_skill = self.root / "skills" / "locked-private"
+        self.locked_skill.mkdir()
+        (self.locked_skill / "SKILL.md").write_bytes(b"\x00GITCRYPT\x00ciphertext")
 
     def tearDown(self):
         self.temp.cleanup()
@@ -116,6 +119,21 @@ class SkillctlHarnessModesTest(unittest.TestCase):
         self.run_skillctl("sync")
         self.assertFalse((self.home / ".codex" / "skills" / "candidate").exists())
 
+    def test_locked_private_skills_are_skipped_and_stale_links_are_pruned(self):
+        codex_skills = self.home / ".codex" / "skills"
+        codex_skills.mkdir(parents=True)
+        locked_link = codex_skills / "locked-private"
+        locked_link.symlink_to(self.locked_skill)
+
+        output = self.run_skillctl("list")
+        self.assertNotIn("locked-private", output)
+        self.run_skillctl("sync")
+        self.assertFalse(locked_link.exists())
+
+        result = self.run_skillctl_result("disable-model", "locked-private")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("private skill 'locked-private' is locked", result.stderr)
+
     def test_verify_is_read_only_and_detects_generated_policy_drift(self):
         self.run_skillctl("disable-model", "sample", "codex")
         self.assertIn("verify: ok", self.run_skillctl("verify"))
@@ -171,6 +189,9 @@ class ClaudeSkillProjectionTest(unittest.TestCase):
         (self.candidate / "SKILL.md").write_text(
             "---\nname: candidate\ndescription: Candidate skill.\n---\n"
         )
+        self.locked_skill = self.skills / "locked-private"
+        self.locked_skill.mkdir()
+        (self.locked_skill / "SKILL.md").write_bytes(b"\x00GITCRYPT\x00ciphertext")
 
     def tearDown(self):
         self.temp.cleanup()
@@ -182,6 +203,8 @@ class ClaudeSkillProjectionTest(unittest.TestCase):
         nested_link.symlink_to(self.skill)
         unrelated = claude_skills / "run-on-mac"
         unrelated.mkdir()
+        locked_link = claude_skills / "locked-private"
+        locked_link.symlink_to(self.locked_skill)
 
         script = f"""\\
 set -euo pipefail
@@ -206,6 +229,7 @@ sync_claude_skill_links {shlex.quote(str(self.skills))}
         self.assertTrue(local_link.is_symlink())
         self.assertEqual(local_link.resolve(), self.local_skill.resolve())
         self.assertFalse((claude_skills / "candidate").exists())
+        self.assertFalse(locked_link.exists())
 
 
 if __name__ == "__main__":

@@ -19,6 +19,19 @@ fleet enroll
 ./dotfiles.sh agents verify
 ```
 
+On an authorized Anders machine, unlock the clone before agent sync or Fleet
+enrollment so private operational skills, the machine registry, and verified
+host identities are readable:
+
+```bash
+git-crypt unlock <keyfile>
+./dotfiles.sh agents sync
+```
+
+A public locked clone still installs and verifies reusable skills. Agent setup
+skips private ciphertext skills, while Fleet requires either an unlocked
+registry or explicit `FLEET_CONFIG` and `FLEET_KNOWN_HOSTS` replacements.
+
 `fleet enroll` creates a dedicated client identity at
 `~/.ssh/fleet_ed25519`. Europa verifies that the request came from an
 authorized, untagged node owned by the same Tailnet user before it installs the
@@ -176,6 +189,15 @@ one encrypted immutable batch, reconciles with the upstream branch, and
 pushes. It fails rather than publishing unrelated dirty work or pre-existing
 local commits. See `agents/README.md` for detection rules, manual recording,
 and deliberate historical import.
+
+Any workflow that commits a git-crypt-protected path must verify the staged
+blob rather than trusting `.gitattributes`. The shared check also audits a
+commit or remote ref:
+
+```bash
+agents/git-crypt-check staged
+agents/git-crypt-check tree origin/main
+```
 
 Optional machine instructions live in the Git-ignored `agents/.local/`
 directory. Use `SHARED.md` for both harnesses, `AGENTS.md` for Codex, and

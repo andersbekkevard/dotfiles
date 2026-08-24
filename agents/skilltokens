@@ -17,6 +17,15 @@ ROOT = Path(__file__).resolve().parent
 SKILLS = ROOT / "skills"
 DEFAULT_ENCODING = "o200k_base"
 LOCAL_CATEGORY = ".local"
+GIT_CRYPT_MAGIC = b"\x00GITCRYPT\x00"
+
+
+def is_locked_skill_file(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            return handle.read(len(GIT_CRYPT_MAGIC)) == GIT_CRYPT_MAGIC
+    except OSError:
+        return False
 
 
 def ensure_tiktoken():
@@ -136,7 +145,7 @@ def collect(encoding, harness: str) -> list[SkillStats]:
     skill_dirs.sort(key=lambda d: d.name)
     for skill_dir in skill_dirs:
         path, is_off = skill_file(skill_dir)
-        if path is None:
+        if path is None or is_locked_skill_file(path):
             continue
         text = path.read_text()
         frontmatter = parse_frontmatter(text)

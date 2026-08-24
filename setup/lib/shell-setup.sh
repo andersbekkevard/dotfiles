@@ -171,11 +171,20 @@ ensure_default_shell_zsh() {
 }
 
 note_git_crypt_state() {
-  local secrets_path
+  local secrets_path private_probe private_prefix
   secrets_path="$(secrets_source_path)"
+  private_probe="$DOTFILES_DIR/agents/skills/application-email/SKILL.md"
+
+  if [[ -f "$private_probe" ]]; then
+    private_prefix="$(LC_ALL=C od -An -tx1 -N10 "$private_probe" 2>/dev/null | tr -d '[:space:]')"
+    if [[ "$private_prefix" == "00474954435259505400" ]]; then
+      log_warn "Private repository content is locked. Run: git-crypt unlock <keyfile>"
+      return 0
+    fi
+  fi
 
   if [[ ! -e "$secrets_path" ]]; then
-    log_info "No .secrets file present; git-crypt unlock not required."
+    log_info "Private repository content is readable; no .secrets file is present."
     return 0
   fi
 

@@ -2,3 +2,10 @@ shell/.secrets filter=git-crypt diff=git-crypt
 agents/skill-uses/** filter=git-crypt diff=git-crypt
 agents/skill-usage-batches/** filter=git-crypt diff=git-crypt
 agents/skills/onboard-mcps/references/registry.toml filter=git-crypt diff=git-crypt
+agents/skills/application-email/** filter=git-crypt diff=git-crypt
+agents/skills/control-europa-desktop/** filter=git-crypt diff=git-crypt
+agents/skills/cycle-codex-account/** filter=git-crypt diff=git-crypt
+scripts/.config/fleet/machines.tsv filter=git-crypt diff=git-crypt
+scripts/.config/fleet/known_hosts filter=git-crypt diff=git-crypt
+agents/in-progress/html/benchmark/cases/** filter=git-crypt diff=git-crypt
+agents/in-progress/html/benchmark/manifest.json filter=git-crypt diff=git-crypt

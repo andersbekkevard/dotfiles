@@ -152,9 +152,33 @@ EOF
     fail "client enrollment did not report its verified machine"
 }
 
+test_locked_private_configuration_fails_clearly() {
+  local home="$TEST_ROOT/locked-home" config="$TEST_ROOT/locked-machines.tsv"
+  local known_hosts="$TEST_ROOT/locked-known-hosts"
+  mkdir -p "$home"
+  printf '\000GITCRYPT\000ciphertext' >"$config"
+  if HOME="$home" FLEET_CONFIG="$config" FLEET_LOCAL_CONFIG='' \
+      "$FLEET" list >"$TEST_ROOT/locked-registry.out" 2>&1; then
+    fail "fleet accepted a locked machine registry"
+  fi
+  grep -Fq "private machine registry is locked" "$TEST_ROOT/locked-registry.out" ||
+    fail "fleet returned the wrong locked-registry failure"
+
+  printf 'remote\tuser@remote\tremote-host\t-\n' >"$config"
+  printf '\000GITCRYPT\000ciphertext' >"$known_hosts"
+  if HOME="$home" FLEET_CONFIG="$config" FLEET_LOCAL_CONFIG='' \
+      FLEET_KNOWN_HOSTS="$known_hosts" \
+      "$FLEET" remote check >"$TEST_ROOT/locked-known-hosts.out" 2>&1; then
+    fail "fleet accepted locked host identities"
+  fi
+  grep -Fq "private host identities are locked" "$TEST_ROOT/locked-known-hosts.out" ||
+    fail "fleet returned the wrong locked-known-hosts failure"
+}
+
 test_target_install_is_restricted_and_idempotent
 test_target_install_refuses_silent_rotation
 test_registrar_verifies_tailnet_owner_before_installing
 test_client_enroll_uses_dedicated_identity_and_verifies_targets
+test_locked_private_configuration_fails_clearly
 
 printf 'fleet enrollment contracts: ok\n'
