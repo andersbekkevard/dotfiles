@@ -631,6 +631,13 @@ notes = [
   "Anders-authored CLI-first Raindrop access for macOS and Linux.",
 ]
 
+[skills.onboard-mcps]
+local_path = "agents/skills/onboard-mcps"
+tracking = "local"
+notes = [
+  "User-invoked reconciliation of MCP clients against a private git-crypt-managed registry.",
+]
+
 [skills.publish-web]
 local_path = "agents/skills/publish-web"
 tracking = "local"

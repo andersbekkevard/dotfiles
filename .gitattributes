@@ -1,3 +1,4 @@
 shell/.secrets filter=git-crypt diff=git-crypt
 agents/skill-uses/** filter=git-crypt diff=git-crypt
 agents/skill-usage-batches/** filter=git-crypt diff=git-crypt
+agents/skills/onboard-mcps/references/registry.toml filter=git-crypt diff=git-crypt
