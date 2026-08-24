@@ -40,6 +40,7 @@ evidence outranks a guessed category.
 path, category, allocated bytes, reclaimable bytes, recreation cost, activity
 or uncertainty, and the action that would be required. State that nothing was
 removed.
+Express every reported byte count in human-readable IEC units; raw bytes are optional.
 
 5. When a useful recurring candidate is outside scope, propose one evolution:
 put portable discovery in the tracked scripts and machine-only paths in
