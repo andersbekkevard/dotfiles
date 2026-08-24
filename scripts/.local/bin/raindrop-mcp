@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${RAINDROP_API_TOKEN:-}" && -r "$HOME/.secrets" ]]; then
+  # shellcheck disable=SC1090
+  source "$HOME/.secrets"
+fi
+
+if [[ -z "${RAINDROP_API_TOKEN:-}" ]]; then
+  printf 'raindrop-mcp: RAINDROP_API_TOKEN is not configured\n' >&2
+  exit 1
+fi
+
+if command -v npx >/dev/null 2>&1; then
+  NPX="$(command -v npx)"
+elif [[ -x /opt/homebrew/bin/npx ]]; then
+  NPX=/opt/homebrew/bin/npx
+else
+  printf 'raindrop-mcp: npx is required\n' >&2
+  exit 1
+fi
+
+exec "$NPX" -y mcp-remote \
+  https://api.raindrop.io/rest/v2/ai/mcp \
+  --header 'Authorization: Bearer ${RAINDROP_API_TOKEN}' \
+  --transport http-only \
+  --silent
