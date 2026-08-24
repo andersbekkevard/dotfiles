@@ -61,8 +61,12 @@ prints its absolute path.
 ## Commit and push now
 
 The evidence root is encrypted with `git-crypt`. Before creating the packet,
-check that the current branch has an upstream and that pushing will not publish
-pre-existing local commits. Ask Anders if either condition fails.
+check that the current branch has an upstream. Ask Anders if it does not.
+When the branch has unpushed commits, inspect their intent and affected paths.
+Push ordinary, coherent work with the packet when it does not look broken,
+incomplete, destructive, security-sensitive, deployment-related, or otherwise
+genuinely risky. Do not ask only because the work predates the packet. Ask
+Anders when the risk or intent is unclear.
 
 Once the script returns a valid packet, commit it immediately. Commit only that
 timestamp directory, even when unrelated changes are dirty or staged:
