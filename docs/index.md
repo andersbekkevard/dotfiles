@@ -28,6 +28,7 @@ Operator invariant:
 | Git repository LOC helper | `docs/git-loc.md` | `git-loc` exact and estimate modes for remote repository size checks |
 | Local overrides and stable command layer | `docs/local-overrides.md` | Where machine-specific shell tweaks, agent instructions, and automation-visible wrappers belong |
 | Secrets and git-crypt flow | `docs/secrets.md` | Unlock/export behavior |
+| Raindrop CLI and API access | `docs/raindrop.md` | Cross-platform command, authentication, and setup |
 | General engineering principles | `docs/design-principles.md` | Broader coding standards |
 
 ## Rule of one canonical owner

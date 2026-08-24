@@ -624,6 +624,13 @@ notes = [
 local_path = "agents/skills/application-email"
 tracking = "local"
 
+[skills.raindrop]
+local_path = "agents/skills/raindrop"
+tracking = "local"
+notes = [
+  "Anders-authored CLI-first Raindrop access for macOS and Linux.",
+]
+
 [skills.publish-web]
 local_path = "agents/skills/publish-web"
 tracking = "local"

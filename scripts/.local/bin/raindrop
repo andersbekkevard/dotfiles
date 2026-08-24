@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly RAINDROP_CLI_VERSION="0.1.0"
+readonly RAINDROP_API_BASE="${RAINDROP_API_BASE:-https://api.raindrop.io}"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  raindrop user
+  raindrop request <method> <path> [json|-]
+  raindrop --help
+  raindrop --version
+
+Examples:
+  raindrop user
+  raindrop request GET /rest/v1/collections/all
+  raindrop request POST /rest/v1/raindrop '{"link":"https://example.com"}'
+  raindrop request PUT /rest/v1/raindrop/123 - < update.json
+
+Authentication:
+  RAINDROP_API_TOKEN is read from the environment or ~/.secrets.
+
+Output:
+  The Raindrop API response is written unchanged to stdout. Diagnostics go to
+  stderr. HTTP failures return curl's non-zero exit status.
+EOF
+}
+
+die() {
+  printf 'raindrop: %s\n' "$*" >&2
+  exit 1
+}
+
+usage_error() {
+  printf 'raindrop: %s\n\n' "$*" >&2
+  usage >&2
+  exit 2
+}
+
+load_token() {
+  if [[ -z "${RAINDROP_API_TOKEN:-}" && -r "$HOME/.secrets" ]]; then
+    # shellcheck disable=SC1090
+    source "$HOME/.secrets"
+  fi
+  [[ -n "${RAINDROP_API_TOKEN:-}" ]] ||
+    die 'RAINDROP_API_TOKEN is not set; unlock and stow dotfiles/shell/.secrets'
+}
+
+api_url() {
+  local path="$1"
+  case "$path" in
+    http://*|https://*)
+      usage_error 'path must be relative to api.raindrop.io'
+      ;;
+    /rest/v1/*)
+      printf '%s%s\n' "$RAINDROP_API_BASE" "$path"
+      ;;
+    /*)
+      printf '%s/rest/v1%s\n' "$RAINDROP_API_BASE" "$path"
+      ;;
+    *)
+      printf '%s/rest/v1/%s\n' "$RAINDROP_API_BASE" "$path"
+      ;;
+  esac
+}
+
+request() {
+  local method="$1" path="$2" body="${3-}" url
+  method="$(printf '%s' "$method" | tr '[:lower:]' '[:upper:]')"
+  [[ "$method" =~ ^(GET|POST|PUT|PATCH|DELETE)$ ]] ||
+    usage_error "unsupported method: $method"
+
+  load_token
+  url="$(api_url "$path")"
+
+  local curl_args=(
+    --silent
+    --show-error
+    --fail-with-body
+    --connect-timeout "${RAINDROP_CONNECT_TIMEOUT:-10}"
+    --max-time "${RAINDROP_TIMEOUT:-30}"
+    --request "$method"
+    --header "Authorization: Bearer $RAINDROP_API_TOKEN"
+    --header 'Accept: application/json'
+  )
+
+  if [[ -n "$body" ]]; then
+    curl_args+=(--header 'Content-Type: application/json')
+    if [[ "$body" == '-' ]]; then
+      curl_args+=(--data-binary @-)
+    else
+      curl_args+=(--data-binary "$body")
+    fi
+  fi
+
+  curl "${curl_args[@]}" "$url"
+}
+
+main() {
+  case "${1-}" in
+    -h|--help|help|'')
+      usage
+      ;;
+    --version)
+      printf 'raindrop %s\n' "$RAINDROP_CLI_VERSION"
+      ;;
+    user)
+      [[ $# -eq 1 ]] || usage_error 'user takes no arguments'
+      request GET /rest/v1/user
+      ;;
+    request)
+      [[ $# -ge 3 && $# -le 4 ]] ||
+        usage_error 'request requires METHOD PATH and optional JSON or -'
+      request "$2" "$3" "${4-}"
+      ;;
+    *)
+      usage_error "unknown command: $1"
+      ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Raindrop"
+  short_description: "Access Raindrop through its CLI and API"
+  default_prompt: "Use $raindrop to work with my Raindrop library through the CLI/API."
