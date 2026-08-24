@@ -1,0 +1,1334 @@
+#!/usr/bin/env python3
+"""Collect skill invocations locally and publish conflict-free usage batches."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import secrets
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import uuid
+from collections import Counter
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable, Iterator
+
+
+SCHEMA_VERSION = 1
+GIT_CRYPT_MAGIC = b"\x00GITCRYPT\x00"
+SKILL_NAME = re.compile(
+    r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?::[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$"
+)
+SKILL_LINK = re.compile(
+    r"\[\$([a-z0-9][a-z0-9:-]*)\]\([^\n)]*?/SKILL\.md(?:[:#][^)]*)?\)",
+    re.IGNORECASE,
+)
+SKILL_BLOCK = re.compile(r"<skill>\s*<name>([^<]+)</name>", re.IGNORECASE)
+SKILL_PATH = re.compile(
+    r"(?:^|[/\\])skills[/\\]([a-z0-9][a-z0-9:-]*)[/\\]SKILL\.md\b",
+    re.IGNORECASE,
+)
+READ_COMMAND = re.compile(r"\b(?:bat|cat|head|less|sed|tail)\b", re.IGNORECASE)
+CLAUDE_COMMAND = re.compile(r"<command-name>/([^<\s]+)</command-name>")
+CLAUDE_BUILTINS = {
+    "clear",
+    "compact",
+    "config",
+    "context",
+    "cost",
+    "doctor",
+    "exit",
+    "export",
+    "help",
+    "init",
+    "login",
+    "logout",
+    "mcp",
+    "memory",
+    "model",
+    "permissions",
+    "plugin",
+    "pr-comments",
+    "release-notes",
+    "rename",
+    "resume",
+    "rewind",
+    "status",
+    "terminal-setup",
+    "theme",
+    "todos",
+    "usage",
+    "vim",
+}
+CURSOR_MANUAL_SKILL = re.compile(r"^Skill Name:\s*([^\s]+)\s*$", re.MULTILINE)
+USER_QUERY = re.compile(r"<user_query>([\s\S]*?)</user_query>", re.IGNORECASE)
+SYSTEM_REMINDER = re.compile(
+    r"<system-reminder>[\s\S]*?</system-reminder>", re.IGNORECASE
+)
+INVOCATIONS = ("user", "model", "unknown")
+HARNESSES = ("codex", "claude", "cursor", "grok")
+
+
+class UsageError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class DetectedUse:
+    key: str
+    skill: str
+    harness: str
+    invocation: str
+    day: str
+
+
+@dataclass(frozen=True)
+class Source:
+    harness: str
+    path: Path
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def utc_text(value: datetime | None = None) -> str:
+    return (value or utc_now()).isoformat().replace("+00:00", "Z")
+
+
+def day_from(value: object, fallback: datetime) -> str:
+    if isinstance(value, str) and value:
+        candidate = value.replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(candidate).astimezone(timezone.utc).date().isoformat()
+        except ValueError:
+            pass
+    return fallback.astimezone(timezone.utc).date().isoformat()
+
+
+def timestamp_from(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def canonical_skill(raw: str) -> str | None:
+    value = raw.strip().lower().lstrip("/")
+    return value if SKILL_NAME.fullmatch(value) else None
+
+
+def skill_paths(value: object) -> set[str]:
+    text = value if isinstance(value, str) else json.dumps(value, sort_keys=True)
+    return {
+        skill
+        for raw in SKILL_PATH.findall(text)
+        if (skill := canonical_skill(raw)) is not None
+    }
+
+
+def skill_paths_from_read_command(value: object) -> set[str]:
+    text = value if isinstance(value, str) else json.dumps(value, sort_keys=True)
+    found: set[str] = set()
+    for match in SKILL_PATH.finditer(text):
+        prefix = text[max(0, match.start() - 400) : match.start()]
+        if not READ_COMMAND.search(prefix):
+            continue
+        skill = canonical_skill(match.group(1))
+        if skill:
+            found.add(skill)
+    return found
+
+
+def text_content(content: object) -> str:
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    parts: list[str] = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        text = block.get("text")
+        if isinstance(text, str):
+            parts.append(text)
+    return "\n".join(parts)
+
+
+def use_key(
+    harness: str, source: Path, locator: str, skill: str, stable_locator: bool
+) -> str:
+    identity = locator if stable_locator else f"{source}\0{locator}"
+    raw = "\0".join((harness, identity, skill)).encode()
+    return hashlib.sha256(raw).hexdigest()
+
+
+def detected(
+    *,
+    harness: str,
+    source: Path,
+    locator: str,
+    skill: str,
+    invocation: str,
+    day: str,
+    stable_locator: bool = True,
+) -> DetectedUse | None:
+    normalized = canonical_skill(skill)
+    if normalized is None:
+        return None
+    return DetectedUse(
+        key=use_key(harness, source, locator, normalized, stable_locator),
+        skill=normalized,
+        harness=harness,
+        invocation=invocation,
+        day=day,
+    )
+
+
+def codex_uses(
+    record: dict[str, object],
+    source: Path,
+    byte_offset: int,
+    fallback: datetime,
+    turn_locator: str,
+) -> list[DetectedUse]:
+    if record.get("type") != "response_item" or not isinstance(record.get("payload"), dict):
+        return []
+    payload = record["payload"]
+    assert isinstance(payload, dict)
+    metadata = payload.get("internal_chat_message_metadata_passthrough")
+    turn_id = metadata.get("turn_id") if isinstance(metadata, dict) else None
+    record_id = turn_id or payload.get("id") or payload.get("call_id")
+    locator = str(record_id or byte_offset)
+    stable_locator = record_id is not None
+    day = day_from(record.get("timestamp"), fallback)
+    found: list[DetectedUse] = []
+
+    if payload.get("type") == "message" and payload.get("role") == "user":
+        text = text_content(payload.get("content"))
+        explicit = {
+            skill
+            for raw in SKILL_LINK.findall(text)
+            if (skill := canonical_skill(raw)) is not None
+        }
+        blocks = {
+            skill
+            for raw in SKILL_BLOCK.findall(text)
+            if (skill := canonical_skill(raw)) is not None
+        }
+        for skill in sorted(explicit):
+            item = detected(
+                harness="codex",
+                source=source,
+                locator=locator,
+                skill=skill,
+                invocation="user",
+                day=day,
+                stable_locator=stable_locator,
+            )
+            if item:
+                found.append(item)
+        for skill in sorted(blocks - explicit):
+            item = detected(
+                harness="codex",
+                source=source,
+                locator=locator,
+                skill=skill,
+                invocation="model",
+                day=day,
+                stable_locator=stable_locator,
+            )
+            if item:
+                found.append(item)
+
+    if (
+        payload.get("type") in {"custom_tool_call", "function_call"}
+        and str(payload.get("name") or "").lower() in {"exec", "exec_command"}
+    ):
+        value = payload.get("input", payload.get("arguments", ""))
+        for skill in sorted(skill_paths_from_read_command(value)):
+            item = detected(
+                harness="codex",
+                source=source,
+                locator=locator,
+                skill=skill,
+                invocation="model",
+                day=day,
+                stable_locator=stable_locator,
+            )
+            if item:
+                found.append(item)
+    return found
+
+
+def claude_uses(
+    record: dict[str, object],
+    source: Path,
+    byte_offset: int,
+    fallback: datetime,
+    turn_locator: str,
+) -> list[DetectedUse]:
+    message = record.get("message")
+    if not isinstance(message, dict):
+        return []
+    prompt_id = record.get("uuid") or record.get("promptId")
+    prompt = str(prompt_id or byte_offset)
+    stable_prompt = prompt_id is not None
+    day = day_from(record.get("timestamp"), fallback)
+    found: list[DetectedUse] = []
+
+    if record.get("type") == "user":
+        text = text_content(message.get("content"))
+        commands = {
+            raw for raw in CLAUDE_COMMAND.findall(text) if raw.lower() not in CLAUDE_BUILTINS
+        }
+        names = commands | set(SKILL_LINK.findall(text))
+        for raw in sorted(names):
+            skill = canonical_skill(raw)
+            if skill is None:
+                continue
+            item = detected(
+                harness="claude",
+                source=source,
+                locator=prompt,
+                skill=skill,
+                invocation="user",
+                day=day,
+                stable_locator=stable_prompt,
+            )
+            if item:
+                found.append(item)
+
+    if record.get("type") != "assistant" or not isinstance(message.get("content"), list):
+        return found
+    for index, block in enumerate(message["content"]):
+        if not isinstance(block, dict) or block.get("type") != "tool_use":
+            continue
+        name = str(block.get("name") or "").lower()
+        raw_tool_id = block.get("id")
+        tool_id = str(raw_tool_id or f"{prompt}:{index}")
+        value = block.get("input", {})
+        names: set[str] = set()
+        if name == "skill" and isinstance(value, dict) and isinstance(value.get("skill"), str):
+            names.add(value["skill"])
+        for raw in sorted(names):
+            skill = canonical_skill(raw)
+            if skill is None:
+                continue
+            item = detected(
+                harness="claude",
+                source=source,
+                locator=tool_id,
+                skill=skill,
+                invocation="model",
+                day=day,
+                stable_locator=raw_tool_id is not None or stable_prompt,
+            )
+            if item:
+                found.append(item)
+    return found
+
+
+def cursor_uses(
+    record: dict[str, object],
+    source: Path,
+    byte_offset: int,
+    fallback: datetime,
+    turn_locator: str,
+) -> list[DetectedUse]:
+    message = record.get("message")
+    if not isinstance(message, dict):
+        return []
+    role = str(record.get("role") or message.get("role") or "")
+    day = day_from(record.get("timestamp"), fallback)
+    found: list[DetectedUse] = []
+    content = message.get("content")
+
+    if role == "user":
+        text = text_content(content)
+        names = set(SKILL_LINK.findall(text))
+        if "<manually_attached_skills>" in text:
+            names.update(CURSOR_MANUAL_SKILL.findall(text))
+        for raw in sorted(names):
+            skill = canonical_skill(raw)
+            if skill is None:
+                continue
+            item = detected(
+                harness="cursor",
+                source=source,
+                locator=str(byte_offset),
+                skill=skill,
+                invocation="user",
+                day=day,
+                stable_locator=False,
+            )
+            if item:
+                found.append(item)
+
+    if role != "assistant" or not isinstance(content, list):
+        return found
+    for block in content:
+        if not isinstance(block, dict) or block.get("type") != "tool_use":
+            continue
+        name = str(block.get("name") or "").lower()
+        if name not in {"read", "read_file", "readfile"}:
+            continue
+        for skill in sorted(skill_paths(block.get("input", {}))):
+            item = detected(
+                harness="cursor",
+                source=source,
+                locator=turn_locator,
+                skill=skill,
+                invocation="model",
+                day=day,
+                stable_locator=True,
+            )
+            if item:
+                found.append(item)
+    return found
+
+
+def grok_uses(
+    record: dict[str, object],
+    source: Path,
+    byte_offset: int,
+    fallback: datetime,
+    turn_locator: str,
+) -> list[DetectedUse]:
+    day = day_from(record.get("timestamp"), fallback)
+    found: list[DetectedUse] = []
+    record_type = record.get("type")
+
+    if record_type == "user":
+        text = text_content(record.get("content"))
+        query = USER_QUERY.search(text)
+        user_text = query.group(1) if query else SYSTEM_REMINDER.sub("", text)
+        for raw in sorted(set(SKILL_LINK.findall(user_text))):
+            skill = canonical_skill(raw)
+            if skill is None:
+                continue
+            record_id = record.get("id")
+            item = detected(
+                harness="grok",
+                source=source,
+                locator=str(record_id or byte_offset),
+                skill=skill,
+                invocation="user",
+                day=day,
+                stable_locator=record_id is not None,
+            )
+            if item:
+                found.append(item)
+
+    if record_type != "assistant" or not isinstance(record.get("tool_calls"), list):
+        return found
+    for call in record["tool_calls"]:
+        if not isinstance(call, dict):
+            continue
+        name = str(call.get("name") or "").lower()
+        if name not in {"read", "read_file", "readfile"}:
+            continue
+        arguments = call.get("arguments", {})
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                pass
+        for skill in sorted(skill_paths(arguments)):
+            item = detected(
+                harness="grok",
+                source=source,
+                locator=turn_locator,
+                skill=skill,
+                invocation="model",
+                day=day,
+                stable_locator=True,
+            )
+            if item:
+                found.append(item)
+    return found
+
+
+ADAPTERS = {
+    "codex": codex_uses,
+    "claude": claude_uses,
+    "cursor": cursor_uses,
+    "grok": grok_uses,
+}
+
+
+def user_turn_locator(
+    harness: str, record: dict[str, object], source: Path, byte_offset: int
+) -> str | None:
+    stable: object = None
+    is_user = False
+    if harness == "codex":
+        payload = record.get("payload")
+        if isinstance(payload, dict):
+            is_user = payload.get("type") == "message" and payload.get("role") == "user"
+            metadata = payload.get("internal_chat_message_metadata_passthrough")
+            turn_id = metadata.get("turn_id") if isinstance(metadata, dict) else None
+            stable = turn_id or payload.get("id")
+    elif harness == "claude":
+        is_user = record.get("type") == "user"
+        stable = record.get("uuid") or record.get("promptId")
+    elif harness == "cursor":
+        message = record.get("message")
+        role = record.get("role")
+        if role is None and isinstance(message, dict):
+            role = message.get("role")
+        is_user = role == "user"
+        stable = record.get("id") or record.get("uuid")
+    elif harness == "grok":
+        is_user = record.get("type") == "user"
+        stable = record.get("id")
+    if not is_user:
+        return None
+    return str(stable) if stable is not None else f"{source}\0{byte_offset}"
+
+
+def default_state_dir() -> Path:
+    root = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+    return root / "dotfiles/skill-usage"
+
+
+def default_repo() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def source_roots() -> dict[str, list[Path]]:
+    state_root = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+    codex_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
+    claude_home = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude"))
+    grok_home = Path(os.environ.get("GROK_HOME", Path.home() / ".grok"))
+    return {
+        "codex": [codex_home / "sessions"],
+        "claude": [
+            claude_home / "projects",
+            state_root / "agent-dispatch/claude",
+        ],
+        "cursor": [Path.home() / ".cursor/projects"],
+        "grok": [
+            grok_home / "sessions",
+            state_root / "agent-dispatch/grok/sessions",
+        ],
+    }
+
+
+def discover_under(harness: str, root: Path) -> Iterator[Path]:
+    if not root.exists():
+        return
+    if root.is_file():
+        if root.suffix == ".jsonl":
+            yield root.resolve()
+        return
+    if harness == "grok":
+        candidates = root.rglob("chat_history.jsonl")
+    else:
+        candidates = root.rglob("*.jsonl")
+    for candidate in candidates:
+        if candidate.is_file():
+            yield candidate.resolve()
+
+
+def discover_sources(explicit: list[str] | None = None) -> list[Source]:
+    found: dict[tuple[str, Path], Source] = {}
+    if explicit:
+        for raw in explicit:
+            if "=" not in raw:
+                raise UsageError("--source must use HARNESS=/absolute/path")
+            harness, raw_path = raw.split("=", 1)
+            if harness not in HARNESSES:
+                raise UsageError(f"unsupported harness in --source: {harness}")
+            path = Path(raw_path).expanduser().resolve()
+            for candidate in discover_under(harness, path):
+                found[(harness, candidate)] = Source(harness, candidate)
+    else:
+        for harness, roots in source_roots().items():
+            for root in roots:
+                for candidate in discover_under(harness, root):
+                    found[(harness, candidate)] = Source(harness, candidate)
+    return sorted(found.values(), key=lambda item: (item.harness, str(item.path)))
+
+
+class UsageStore:
+    def __init__(self, state_dir: Path):
+        self.state_dir = state_dir.resolve()
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+        os.chmod(self.state_dir, 0o700)
+        self.path = self.state_dir / "usage.sqlite3"
+        self.db = sqlite3.connect(self.path, timeout=30)
+        self.db.execute("PRAGMA journal_mode=WAL")
+        self.db.execute("PRAGMA busy_timeout=30000")
+        self.db.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS sources (
+                path TEXT PRIMARY KEY,
+                harness TEXT NOT NULL,
+                offset INTEGER NOT NULL,
+                identity TEXT NOT NULL DEFAULT '',
+                turn_locator TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE IF NOT EXISTS uses (
+                id TEXT PRIMARY KEY,
+                skill TEXT NOT NULL,
+                harness TEXT NOT NULL,
+                invocation TEXT NOT NULL,
+                day TEXT NOT NULL,
+                quantity INTEGER NOT NULL DEFAULT 1,
+                batch_sequence INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS batches (
+                sequence INTEGER PRIMARY KEY,
+                relative_path TEXT NOT NULL UNIQUE,
+                status TEXT NOT NULL,
+                commit_hash TEXT
+            );
+            """
+        )
+        source_columns = {
+            str(row[1]) for row in self.db.execute("PRAGMA table_info(sources)")
+        }
+        if "identity" not in source_columns:
+            self.db.execute(
+                "ALTER TABLE sources ADD COLUMN identity TEXT NOT NULL DEFAULT ''"
+            )
+        if "turn_locator" not in source_columns:
+            self.db.execute(
+                "ALTER TABLE sources ADD COLUMN turn_locator TEXT NOT NULL DEFAULT ''"
+            )
+        self.db.commit()
+        os.chmod(self.path, 0o600)
+
+    def close(self) -> None:
+        self.db.close()
+
+    def meta(self, key: str) -> str | None:
+        row = self.db.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+        return str(row[0]) if row else None
+
+    def set_meta(self, key: str, value: str) -> None:
+        self.db.execute(
+            "INSERT INTO meta(key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+
+    def replica_id(self) -> str:
+        replica = self.meta("replica_id")
+        if replica:
+            return replica
+        replica = secrets.token_hex(6)
+        self.set_meta("replica_id", replica)
+        self.db.commit()
+        return replica
+
+    def initialize(self, sources: Iterable[Source], include_history: bool = False) -> bool:
+        if self.meta("initialized_at"):
+            return False
+        with self.db:
+            self.replica_id()
+            for source in sources:
+                stat = source.path.stat()
+                offset = 0 if include_history else stat.st_size
+                identity = str(stat.st_ino)
+                self.db.execute(
+                    """
+                    INSERT OR IGNORE INTO sources(
+                        path, harness, offset, identity, turn_locator
+                    )
+                    VALUES (?, ?, ?, ?, '')
+                    """,
+                    (str(source.path), source.harness, offset, identity),
+                )
+            self.set_meta("initialized_at", utc_text())
+        return True
+
+    def add_use(self, item: DetectedUse, quantity: int = 1) -> bool:
+        cursor = self.db.execute(
+            """
+            INSERT OR IGNORE INTO uses(id, skill, harness, invocation, day, quantity)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.key,
+                item.skill,
+                item.harness,
+                item.invocation,
+                item.day,
+                quantity,
+            ),
+        )
+        inserted = cursor.rowcount > 0
+        if not inserted and item.invocation == "user":
+            self.db.execute(
+                "UPDATE uses SET invocation = 'user' WHERE id = ?", (item.key,)
+            )
+        return inserted
+
+    def collect(self, sources: Iterable[Source], from_start: bool = False) -> tuple[int, int]:
+        added = 0
+        scanned = 0
+        initialized_at = timestamp_from(self.meta("initialized_at"))
+        with self.db:
+            for source in sources:
+                stat = source.path.stat()
+                fallback = datetime.fromtimestamp(stat.st_mtime, timezone.utc)
+                identity = str(stat.st_ino)
+                row = self.db.execute(
+                    "SELECT harness, offset, identity, turn_locator "
+                    "FROM sources WHERE path = ?",
+                    (str(source.path),),
+                ).fetchone()
+                offset = 0 if from_start or row is None else int(row[1])
+                size = stat.st_size
+                replaced = row is not None and row[2] and row[2] != identity
+                if not from_start and row is not None and (replaced or size < offset):
+                    offset = 0
+                with source.path.open("rb") as handle:
+                    handle.seek(offset)
+                    data = handle.read()
+                end = data.rfind(b"\n")
+                if end < 0:
+                    new_offset = offset
+                    complete = b""
+                else:
+                    complete = data[: end + 1]
+                    new_offset = offset + len(complete)
+                position = offset
+                turn_locator = (
+                    str(row[3])
+                    if row is not None and row[3]
+                    else f"{source.path}\0{offset}"
+                )
+                for raw_line in complete.splitlines(keepends=True):
+                    line = raw_line.rstrip(b"\r\n")
+                    if line:
+                        try:
+                            record = json.loads(line)
+                        except (UnicodeDecodeError, json.JSONDecodeError):
+                            record = None
+                        if isinstance(record, dict):
+                            current_turn = user_turn_locator(
+                                source.harness, record, source.path, position
+                            )
+                            if current_turn is not None:
+                                turn_locator = current_turn
+                            recorded_at = timestamp_from(record.get("timestamp"))
+                            if (
+                                not from_start
+                                and initialized_at is not None
+                                and recorded_at is not None
+                                and recorded_at < initialized_at
+                            ):
+                                continue
+                            for item in ADAPTERS[source.harness](
+                                record, source.path, position, fallback, turn_locator
+                            ):
+                                if self.add_use(item):
+                                    added += 1
+                    position += len(raw_line)
+                self.db.execute(
+                    """
+                    INSERT INTO sources(
+                        path, harness, offset, identity, turn_locator
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(path) DO UPDATE SET harness = excluded.harness,
+                        offset = excluded.offset, identity = excluded.identity,
+                        turn_locator = excluded.turn_locator
+                    """,
+                    (
+                        str(source.path),
+                        source.harness,
+                        new_offset,
+                        identity,
+                        turn_locator,
+                    ),
+                )
+                scanned += 1
+        return scanned, added
+
+    def record(self, skill: str, harness: str, invocation: str, quantity: int) -> None:
+        item = DetectedUse(
+            key=hashlib.sha256(uuid.uuid4().bytes).hexdigest(),
+            skill=skill,
+            harness=harness,
+            invocation=invocation,
+            day=utc_now().date().isoformat(),
+        )
+        with self.db:
+            self.add_use(item, quantity)
+
+    def pending_count(self) -> int:
+        row = self.db.execute(
+            "SELECT COALESCE(SUM(quantity), 0) FROM uses WHERE batch_sequence IS NULL"
+        ).fetchone()
+        return int(row[0]) if row else 0
+
+    def pending_counts(self) -> Counter[tuple[str, str, str, str]]:
+        rows = self.db.execute(
+            """
+            SELECT skill, harness, invocation, day, SUM(quantity)
+            FROM uses WHERE batch_sequence IS NULL
+            GROUP BY skill, harness, invocation, day
+            """
+        ).fetchall()
+        return Counter(
+            {
+                (str(skill), str(harness), str(invocation), str(day)): int(count)
+                for skill, harness, invocation, day, count in rows
+            }
+        )
+
+    def existing_batch(self) -> tuple[int, str, str, str | None] | None:
+        row = self.db.execute(
+            """
+            SELECT sequence, relative_path, status, commit_hash
+            FROM batches WHERE status != 'pushed' ORDER BY sequence LIMIT 1
+            """
+        ).fetchone()
+        if not row:
+            return None
+        return int(row[0]), str(row[1]), str(row[2]), row[3]
+
+    def prepare_batch(self, repo: Path) -> tuple[int, Path] | None:
+        existing = self.existing_batch()
+        if existing:
+            sequence, relative, _, _ = existing
+            return sequence, repo / relative
+        replica = self.replica_id()
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
+            existing = self.existing_batch()
+            if existing:
+                self.db.commit()
+                sequence, relative, _, _ = existing
+                return sequence, repo / relative
+            rows = self.db.execute(
+                """
+                SELECT skill, harness, invocation, day, SUM(quantity)
+                FROM uses WHERE batch_sequence IS NULL
+                GROUP BY skill, harness, invocation, day
+                ORDER BY skill, harness, invocation, day
+                """
+            ).fetchall()
+            if not rows:
+                self.db.rollback()
+                return None
+            sequence_row = self.db.execute(
+                "SELECT COALESCE(MAX(sequence), 0) + 1 FROM batches"
+            ).fetchone()
+            sequence = int(sequence_row[0])
+            payload = {
+                "schema_version": SCHEMA_VERSION,
+                "replica_id": replica,
+                "sequence": sequence,
+                "created_at": utc_text(),
+                "counts": [
+                    {
+                        "skill": row[0],
+                        "harness": row[1],
+                        "invocation": row[2],
+                        "day": row[3],
+                        "count": int(row[4]),
+                    }
+                    for row in rows
+                ],
+            }
+            encoded = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode()
+            digest = hashlib.sha256(encoded).hexdigest()[:12]
+            relative = (
+                Path("agents/skill-usage-batches")
+                / replica
+                / f"{sequence:08d}-{digest}.json"
+            )
+            destination = repo / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            fd, temp_name = tempfile.mkstemp(
+                prefix=f".{destination.name}.", dir=destination.parent
+            )
+            try:
+                with os.fdopen(fd, "wb") as handle:
+                    handle.write(encoded)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.replace(temp_name, destination)
+            except BaseException:
+                try:
+                    os.unlink(temp_name)
+                except FileNotFoundError:
+                    pass
+                raise
+            self.db.execute(
+                "INSERT INTO batches(sequence, relative_path, status) "
+                "VALUES (?, ?, 'prepared')",
+                (sequence, str(relative)),
+            )
+            self.db.execute(
+                "UPDATE uses SET batch_sequence = ? WHERE batch_sequence IS NULL",
+                (sequence,),
+            )
+            self.db.commit()
+            return sequence, destination
+        except BaseException:
+            self.db.rollback()
+            raise
+
+    def adopt_orphan_batch(self, repo: Path) -> None:
+        if self.existing_batch() is not None:
+            return
+        replica = self.replica_id()
+        relative_root = Path("agents/skill-usage-batches") / replica
+        result = run_git(
+            repo,
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "--",
+            str(relative_root),
+        )
+        candidates = [
+            repo / line
+            for line in result.stdout.splitlines()
+            if line.endswith(".json")
+        ]
+        if len(candidates) != 1:
+            return
+        candidate = candidates[0]
+        counts = validate_batch(candidate)
+        if counts != self.pending_counts():
+            return
+        match = re.fullmatch(r"(\d{8})-[0-9a-f]{12}\.json", candidate.name)
+        next_row = self.db.execute(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM batches"
+        ).fetchone()
+        if match is None or next_row is None or int(match.group(1)) != int(next_row[0]):
+            return
+        sequence = int(next_row[0])
+        relative = str(candidate.relative_to(repo))
+        with self.db:
+            self.db.execute(
+                "INSERT INTO batches(sequence, relative_path, status) "
+                "VALUES (?, ?, 'prepared')",
+                (sequence, relative),
+            )
+            self.db.execute(
+                "UPDATE uses SET batch_sequence = ? WHERE batch_sequence IS NULL",
+                (sequence,),
+            )
+
+    def mark_committed(self, sequence: int, commit_hash: str) -> None:
+        with self.db:
+            self.db.execute(
+                "UPDATE batches SET status = 'committed', commit_hash = ? WHERE sequence = ?",
+                (commit_hash, sequence),
+            )
+
+    def mark_pushed(self, sequence: int, commit_hash: str) -> None:
+        with self.db:
+            self.db.execute(
+                "UPDATE batches SET status = 'pushed', commit_hash = ? WHERE sequence = ?",
+                (commit_hash, sequence),
+            )
+
+    def validate(self) -> None:
+        result = self.db.execute("PRAGMA integrity_check").fetchone()
+        if not result or result[0] != "ok":
+            raise UsageError(f"local database integrity check failed: {result}")
+        for table in ("sources", "uses", "batches"):
+            self.db.execute(f"SELECT 1 FROM {table} LIMIT 1").fetchall()
+
+
+def run_git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args], text=True, capture_output=True, check=False
+    )
+    if check and result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip()
+        raise UsageError(f"git {' '.join(args)} failed: {message}")
+    return result
+
+
+def upstream(repo: Path) -> str:
+    result = run_git(repo, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    value = result.stdout.strip()
+    if not value:
+        raise UsageError("current branch has no upstream")
+    return value
+
+
+def push_target(repo: Path) -> tuple[str, str]:
+    branch = run_git(repo, "symbolic-ref", "--quiet", "--short", "HEAD").stdout.strip()
+    if not branch:
+        raise UsageError("skill usage sync requires an attached branch")
+    remote = run_git(
+        repo, "config", "--get", f"branch.{branch}.remote", check=False
+    ).stdout.strip()
+    merge_ref = run_git(
+        repo, "config", "--get", f"branch.{branch}.merge", check=False
+    ).stdout.strip()
+    if not remote or remote == "." or not merge_ref.startswith("refs/heads/"):
+        raise UsageError("current branch has no pushable remote upstream")
+    return remote, merge_ref
+
+
+def dirty_paths(repo: Path) -> list[str]:
+    result = run_git(repo, "status", "--porcelain=v1", "--untracked-files=all")
+    return [line[3:] for line in result.stdout.splitlines() if len(line) >= 4]
+
+
+def ahead_commits(repo: Path, tracking: str) -> list[str]:
+    result = run_git(repo, "rev-list", f"{tracking}..HEAD")
+    return [line for line in result.stdout.splitlines() if line]
+
+
+def commit_paths(repo: Path, commit: str) -> set[str]:
+    result = run_git(
+        repo, "diff-tree", "--no-commit-id", "--name-only", "-r", commit
+    )
+    return set(result.stdout.splitlines())
+
+
+def ensure_git_crypt(repo: Path) -> None:
+    required = run_git(
+        repo, "config", "--get", "filter.git-crypt.required", check=False
+    ).stdout.strip()
+    clean = run_git(
+        repo, "config", "--get", "filter.git-crypt.clean", check=False
+    ).stdout.strip()
+    smudge = run_git(
+        repo, "config", "--get", "filter.git-crypt.smudge", check=False
+    ).stdout.strip()
+    if required.lower() != "true" or "git-crypt" not in clean or "git-crypt" not in smudge:
+        raise UsageError(
+            "skill usage sync requires this checkout to be unlocked with git-crypt"
+        )
+
+
+def staged_batch_is_encrypted(repo: Path, relative: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(repo), "show", f":{relative}"],
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0 and result.stdout.startswith(GIT_CRYPT_MAGIC)
+
+
+def validate_batch(path: Path) -> Counter[tuple[str, str, str, str]]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise UsageError(f"invalid skill usage batch {path}: {exc}") from exc
+    if payload.get("schema_version") != SCHEMA_VERSION or not isinstance(
+        payload.get("counts"), list
+    ):
+        raise UsageError(f"unsupported skill usage batch schema: {path}")
+    replica = payload.get("replica_id")
+    sequence = payload.get("sequence")
+    match = re.fullmatch(r"(\d{8})-([0-9a-f]{12})\.json", path.name)
+    if (
+        not isinstance(replica, str)
+        or not re.fullmatch(r"[0-9a-f]{12}", replica)
+        or path.parent.name != replica
+        or not isinstance(sequence, int)
+        or match is None
+        or int(match.group(1)) != sequence
+        or hashlib.sha256(path.read_bytes()).hexdigest()[:12] != match.group(2)
+    ):
+        raise UsageError(f"batch identity does not match its path: {path}")
+    counts: Counter[tuple[str, str, str, str]] = Counter()
+    for row in payload["counts"]:
+        if not isinstance(row, dict):
+            raise UsageError(f"invalid count row in {path}")
+        skill = canonical_skill(str(row.get("skill", "")))
+        harness = row.get("harness")
+        invocation = row.get("invocation")
+        day = row.get("day")
+        count = row.get("count")
+        if (
+            skill is None
+            or harness not in HARNESSES
+            or invocation not in INVOCATIONS
+            or not isinstance(day, str)
+            or not isinstance(count, int)
+            or count < 1
+        ):
+            raise UsageError(f"invalid count row in {path}: {row!r}")
+        counts[(skill, harness, invocation, day)] += count
+    return counts
+
+
+def all_counts(repo: Path, store: UsageStore) -> Counter[tuple[str, str, str, str]]:
+    counts: Counter[tuple[str, str, str, str]] = Counter()
+    tracked = run_git(
+        repo, "ls-files", "--", "agents/skill-usage-batches"
+    ).stdout.splitlines()
+    local = [
+        str(row[0])
+        for row in store.db.execute("SELECT relative_path FROM batches").fetchall()
+    ]
+    for relative in sorted(set(tracked + local)):
+        path = repo / relative
+        if path.is_file():
+            counts.update(validate_batch(path))
+    rows = store.db.execute(
+        """
+        SELECT skill, harness, invocation, day, SUM(quantity)
+        FROM uses WHERE batch_sequence IS NULL
+        GROUP BY skill, harness, invocation, day
+        """
+    ).fetchall()
+    for skill, harness, invocation, day, quantity in rows:
+        counts[(skill, harness, invocation, day)] += int(quantity)
+    return counts
+
+
+def print_report(repo: Path, store: UsageStore, json_output: bool) -> None:
+    detailed = all_counts(repo, store)
+    totals: dict[str, dict[str, object]] = {}
+    for (skill, harness, invocation, _day), count in detailed.items():
+        row = totals.setdefault(
+            skill,
+            {
+                "skill": skill,
+                "total": 0,
+                "by_harness": Counter(),
+                "by_invocation": Counter(),
+            },
+        )
+        row["total"] = int(row["total"]) + count
+        assert isinstance(row["by_harness"], Counter)
+        assert isinstance(row["by_invocation"], Counter)
+        row["by_harness"][harness] += count
+        row["by_invocation"][invocation] += count
+    rows = sorted(totals.values(), key=lambda row: (-int(row["total"]), str(row["skill"])))
+    normalized = [
+        {
+            "skill": row["skill"],
+            "total": row["total"],
+            "by_harness": dict(sorted(row["by_harness"].items())),
+            "by_invocation": dict(sorted(row["by_invocation"].items())),
+        }
+        for row in rows
+    ]
+    if json_output:
+        print(json.dumps(normalized, indent=2, sort_keys=True))
+        return
+    if not normalized:
+        print("No skill usage recorded.")
+        return
+    width = max(len(str(row["skill"])) for row in normalized)
+    print(f"{'skill':<{width}}  total  user  model  unknown")
+    for row in normalized:
+        by = row["by_invocation"]
+        print(
+            f"{row['skill']:<{width}}  {row['total']:>5}  "
+            f"{by.get('user', 0):>4}  {by.get('model', 0):>5}  {by.get('unknown', 0):>7}"
+        )
+
+
+def sync(
+    repo: Path,
+    store: UsageStore,
+    explicit_sources: list[str],
+    no_collect: bool,
+) -> None:
+    ensure_git_crypt(repo)
+    tracking = upstream(repo)
+    remote, merge_ref = push_target(repo)
+    store.adopt_orphan_batch(repo)
+    existing = store.existing_batch()
+    allowed = {existing[1]} if existing else set()
+    unrelated = [path for path in dirty_paths(repo) if path not in allowed]
+    if unrelated:
+        preview = ", ".join(unrelated[:5])
+        raise UsageError(f"working tree must be clean before skill usage sync: {preview}")
+
+    run_git(repo, "fetch")
+    ahead = ahead_commits(repo, tracking)
+    if ahead:
+        expected = existing[1] if existing else None
+        if len(ahead) != 1 or expected is None or commit_paths(repo, ahead[0]) != {expected}:
+            raise UsageError(
+                "sync would push pre-existing local commits; push or reconcile them first"
+            )
+        assert existing is not None
+        store.mark_committed(existing[0], ahead[0])
+    if not ahead:
+        run_git(repo, "merge", "--ff-only", tracking)
+        if existing and existing[2] == "prepared":
+            tracked = run_git(
+                repo, "ls-files", "--error-unmatch", "--", existing[1], check=False
+            )
+            if tracked.returncode == 0:
+                store.mark_committed(
+                    existing[0], run_git(repo, "rev-parse", "HEAD").stdout.strip()
+                )
+
+    sources = [] if no_collect else discover_sources(explicit_sources or None)
+    scanned, added = store.collect(sources)
+    prepared = store.prepare_batch(repo)
+    if prepared is None:
+        print(f"skill-usage sync: no pending uses ({scanned} transcripts scanned)")
+        return
+    sequence, batch_path = prepared
+    relative = str(batch_path.relative_to(repo))
+    existing = store.existing_batch()
+    assert existing is not None
+    status = existing[2]
+    commit_hash = existing[3]
+    if status == "prepared":
+        run_git(repo, "add", "--", relative)
+        if not staged_batch_is_encrypted(repo, relative):
+            run_git(repo, "reset", "--quiet", "HEAD", "--", relative)
+            raise UsageError(
+                "git-crypt did not encrypt the staged skill usage batch; refusing to commit"
+            )
+        replica = store.replica_id()
+        run_git(
+            repo,
+            "commit",
+            "--only",
+            "-m",
+            f"skill-usage: {replica} #{sequence:08d}",
+            "--",
+            relative,
+        )
+        commit_hash = run_git(repo, "rev-parse", "HEAD").stdout.strip()
+        store.mark_committed(sequence, commit_hash)
+
+    assert commit_hash is not None
+    for attempt in range(3):
+        pushed = run_git(
+            repo, "push", "--porcelain", remote, f"HEAD:{merge_ref}", check=False
+        )
+        if pushed.returncode == 0:
+            final_commit = run_git(repo, "rev-parse", "HEAD").stdout.strip()
+            store.mark_pushed(sequence, final_commit)
+            print(
+                f"skill-usage sync: pushed {relative} "
+                f"({added} new uses, {scanned} transcripts scanned)"
+            )
+            return
+        run_git(repo, "fetch")
+        run_git(repo, "rebase", tracking)
+        commit_hash = run_git(repo, "rev-parse", "HEAD").stdout.strip()
+        store.mark_committed(sequence, commit_hash)
+    raise UsageError("git push failed after three conflict-free reconciliation attempts")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Count skill invocations locally and publish immutable usage batches."
+    )
+    parser.add_argument("--repo", default=str(default_repo()), metavar="DIR")
+    parser.add_argument("--state-dir", default=str(default_state_dir()), metavar="DIR")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    init = subparsers.add_parser("init", help="Start telemetry without importing old sessions.")
+    init.add_argument("--include-history", action="store_true")
+
+    collect = subparsers.add_parser("collect", help="Collect new invocations from transcripts.")
+    collect.add_argument("--source", action="append", default=[], metavar="HARNESS=PATH")
+    collect.add_argument("--from-start", action="store_true")
+
+    record = subparsers.add_parser("record", help="Record one invocation explicitly.")
+    record.add_argument("skill")
+    record.add_argument("--harness", choices=HARNESSES, required=True)
+    record.add_argument("--invocation", choices=INVOCATIONS, default="unknown")
+    record.add_argument("--count", type=int, default=1)
+
+    report = subparsers.add_parser("report", help="Show committed and pending totals.")
+    report.add_argument("--json", action="store_true", dest="json_output")
+
+    sync_parser = subparsers.add_parser(
+        "sync", help="Collect, batch, commit, reconcile, and push usage."
+    )
+    sync_parser.add_argument("--source", action="append", default=[], metavar="HARNESS=PATH")
+    sync_parser.add_argument(
+        "--no-collect",
+        action="store_true",
+        help="Publish already-recorded uses without scanning transcripts.",
+    )
+
+    subparsers.add_parser("doctor", help="Validate local state and committed batches.")
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    repo = Path(args.repo).expanduser().resolve()
+    state_dir = Path(args.state_dir).expanduser().resolve()
+    if not repo.is_dir() or run_git(repo, "rev-parse", "--is-inside-work-tree", check=False).returncode:
+        raise UsageError(f"not a dotfiles Git checkout: {repo}")
+    store = UsageStore(state_dir)
+    try:
+        if args.command == "init":
+            sources = discover_sources()
+            created = store.initialize(sources, args.include_history)
+            if created and args.include_history:
+                scanned, added = store.collect(sources, from_start=True)
+                print(
+                    f"skill-usage init: imported {added} uses from {scanned} transcripts; "
+                    f"replica {store.replica_id()}"
+                )
+            elif created:
+                print(
+                    f"skill-usage init: baseline set at {len(sources)} transcripts; "
+                    f"replica {store.replica_id()}"
+                )
+            else:
+                print(f"skill-usage init: already initialized; replica {store.replica_id()}")
+            return 0
+
+        if not store.meta("initialized_at"):
+            store.initialize(discover_sources())
+
+        if args.command == "collect":
+            sources = discover_sources(args.source or None)
+            scanned, added = store.collect(sources, args.from_start)
+            print(f"skill-usage collect: {added} new uses from {scanned} transcripts")
+        elif args.command == "record":
+            skill = canonical_skill(args.skill)
+            if skill is None:
+                raise UsageError(f"invalid skill name: {args.skill}")
+            if args.count < 1:
+                raise UsageError("--count must be at least 1")
+            store.record(skill, args.harness, args.invocation, args.count)
+            print(f"skill-usage record: {skill} +{args.count}")
+        elif args.command == "report":
+            print_report(repo, store, args.json_output)
+        elif args.command == "sync":
+            sync(repo, store, args.source, args.no_collect)
+        elif args.command == "doctor":
+            store.validate()
+            counts = all_counts(repo, store)
+            print(
+                f"skill-usage doctor: ok; replica {store.replica_id()}; "
+                f"pending {store.pending_count()}; dimensions {len(counts)}"
+            )
+        return 0
+    finally:
+        store.close()
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except UsageError as exc:
+        print(f"skill-usage: {exc}", file=sys.stderr)
+        raise SystemExit(1)

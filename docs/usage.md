@@ -162,6 +162,21 @@ are composed from primary `agents/SHARED.global.md` content followed by
 `agents/CLAUDE.global.md` or `agents/AGENTS.global.md`. On a fresh machine that
 still needs packages, run the normal explicit profile instead.
 
+The first agent sync on each machine also initializes local skill-usage
+telemetry at the current transcript endpoints. Existing sessions become the
+baseline and are not counted. Later reconciliation is explicit:
+
+```bash
+agents/skill-usage sync
+agents/skill-usage report
+```
+
+`sync` collects new Codex, Claude, Cursor, and Grok skill invocations, commits
+one encrypted immutable batch, reconciles with the upstream branch, and
+pushes. It fails rather than publishing unrelated dirty work or pre-existing
+local commits. See `agents/README.md` for detection rules, manual recording,
+and deliberate historical import.
+
 Optional machine instructions live in the Git-ignored `agents/.local/`
 directory. Use `SHARED.md` for both harnesses, `AGENTS.md` for Codex, and
 `CLAUDE.md` for Claude. Setup appends shared local rules and then harness-local

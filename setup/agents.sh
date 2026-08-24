@@ -286,6 +286,11 @@ verify_agent_surface() {
     failures=1
   fi
 
+  if [[ ! -x "$agents_dir/skill-usage" ]]; then
+    printf 'missing executable: %s\n' "$agents_dir/skill-usage"
+    failures=1
+  fi
+
   if [[ $failures -eq 0 ]]; then
     printf 'agents verify: ok\n'
     return 0
@@ -335,8 +340,10 @@ ensure_agent_surface() {
 
   if command_exists python3; then
     run_cmd "Sync Codex skill links + yaml" python3 "$agents_dir/skillctl" sync
+    run_cmd "Initialize local skill usage telemetry" \
+      python3 "$agents_dir/skill-usage" init
   else
-    log_warn "python3 not found; skipping skillctl sync (Codex skill links + yaml)"
+    log_warn "python3 not found; skipping skillctl sync and skill usage initialization"
   fi
   log_ok "agent surface refreshed"
 }

@@ -62,8 +62,10 @@ Both x86_64 and arm64/aarch64 are supported on Linux. Architecture is auto-detec
 On an already working machine, `./dotfiles.sh agents sync` refreshes only the global
 agent skills and instructions under `~/.claude` and `~/.codex`. It does not
 install packages, restow dotfiles, refresh shell templates, or update stable
-command entrypoints. `./dotfiles.sh agents status` shows the tracked and
-machine-local instruction sources and effective invocation modes.
+command entrypoints. The first run also establishes the local skill-usage
+telemetry baseline. `./dotfiles.sh agents status` shows the tracked and
+machine-local instruction sources and effective invocation modes; use
+`agents/skill-usage sync` to publish later usage counts.
 
 A successful install or update records the resolved command path, provider, and
 reported version under `${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/install-state/`.

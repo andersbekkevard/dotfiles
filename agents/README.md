@@ -46,6 +46,10 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
   from real skill uses. Each packet contains `metadata.json`, `evidence.md`,
   and only the artifacts needed to understand that use. `/record-skill-use`
   owns packet creation.
+- `skill-usage` — harness-agnostic usage telemetry. It records locally in
+  SQLite, recognizes Codex, Claude, Cursor, and Grok transcripts, and publishes
+  encrypted immutable batches under `skill-usage-batches/`. No device edits a
+  shared counter file.
 
 ## Setup and Repair
 
@@ -58,9 +62,46 @@ Use setup for the machine-level agent surface:
 That command runs only `setup/agents.sh`. It creates or repairs
 `~/.claude/skills/<name>`, composes
 `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, and refreshes the flat Codex
-skill projection. It does not install packages, restow unrelated dotfiles,
-refresh shell templates, or update stable command entrypoints. On a fresh
-machine that still needs packages, run the normal explicit profile instead.
+skill projection. On its first run per machine, it also initializes the local
+skill-usage database and treats existing transcripts as the baseline. It does
+not install packages, restow unrelated dotfiles, refresh shell templates, or
+update stable command entrypoints. On a fresh machine that still needs
+packages, run the normal explicit profile instead.
+
+## Skill usage telemetry
+
+Telemetry and `/record-skill-use` have different responsibilities. Telemetry
+answers how often a skill ran. Evidence packets preserve a selected use with
+enough context to learn from it.
+
+The normal reconciliation command scans transcript additions, writes one
+immutable encrypted delta batch, commits only that batch, reconciles with the
+upstream branch, and pushes:
+
+```bash
+agents/skill-usage sync
+```
+
+It refuses a dirty worktree and refuses to push pre-existing local commits.
+Each device writes under its own opaque replica directory, so a concurrent
+push can rebase without a shared-file conflict.
+
+Inspect totals, collect without publishing, or add a manual fallback count:
+
+```bash
+agents/skill-usage report
+agents/skill-usage collect
+agents/skill-usage record html --harness codex --invocation user
+agents/skill-usage doctor
+```
+
+`collect` recognizes native Codex skill links and injected skill blocks,
+Claude slash commands and `Skill` tool calls, Cursor manual attachments and
+skill-file reads, and Grok skill-file reads. It ignores skill catalogs that
+only advertise availability. The first setup run sets an end-of-file baseline,
+so totals start at installation rather than importing historical sessions.
+Use `init --include-history` only for a deliberate backfill on a new state
+database.
 
 Machine-local instruction overlays use these optional paths:
 

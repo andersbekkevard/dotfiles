@@ -1,6 +1,12 @@
 # Secrets
 
-Secrets are tracked with `git-crypt` in `shell/.secrets`, which stows to `~/.secrets`.
+Secrets are tracked with `git-crypt` in `shell/.secrets`, which stows to
+`~/.secrets`. Private skill evidence under `agents/skill-uses/` and skill-usage
+telemetry batches under `agents/skill-usage-batches/` use the same encryption filter.
+
+Skill-usage batch paths expose only an opaque replica id and sequence. Their
+contents include skill names, harness, invocation type, UTC day, and counts.
+They never include prompts, transcript paths, hostnames, or session text.
 
 ## Unlock flow
 
