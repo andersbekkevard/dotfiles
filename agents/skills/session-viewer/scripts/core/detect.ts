@@ -3,7 +3,7 @@ import { codexImporter } from "../importers/codex.ts";
 import { cursorImporter } from "../importers/cursor.ts";
 import { grokImporter } from "../importers/grok.ts";
 import { piOpenClawImporter } from "../importers/pi-openclaw.ts";
-import type { JsonlRecord, SessionDocument, SessionImporter } from "./types.ts";
+import type { JsonlRecord, SessionDocument, SessionFormat, SessionImporter } from "./types.ts";
 
 const importers: SessionImporter[] = [
   codexImporter,
@@ -13,8 +13,14 @@ const importers: SessionImporter[] = [
   claudeImporter,
 ];
 
-export function parseSessionDocument(records: JsonlRecord[], sourcePath?: string): SessionDocument {
-  const importer = importers.find((candidate) => candidate.detect(records));
+export function parseSessionDocument(
+  records: JsonlRecord[],
+  sourcePath?: string,
+  formatHint?: Exclude<SessionFormat, "unknown">,
+): SessionDocument {
+  const importer =
+    importers.find((candidate) => candidate.format === formatHint) ??
+    importers.find((candidate) => candidate.detect(records));
   if (!importer) {
     return {
       format: "unknown",

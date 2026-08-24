@@ -405,6 +405,32 @@ test("parses Claude Code tool use and result blocks", () => {
   assert.equal(doc.events.filter((event) => event.kind === "tool_result").length, 1);
 });
 
+test("detects Claude Code 2.1 stream-json as Claude", () => {
+  const doc = parse(
+    [
+      JSON.stringify({
+        type: "system",
+        subtype: "init",
+        session_id: "claude-session-id",
+        apiKeySource: "none",
+        claude_code_version: "2.1.241",
+        model: "claude-opus-5",
+      }),
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [{ type: "text", text: "Claude response" }],
+        },
+      }),
+    ].join("\n"),
+  );
+
+  assert.equal(doc.format, "claude");
+  assert.equal(doc.title, "claude-session-id");
+  assert.equal(doc.events.find((event) => event.kind === "message")?.text, "Claude response");
+});
+
 test("keeps Claude thinking content blocks", () => {
   const doc = parse(
     [
@@ -1095,6 +1121,66 @@ test("CLI accepts Grok directories, summaries, and chat history", async () => {
       true,
     );
   }
+});
+
+test("CLI renders an Analytics MCP subject directory with its preserved prompt", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "session-viewer-analytics-mcp-"));
+  const subjectDir = path.join(root, "subject");
+  const output = path.join(root, "subject.html");
+  const prompt = "Compare Calibrate and High Ground over their longest shared monthly history.";
+  await fs.mkdir(subjectDir);
+  await fs.writeFile(
+    path.join(subjectDir, "manifest.json"),
+    JSON.stringify({ subject: { product: "claude" } }),
+    "utf8",
+  );
+  await fs.writeFile(path.join(subjectDir, "prompt.txt"), prompt, "utf8");
+  await fs.writeFile(
+    path.join(subjectDir, "trace.jsonl"),
+    [
+      JSON.stringify({
+        type: "system",
+        subtype: "init",
+        session_id: "claude-subject-session",
+        apiKeySource: "none",
+        model: "claude-opus-5",
+      }),
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [{ type: "text", text: "I will compare the funds." }],
+        },
+      }),
+    ].join("\n"),
+    "utf8",
+  );
+  await fs.writeFile(path.join(subjectDir, "events.jsonl"), "{}\n", "utf8");
+  await fs.writeFile(path.join(subjectDir, "results.jsonl"), "{}\n", "utf8");
+
+  await execFileAsync(process.execPath, [
+    "agents/skills/session-viewer/scripts/session-viewer.ts",
+    subjectDir,
+    "--out",
+    output,
+    "--raw",
+  ]);
+  const html = await fs.readFile(output, "utf8");
+  const payload = /<script id="viewer-payload" type="application\/json">([^<]*)<\/script>/u.exec(
+    html,
+  )?.[1];
+  assert.ok(payload);
+  const embedded = JSON.parse(payload);
+  assert.equal(embedded.kind, "normalized");
+  const encoded = embedded.data;
+  const document = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
+  assert.equal(document.format, "claude");
+  assert.equal(document.events[0].role, "user");
+  assert.equal(document.events[0].text, prompt);
+  assert.equal(
+    document.events.some((event: { text: string }) => event.text === "I will compare the funds."),
+    true,
+  );
 });
 
 test("CLI accepts a native Cursor transcript directory", async () => {

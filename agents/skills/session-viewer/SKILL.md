@@ -27,6 +27,7 @@ Useful modes:
 ```bash
 node skills/session-viewer/scripts/session-viewer.ts <session> --out session.html
 node skills/session-viewer/scripts/session-viewer.ts <session> --raw --out session.html
+node skills/session-viewer/scripts/session-viewer.ts <analytics-mcp-subject-dir> --out session.html
 node skills/session-viewer/scripts/session-viewer.ts --blank --out viewer.html --open
 ```
 
@@ -38,10 +39,13 @@ Defaults:
 - detects `codex`, `claude`, `cursor`, `grok`, or `pi-openclaw`
 - accepts a Cursor transcript directory, native JSONL, or `stream-json` output
 - accepts a Grok session directory, its `summary.json`, or `chat_history.jsonl`
+- accepts an Analytics MCP subject directory and combines its verified
+  `prompt.txt` with `trace.jsonl` using the product named in `manifest.json`
 - embeds normalized session data into one HTML file
 - writes to a timestamped file in the OS temp directory unless `--out` is set
 - keeps tool input/output text in the DOM so browser search can find it
-- `--raw` embeds the original JSONL and lets the browser parse it
+- `--raw` embeds one original JSONL for browser parsing; Analytics MCP subject
+  directories stay normalized because their prompt and trace are separate files
 - `--blank` creates a reusable file-picker viewer
 
 ## Where Sessions Live

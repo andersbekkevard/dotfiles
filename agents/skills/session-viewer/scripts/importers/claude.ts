@@ -167,6 +167,19 @@ export const claudeImporter: SessionImporter = {
       }
       const type = stringValue(record.value.type);
       const timestamp = timestampOf(record.value);
+      if (type === "system" && record.value.subtype === "init") {
+        const sessionId = stringValue(record.value.session_id);
+        const cwd = stringValue(record.value.cwd);
+        const model = stringValue(record.value.model);
+        const cliVersion = stringValue(record.value.claude_code_version);
+        const permissionMode = stringValue(record.value.permissionMode);
+        if (sessionId) meta.id = sessionId;
+        if (cwd) meta.cwd = cwd;
+        if (model) meta.model = model;
+        if (cliVersion) meta.cli_version = cliVersion;
+        if (permissionMode) meta.permission_mode = permissionMode;
+        continue;
+      }
       if (type === "summary") {
         const summary = firstText(record.value, ["summary", "text"]);
         if (summary) {
@@ -204,6 +217,7 @@ export const claudeImporter: SessionImporter = {
 
     const title =
       stringValue(meta.summary) ??
+      stringValue(meta.id) ??
       (sourcePath ? sourcePath.split(/[\\/]/u).pop() : undefined) ??
       "Claude session";
     return {

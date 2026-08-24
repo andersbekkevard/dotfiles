@@ -170,7 +170,8 @@ export const cursorImporter: SessionImporter = {
         (value.type === "system" &&
           value.subtype === "init" &&
           typeof value.session_id === "string" &&
-          "apiKeySource" in value)
+          "apiKeySource" in value &&
+          !("claude_code_version" in value))
       );
     });
   },
