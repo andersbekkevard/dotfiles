@@ -42,6 +42,10 @@ Claude Code and Codex. Repo-specific skills stay in each repo's
 - `skill-sources.toml` + `skillpull` — source/provenance map and read-only
   upstream drift audit for skills that are copied from or tracked against
   public remotes.
+- `skill-uses/<skill-name>/<UTC timestamp>/` — `git-crypt` encrypted packets
+  from real skill uses. Each packet contains `metadata.json`, `evidence.md`,
+  and only the artifacts needed to understand that use. `/record-skill-use`
+  owns packet creation.
 
 ## Setup and Repair
 

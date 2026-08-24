@@ -1,6 +1,7 @@
 ---
 name: explain
 description: Explain complex material as an HTML artifact with a clear argument, visual journey, evidence, and caveats.
+disable-model-invocation: true
 ---
 
 # Explain

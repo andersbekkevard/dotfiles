@@ -1,6 +1,7 @@
 ---
 name: wayfinder
 description: "Plan a huge chunk of work — more than one agent session can hold — as a shared Markdown map of investigation tickets, and resolve them until the way to the destination is clear. Also use when a planning conversation should become durable — 'write this down', 'document this so we can pick up later' — landing it on the map."
+disable-model-invocation: true
 ---
 
 A loose idea has arrived — too big for one agent session, and wrapped in fog: the way from here to the **destination** isn't visible yet. Wayfinding is about finding that way, not charging at the destination. This skill charts the way as a **shared Markdown map** in the repo, then works its tickets until the route is clear.

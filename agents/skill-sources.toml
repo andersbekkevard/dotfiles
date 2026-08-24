@@ -43,6 +43,17 @@ preserve = [
   "Keep disable-model-invocation=true so humanizer remains user-invoked in this global skill surface.",
 ]
 
+[skills.i-have-adhd]
+local_path = "agents/skills/i-have-adhd"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/ayghri/i-have-adhd.git", ref = "main", path = "skills/i-have-adhd" }
+notes = [
+  "Added on 2026-08-23 as a user-invoked demo.",
+]
+preserve = [
+  "Keep i-have-adhd user-invoked in both Claude and Codex.",
+]
+
 [skills.eli5]
 local_path = "agents/skills/eli5/SKILL.md"
 tracking = "tracked"
@@ -457,6 +468,13 @@ notes = [
   "Conversation-only review of friction, wasted effort, and improvement candidates.",
 ]
 
+[skills.record-skill-use]
+local_path = "agents/skills/record-skill-use"
+tracking = "local"
+notes = [
+  "User-invoked capture of one real skill use into an encrypted, harness-agnostic evidence packet.",
+]
+
 [skills.independent-reflect]
 local_path = "agents/skills/independent-reflect"
 tracking = "tracked"
@@ -519,12 +537,14 @@ tracking = "local"
 
 [skills.tufte-viz]
 local_path = "agents/skills/tufte-viz"
-tracking = "local"
+tracking = "tracked"
+upstream = { type = "git", url = "https://github.com/aparente/claude-skills.git", ref = "master", path = "skills/tufte-viz/SKILL.md" }
 notes = [
-  "Copied from the Seatankers repository skill on 2026-08-05 for reuse across projects.",
+  "Copied from the Seatankers repository skill on 2026-08-05 for reuse across projects; provenance now follows aparente's maintained claude-skills repository.",
 ]
 preserve = [
   "Keep tufte-viz user-invoked in both Claude and Codex.",
+  "Keep the concise local description and Anders-specific Mac artifact-delivery rule; review upstream body changes deliberately.",
 ]
 
 [skills.codex-dispatch]

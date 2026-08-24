@@ -1,6 +1,7 @@
 ---
 name: reclaim-storage
 description: Audit machine-wide disk or RAM-backed storage and propose exact reclaim candidates without deleting them. Use when Anders asks what consumes space, how much can be reclaimed, whether caches, build targets, Trash, worktrees, temporary files, or Codex sessions can be pruned, or when storage pressure appears during another task.
+disable-model-invocation: true
 ---
 
 # Reclaim Storage

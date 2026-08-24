@@ -1,1 +1,2 @@
 shell/.secrets filter=git-crypt diff=git-crypt
+agents/skill-uses/** filter=git-crypt diff=git-crypt

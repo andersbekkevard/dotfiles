@@ -1,6 +1,7 @@
 ---
 name: onboard-devbox
 description: Onboard a fresh Linux devbox into Anders' dotfiles and Fleet. Use when Anders asks to set up, provision, bootstrap, or onboard a new development machine.
+disable-model-invocation: true
 ---
 
 # Onboard Devbox
