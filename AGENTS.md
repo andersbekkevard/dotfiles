@@ -20,6 +20,36 @@ Operator invariant: `./dotfiles.sh` is the only root management entrypoint. File
 If the task touches secrets, also read:
 - `docs/secrets.md`
 
+## Private repository content
+
+Anders-private repository content includes:
+
+- shell secrets;
+- skill-use evidence and usage batches;
+- private MCP registries;
+- complete Anders-specific operational skills;
+- machine registries and verified host identities; and
+- benchmark cases reconstructed from Anders's real sessions.
+
+`.gitattributes` is the authoritative exact path list. Reusable procedures,
+runners, and sanitized examples remain public.
+
+Before committing any protected content, verify the staged Git blobs rather
+than trusting the attribute declaration:
+
+```bash
+agents/git-crypt-check staged -- <paths...>
+```
+
+Do not commit if the check fails. After committing, verify the resulting tree
+with `agents/git-crypt-check tree HEAD -- <paths...>`. After pushing, verify the
+remote with `agents/git-crypt-check tree origin/main -- <paths...>`.
+
+When Anders identifies a new file, directory, or category as private, add its
+exact path to `.gitattributes` before staging the content. Add a new semantic
+category to this inventory when needed, and add a representative path to
+`agents/tests/test_private_content_policy.py` in the same commit.
+
 ## Documentation map (source-of-truth matrix)
 
 | File | Primary purpose | Source of truth for |

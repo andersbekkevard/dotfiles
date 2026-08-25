@@ -6,6 +6,7 @@ from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[2]
+AGENTS = REPO / "AGENTS.md"
 
 
 class PrivateContentPolicyTest(unittest.TestCase):
@@ -50,6 +51,21 @@ class PrivateContentPolicyTest(unittest.TestCase):
         for path in public_paths:
             with self.subTest(path=path):
                 self.assertEqual(self.attribute(path), "unspecified")
+
+    def test_agents_require_blob_verification_for_private_content(self) -> None:
+        instructions = AGENTS.read_text(encoding="utf-8")
+        required = (
+            "## Private repository content",
+            "`.gitattributes` is the authoritative exact path list.",
+            "agents/git-crypt-check staged -- <paths...>",
+            "agents/git-crypt-check tree HEAD -- <paths...>",
+            "agents/git-crypt-check tree origin/main -- <paths...>",
+            "add its\nexact path to `.gitattributes` before staging the content",
+            "agents/tests/test_private_content_policy.py",
+        )
+        for text in required:
+            with self.subTest(text=text):
+                self.assertIn(text, instructions)
 
 
 if __name__ == "__main__":
