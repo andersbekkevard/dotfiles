@@ -4,6 +4,9 @@
 
 Prefer prose over lists.
 
+When reporting storage sizes, use an appropriate human-readable unit such as
+MB or GB, not raw bytes alone.
+
 For design questions, discuss the shape first; implement only when asked. A question is never a call to action.
 
 Work in the current session by default. Use subagents, new threads, or external model
