@@ -38,6 +38,10 @@ python3 "$SKILL_DIR/scripts/invoke.py" /absolute/path/prompt.md \
   --effort high
 ```
 
+The runner stages only Claude subscription material into its private run home.
+On macOS it accepts Claude Code's native Keychain login as well as the legacy
+`.credentials.json` file; other platforms use the file-backed login.
+
 For `agentic`, also pass `--root /absolute/repo`. Honor a model or effort Anders
 names; otherwise use the script defaults. The dispatch is complete when the
 runner exits successfully and the output file is nonempty.

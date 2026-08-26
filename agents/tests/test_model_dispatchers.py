@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from unittest import mock
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -292,6 +293,43 @@ class DispatcherTests(unittest.TestCase):
         self.assertNotIn("--no-session-persistence", invocation)
         self.assertIn("--session-id", invocation)
         self.assertTrue(Path(calls[1]["CLAUDE_CONFIG_DIR"]).is_relative_to(self.state / "agent-dispatch/claude"))
+
+    def test_claude_stages_macos_keychain_credentials_when_file_is_absent(self) -> None:
+        (self.home / ".claude/.credentials.json").unlink()
+        keychain_credentials = json.dumps(
+            {
+                "claudeAiOauth": {
+                    "accessToken": "must-not-leak-keychain-claude",
+                    "subscriptionType": "max",
+                }
+            }
+        )
+        with (
+            mock.patch.dict(
+                os.environ,
+                {"HOME": str(self.home), "XDG_STATE_HOME": str(self.state)},
+                clear=False,
+            ),
+            mock.patch.object(
+                dispatch_state,
+                "read_macos_claude_credentials",
+                return_value=keychain_credentials,
+            ),
+        ):
+            isolated_home = dispatch_state.prepare_claude_home()
+
+        staged = isolated_home / ".credentials.json"
+        self.assertEqual(json.loads(staged.read_text()), json.loads(keychain_credentials))
+        self.assert_mode(staged, 0o600)
+        self.assert_isolated(staged)
+
+    def test_claude_keychain_probe_is_macos_only(self) -> None:
+        with (
+            mock.patch.object(dispatch_state.sys, "platform", "linux"),
+            mock.patch.object(dispatch_state.subprocess, "run") as run,
+        ):
+            self.assertIsNone(dispatch_state.read_macos_claude_credentials())
+        run.assert_not_called()
 
     def test_claude_agentic_is_unrestricted(self) -> None:
         env, log = self.fake_cli("claude")

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import uuid
 from datetime import datetime, timezone
@@ -118,6 +120,42 @@ def source_claude_json() -> Path:
     return Path.home() / ".claude.json"
 
 
+def read_macos_claude_credentials() -> str | None:
+    if sys.platform != "darwin":
+        return None
+    import pwd
+
+    account = pwd.getpwuid(os.getuid()).pw_name
+    try:
+        result = subprocess.run(
+            [
+                "/usr/bin/security",
+                "find-generic-password",
+                "-a",
+                account,
+                "-s",
+                "Claude Code-credentials",
+                "-w",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    credentials = result.stdout.strip()
+    try:
+        payload = json.loads(credentials)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict) or not isinstance(payload.get("claudeAiOauth"), dict):
+        return None
+    return credentials
+
+
 def source_grok_home() -> Path:
     raw = os.environ.get("GROK_HOME")
     return Path(raw).expanduser() if raw else Path.home() / ".grok"
@@ -141,9 +179,15 @@ def prepare_claude_home() -> Path:
     home = private_dir(provider_root("claude") / new_run_id())
     source = source_claude_config_dir()
     credentials = source / ".credentials.json"
-    if not regular_file(credentials):
-        raise FileNotFoundError("Claude .credentials.json is missing")
-    stage_secret(credentials, home / ".credentials.json")
+    if regular_file(credentials):
+        stage_secret(credentials, home / ".credentials.json")
+    else:
+        keychain_credentials = read_macos_claude_credentials()
+        if keychain_credentials is None:
+            raise FileNotFoundError(
+                "Claude .credentials.json is missing and macOS Keychain credentials are unavailable"
+            )
+        write_private_text(home / ".credentials.json", keychain_credentials)
     claude_json = source_claude_json()
     if regular_file(claude_json):
         stage_secret(claude_json, home / ".claude.json", link=False)
