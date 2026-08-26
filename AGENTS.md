@@ -28,6 +28,7 @@ Anders-private repository content includes:
 - skill-use evidence and usage batches;
 - private MCP registries;
 - complete Anders-specific operational skills;
+- private skill snapshots;
 - machine registries and verified host identities; and
 - benchmark cases reconstructed from Anders's real sessions.
 
