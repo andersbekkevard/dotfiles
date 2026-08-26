@@ -211,6 +211,8 @@ def main() -> int:
     command = command_for(args, session_id)
     environment = sanitized_environment()
     environment["CLAUDE_CONFIG_DIR"] = str(claude_home)
+    if args.access == "agentic":
+        environment["CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS"] = "0"
 
     if args.access == "closed":
         with tempfile.TemporaryDirectory(prefix="claude-dispatch.") as neutral:

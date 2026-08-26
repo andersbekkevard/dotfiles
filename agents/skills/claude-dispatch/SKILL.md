@@ -45,6 +45,8 @@ On macOS it accepts Claude Code's native Keychain login as well as the legacy
 For `agentic`, also pass `--root /absolute/repo`. Honor a model or effort Anders
 names; otherwise use the script defaults. The dispatch is complete when the
 runner exits successfully and the output file is nonempty.
+Agentic runs wait for Claude background agents to finish instead of accepting
+the CLI's default ten-minute termination ceiling.
 
 Delegated Claude sessions live under `~/.local/state/agent-dispatch/claude/`.
 The runner prints `Transcript: <absolute path>` for the parent session.

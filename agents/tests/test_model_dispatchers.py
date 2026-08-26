@@ -32,6 +32,7 @@ with log.open("a") as h:
         "cwd": os.getcwd(),
         "CODEX_HOME": os.environ.get("CODEX_HOME"),
         "CLAUDE_CONFIG_DIR": os.environ.get("CLAUDE_CONFIG_DIR"),
+        "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS": os.environ.get("CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS"),
         "GROK_HOME": os.environ.get("GROK_HOME"),
         "GROK_DISABLE_API_KEY_AUTH": os.environ.get("GROK_DISABLE_API_KEY_AUTH"),
         "sensitive": [k for k in (
@@ -346,6 +347,7 @@ class DispatcherTests(unittest.TestCase):
         invocation = calls[1]["args"]
         self.assertIn("--dangerously-skip-permissions", invocation)
         self.assertNotIn("--permission-mode", invocation)
+        self.assertEqual(calls[1]["CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS"], "0")
 
     def test_claude_prints_native_parent_transcript(self) -> None:
         env, log = self.fake_cli("claude")
