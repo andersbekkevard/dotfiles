@@ -1,5 +1,8 @@
 # Ghostty configuration managed by dotfiles.
 
+# Do not let launchers force terminal applications into monochrome mode.
+env = NO_COLOR=
+
 # font-family = "MesloLGSDZ Nerd Font Mono"
 # font-family = Monaco
 # font-family = "JetBrains Mono Medium"
