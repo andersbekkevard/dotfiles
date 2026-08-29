@@ -624,6 +624,13 @@ notes = [
 local_path = "agents/skills/application-email"
 tracking = "local"
 
+[skills.remarkable]
+local_path = "agents/skills/remarkable"
+tracking = "local"
+notes = [
+  "Anders-specific My reMarkable cloud operations through the persistent authenticated Europa browser.",
+]
+
 [skills.audio-transcription]
 local_path = "agents/skills/audio-transcription"
 tracking = "local"
