@@ -49,6 +49,14 @@ decisions, corrections, results, provenance, and reusable methods. Preserve the
 smallest useful fact, not a transcript. A question remains a question; capturing
 what it revealed does not authorize unrelated implementation.
 
+When Anders reports a completed event inside the active project's domain and it
+could inform future decisions, methods, or progress, the report itself authorizes
+recording that event within the project's established privacy and publication
+boundary. Do not make Anders request tracking or repeat information he has
+already supplied. Preserve his words when useful, or write a faithful
+reconstruction without inventing details. Ask only when the target project,
+privacy boundary, or meaning is genuinely unclear.
+
 ## Place before searching
 
 Placement is the dual of search. Give each question one current owner and make

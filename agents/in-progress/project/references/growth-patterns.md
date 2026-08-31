@@ -36,9 +36,14 @@ durable execution model. Reconcile settled work into its permanent owner.
 operating doctrine should not be rewritten as often as a machine, application,
 or external-world snapshot. Split them when their update rhythms diverge.
 
-**Dated outcomes can improve reusable methods.** Keep what happened separate
-from what should be tried next. Let observed outcomes update the method without
-turning an isolated result into a rule.
+**Recurring events begin with the first occurrence.** A first real occurrence
+earns a record; repetition earns machinery. For a self-contained event with
+meaningful context, experience, results, or friction, prefer one date-marked
+Markdown record per occurrence. This fits workouts, cooks, meetings,
+experiments, and similar histories. Very small, high-frequency measurements may
+fit an append-only or structured log better. Keep the observed event separate
+from the reusable method it may eventually improve, and do not turn one result
+into a rule.
 
 **Source layers describe transformations.** A source-heavy project may need raw
 received evidence, a faithful searchable derivation, and an integrated output.

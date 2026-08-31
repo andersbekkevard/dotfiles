@@ -8,17 +8,20 @@ lesson is that it was premature or drifted.
 
 **Training** is evidence that a young project can remain shallow. Its durable
 background, current plan, activity areas, and concerns can begin in combined
-owners. The useful transition is to split only after use exposes a distinct
-question, as happened when swimming technique developed enough content to need
-its own treatment. Anticipated session, source, output, decision, and tracker
-structures remain unproven and should not be copied in advance.
+owners. A reported workout can become a date-marked session record immediately;
+more sessions can later justify an activity area, index, schema, or application.
+The useful transition is to split only after use exposes a distinct question,
+as happened when swimming technique developed enough content to need its own
+treatment. Anticipated source, output, decision, and tracker structures remain
+unproven and should not be copied in advance.
 
-**Cooking** separates a reusable method from a dated cook. Lived results can
-update the method's "next time" guidance without pretending an outcome was a
-general law. It also shows that a retired but obvious path may deserve a thin
-signpost. Its planned raw-transcript and compiled-note source architecture is
-still mostly a proposal; empty pantry and transcript structures are evidence
-against scaffolding taxonomies before use.
+**Cooking** proved the date-marked narrative record for a completed cook. It
+separates that lived result from the reusable method, which the evidence can
+later improve without pretending one outcome was a general law. It also shows
+that a retired but obvious path may deserve a thin signpost. Its planned
+raw-transcript and compiled-note source architecture is still mostly a proposal;
+empty pantry and transcript structures are evidence against scaffolding
+taxonomies before use.
 
 ## Knowledge and administration
 
