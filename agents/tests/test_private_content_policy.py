@@ -29,6 +29,7 @@ class PrivateContentPolicyTest(unittest.TestCase):
             "agents/skills/control-europa-desktop/scripts/control-europa-desktop",
             "agents/skills/cycle-codex-account/SKILL.md",
             "agents/skills/remarkable/SKILL.md",
+            "agents/skills/authorize-azure-cli/SKILL.md",
             "agents/private-skill-snapshots/2026-08-26/chief-of-staff.md",
             "scripts/.config/fleet/machines.tsv",
             "scripts/.config/fleet/known_hosts",

@@ -583,6 +583,13 @@ notes = [
   "Private on-demand VNC over supervised reverse SSH; persistent desktop substrate stays separate.",
 ]
 
+[skills.authorize-azure-cli]
+local_path = "agents/skills/authorize-azure-cli"
+tracking = "local"
+notes = [
+  "Anders-specific Mac-to-Europa Azure CLI session transfer.",
+]
+
 [skills.cycle-codex-account]
 local_path = "agents/skills/cycle-codex-account"
 tracking = "local"
