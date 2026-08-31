@@ -1,6 +1,6 @@
 ---
 name: project
-description: Create, maintain, or audit an Anders project repository so its context survives agents, sessions, and machines. Use when shaping a project's durable context, ownership, placement, and growth.
+description: Maintain an Anders project as durable context across agents, sessions, harnesses, and machines. Use when work reveals project knowledge, placement, ownership, provenance, or structure that should survive the conversation.
 ---
 
 # Project
@@ -8,112 +8,110 @@ description: Create, maintain, or audit an Anders project repository so its cont
 Status: work in progress.
 
 An Anders project is one compounding life or work domain carried by a Git
-repository. Chat is working memory. The repository is the project. Its files
-must let a capable agent continue without the previous agent, harness, machine,
-or conversation.
+repository. The agent's intelligence is replaceable; the project's context is
+not. Chat is working memory. The repository is continuity.
 
-This skill owns the project's context contract. It does not own the domain
-work, planning method, source-ingestion procedure, application architecture, or
-conversation style.
+This skill owns the project's context contract and its gradual improvement. It
+does not own the domain work, planning method, source procedure, application
+architecture, or conversation style. Use [`create-project`](../create-project/SKILL.md)
+to turn a new idea into a repository.
 
-Own the architecture while this skill is active. Anders supplies project
-intent, constraints, and the judgments that genuinely require him. You are
-responsible for keeping the repository current, easy for later agents to
-resume, and able to expose or repair routine drift with as little owner effort
-as possible. Improve the contract through use. When work reveals ambiguous
-placement, stale routes, competing owners, missing provenance, or repeated
-manual recovery, make the smallest authorized correction that addresses the
-cause. The target is a self-managing repository that improves the work later
-agents can do without asking Anders to reconstruct its architecture. This
-stewardship does not authorize unrelated domain work.
+## Steward the project
 
-## Shape the contract
+Read the live repository and its local instructions before changing its shape.
+Preserve conventions that have useful work behind them. Keep the repository
+self-contained: a capable agent should be able to resume from the repository
+without this conversation, Anders's dotfiles, or a particular harness.
 
-Inspect the live repository and its local instructions before proposing a
-structure. Preserve conventions that already have real use behind them.
+Before redesigning anything, outline the project's real information and work
+types, the question each answers, its current owner and provenance, and how it
+changes. Make architectural changes sequentially so each new owner has real
+material and its routes and superseded authority can move with it.
 
-Outline the project's actual information and work types before choosing a
-structure. For each type, identify the question it answers, its current owner,
-its provenance, its routes, and how often it changes. Then decide sequentially
-what can remain combined and what has earned a separate owner. Own that
-judgment. Ask Anders when a choice changes project intent, human authority,
-privacy, or permitted external effects, not merely because several reasonable
-filing choices exist.
+Own the ordinary architectural judgment. Anders supplies intent, preferences,
+constraints, and decisions that genuinely require him. Do not ask him to choose
+between equivalent filing options. Do ask when a choice changes the project's
+purpose, human authority, privacy, publication, or permitted external effects.
 
-Make the project self-contained. Put the small contract needed on ordinary
-turns in one repository-owned instruction body, normally `AGENTS.md`. Expose
-that same body through any harness-specific entrypoints the project uses
-without maintaining divergent copies. A future agent must not need this global
-skill or Anders's dotfiles to understand the repository.
+Treat the contract as living. When authorized work reveals ambiguous placement,
+stale routes, competing owners, missing provenance, or repeated manual recovery,
+make the smallest correction that addresses the cause. Aim to require less
+architectural maintenance from Anders as the project gains experience.
 
-Establish only what current work needs:
+Keep the smallest useful cold-start contract in the repository's main agent
+instructions. It should establish the project, the authoritative reading route,
+the placement rules that matter now, and any safety or completion boundaries.
+Expose one shared contract to the harnesses the project uses; do not maintain
+divergent instructions.
 
-- a short cold-start route;
-- one current owner for each question, with links or indexes as routes rather
-  than competing copies;
-- a home for durable preferences, constraints, decisions, results, and
-  corrections revealed during work;
-- explicit privacy and Git-publication boundaries; and
-- enough provenance and uncertainty to distinguish evidence, reports, and
-  inference.
+Capture durable context while its meaning is clear: preferences, constraints,
+decisions, corrections, results, provenance, and reusable methods. Preserve the
+smallest useful fact, not a transcript. A question remains a question; capturing
+what it revealed does not authorize unrelated implementation.
 
-Placement is the dual of search. Define placement precisely enough that the
-same item, given the same known facts, lands with the same owner. Give it one
-physical home and as many routes as readers need. An inbox may quarantine
-material whose owner is genuinely unknown, but it is not a permanent owner.
+## Place before searching
 
-Use Obsidian-compatible Markdown and wikilinks for project knowledge and
-routing. Keep source URLs and other external references clickable. A `docs/`
-folder is referential: it explains the repository's structure and mechanisms
-and routes to current owners. It should not mirror current claims, plans, or
-behavior already owned elsewhere.
+Placement is the dual of search. Give each question one current owner and make
+new material land there predictably. A fact may have many routes, views, or
+links, but one physical home. When authorities disagree, state which type wins
+for that question: policy, configuration, procedure, current state, evidence,
+rationale, or future intent.
 
-Prefer plain Markdown for durable context. Add structured data, code, or an
-application only when the work needs behavior that prose cannot own reliably.
+Deepen an existing owner before creating another file or folder. A new owner is
+earned when different questions, update rhythms, rules, or reading paths begin
+to interfere. A small project may keep its map, current knowledge, and next
+action together. Split them only when use creates pressure.
 
-Do not turn these distinctions into folders before real material needs them.
-A new location earns its place when the first concrete item lacks an owner. A
-new category earns its place when repeated items reveal a stable organizing
-concept. Split an existing owner when different questions, update rhythms, or
-reading paths have begun to interfere with one another.
+`docs/` is referential. It explains how the repository works and routes to
+current owners; it should not mirror claims, plans, or behavior owned elsewhere.
+Use Obsidian Markdown and wikilinks when the project is an Obsidian knowledge
+graph. Otherwise follow the repository's native format. Keep external
+references clickable.
 
-When a new owner supersedes an old one, move the current claims and routes in
-the same change. Keep useful history in Git, dated evidence, or an earned
-decision record rather than leaving two current authorities.
+When an owner moves, update the current claim and its routes together. Preserve
+useful history in Git, dated evidence, or a decision record without leaving two
+current authorities. A short claim-free signpost at an old, obvious address is
+reasonable when removing it would make retrieval worse.
 
-Use an ADR when a choice is hard to reverse, surprising without its context,
-and contains a real trade-off. All three conditions should hold. Create the
-first ADR when the first qualifying decision appears, not an empty directory in
-anticipation.
+## Grow through pressure
 
-Read the [architecture pattern catalogue](references/growth-patterns.md) when
-deciding whether the project has earned more routing, planning, evidence,
-automation, state, or decision structure. It records patterns from Anders's
-existing repositories as a playbook to copy, combine, adapt, or reject, not as
-a template.
+Do not prebuild a mature repository. Add structure when real use identifies a
+missing owner, repeated ambiguity, or a risky recurring operation. Prefer plain
+Markdown until structured data or code owns something prose cannot reliably
+own.
+
+An ADR is earned when a decision is hard to reverse, surprising without its
+context, and contains a real trade-off. All three should hold. Create the first
+ADR for the first qualifying decision, not an empty ADR directory in advance.
+
+When sources become important, separate received evidence, faithful derivation,
+and interpretation as far as the domain requires. Bronze, Silver, and Gold are
+a proven pattern, not universal semantics; if adopted, define their guarantees
+inside the project. Keep provenance and uncertainty close to the claim.
+
+Turn a repeated or consequential rule into a check when objective validation is
+possible. Keep policy, detection, and repair authority distinct: a checker
+provides evidence and does not silently grant itself permission to repair.
+
+Read the [growth patterns](references/growth-patterns.md) when the project has
+earned a new layer. Read the [repository casebook](references/repository-cases.md)
+for the contexts in which Anders's existing patterns worked, drifted, or remain
+untested. They are material for judgment, not a folder template.
 
 ## Preserve continuity
 
-Capture the durable part of a turn while its meaning is still clear. Preserve
-the preference, limiter, decision, result, correction, or reusable method, not
-a transcript of the conversation. A question remains a question; durable
-capture does not authorize unrelated implementation.
+Privacy follows the bytes, not the source path. Choose ordinary Git, encryption,
+ignore rules, external custody, or manifest-backed custody from the material's
+actual constraints. Preserve enough metadata to locate and verify material
+without copying restricted content into broader surfaces.
 
-Let the repository choose its synchronization mode. A clean personal project
-may pull and push `main` every changed turn. A collaborative repository may
-require branches, reviews, or protection of concurrent work. In either case,
-finish with the durable change published through the authorized workflow or
-state exactly why it remains local.
+Publish authorized durable changes through the repository's own Git workflow.
+A private single-owner project may work directly on `main`; a shared repository
+may require branches and review. Never replace local governance with a global
+habit.
 
-Keep secrets and restricted material outside ordinary tracked context. Choose
-ignored, encrypted, external, or manifest-backed custody from the actual
-privacy, size, licensing, and recovery needs rather than copying another
-project's mechanism.
-
-## Review the result
-
-The project should be easier for a cold agent to resume without making every
-agent monitor concepts the project has not yet used. Treat any proposed new
-file, folder, document type, tracker, or workflow as a cost. Keep it only when
-it gives a real item one clearer owner, removes repeated confusion, or makes an
-important operation safer or reproducible.
+The project should become easier to resume and maintain through use without
+making every agent monitor concepts it has not yet needed. Keep a proposed file,
+folder, document type, tracker, or workflow only when it gives real material a
+clearer owner, removes repeated confusion, or makes an important operation safer
+or reproducible.

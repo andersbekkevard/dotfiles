@@ -26,6 +26,14 @@ preserve = [
   "Local references should stay relative to this repo's skill directory layout.",
 ]
 
+[skills.create-project]
+local_path = "agents/in-progress/create-project"
+tracking = "local"
+notes = [
+  "Work-in-progress Anders-owned transition from an explained goal or accumulated conversation to a minimal private project scaffold.",
+  "Keep this user-invoked. An invocation with sufficient context, or Scaffold after an interview, authorizes repository creation, initial commit, and publication.",
+]
+
 [skills.define-goal]
 local_path = "agents/skills/define-goal/SKILL.md"
 tracking = "tracked"
@@ -399,9 +407,9 @@ notes = [
 local_path = "agents/in-progress/project"
 tracking = "local"
 notes = [
-  "Work-in-progress Anders-owned project contract distilled from Cooking, Training, MIT, Hub, Seatankers, and Odin in 2026-08.",
-  "Project layouts and source revisions are retained as a provenance-aware pattern catalogue, not as a shared folder template.",
-  "Seatankers contributed the placement/search duality, Map/Note/ADR boundaries, source tiers, and planning lifecycle; the smaller projects contributed evidence for starting combined and growing through use.",
+  "Work-in-progress Anders-owned stewardship contract for existing projects; new-project interviewing and scaffolding belong to create-project.",
+  "Durable principles are separated from a repository casebook so local architectures remain evidence rather than a shared folder template.",
+  "Jobs and Server were reviewed but explicitly excluded as sources of general project rules until independent domains reproduce the same pressure.",
 ]
 
 [skills.html-1]
