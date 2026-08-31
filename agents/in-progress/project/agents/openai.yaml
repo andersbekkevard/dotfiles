@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project"
+  short_description: "Shape durable Anders project repositories"
+  default_prompt: "Use $project to create or audit this project's durable context contract."

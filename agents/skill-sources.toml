@@ -395,6 +395,14 @@ notes = [
   "Work-in-progress record of Anders's evolving preferences for modular skill design, gradual specificity, and selective borrowing.",
 ]
 
+[skills.project]
+local_path = "agents/in-progress/project"
+tracking = "local"
+notes = [
+  "Work-in-progress Anders-owned project contract distilled from Cooking, Training, MIT, Hub, Seatankers, and Odin in 2026-08.",
+  "Project layouts are retained as evidence for conditional growth patterns, not as a shared folder template.",
+]
+
 [skills.html-1]
 local_path = "agents/in-progress/html/html-1"
 tracking = "local"
