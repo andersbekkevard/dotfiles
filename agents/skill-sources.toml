@@ -400,7 +400,8 @@ local_path = "agents/in-progress/project"
 tracking = "local"
 notes = [
   "Work-in-progress Anders-owned project contract distilled from Cooking, Training, MIT, Hub, Seatankers, and Odin in 2026-08.",
-  "Project layouts are retained as evidence for conditional growth patterns, not as a shared folder template.",
+  "Project layouts and source revisions are retained as a provenance-aware pattern catalogue, not as a shared folder template.",
+  "Seatankers contributed the placement/search duality, Map/Note/ADR boundaries, source tiers, and planning lifecycle; the smaller projects contributed evidence for starting combined and growing through use.",
 ]
 
 [skills.html-1]

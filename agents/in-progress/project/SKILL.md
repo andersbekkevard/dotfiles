@@ -1,6 +1,6 @@
 ---
 name: project
-description: Shape or audit an Anders project repository so its context survives agents, sessions, and machines. Use when creating, restructuring, or reviewing a project's durable context, ownership, and growth.
+description: Create, maintain, or audit an Anders project repository so its context survives agents, sessions, and machines. Use when shaping a project's durable context, ownership, placement, and growth.
 ---
 
 # Project
@@ -16,10 +16,29 @@ This skill owns the project's context contract. It does not own the domain
 work, planning method, source-ingestion procedure, application architecture, or
 conversation style.
 
+Own the architecture while this skill is active. Anders supplies project
+intent, constraints, and the judgments that genuinely require him. You are
+responsible for keeping the repository current, easy for later agents to
+resume, and able to expose or repair routine drift with as little owner effort
+as possible. Improve the contract through use. When work reveals ambiguous
+placement, stale routes, competing owners, missing provenance, or repeated
+manual recovery, make the smallest authorized correction that addresses the
+cause. The target is a self-managing repository that improves the work later
+agents can do without asking Anders to reconstruct its architecture. This
+stewardship does not authorize unrelated domain work.
+
 ## Shape the contract
 
 Inspect the live repository and its local instructions before proposing a
 structure. Preserve conventions that already have real use behind them.
+
+Outline the project's actual information and work types before choosing a
+structure. For each type, identify the question it answers, its current owner,
+its provenance, its routes, and how often it changes. Then decide sequentially
+what can remain combined and what has earned a separate owner. Own that
+judgment. Ask Anders when a choice changes project intent, human authority,
+privacy, or permitted external effects, not merely because several reasonable
+filing choices exist.
 
 Make the project self-contained. Put the small contract needed on ordinary
 turns in one repository-owned instruction body, normally `AGENTS.md`. Expose
@@ -38,6 +57,17 @@ Establish only what current work needs:
 - enough provenance and uncertainty to distinguish evidence, reports, and
   inference.
 
+Placement is the dual of search. Define placement precisely enough that the
+same item, given the same known facts, lands with the same owner. Give it one
+physical home and as many routes as readers need. An inbox may quarantine
+material whose owner is genuinely unknown, but it is not a permanent owner.
+
+Use Obsidian-compatible Markdown and wikilinks for project knowledge and
+routing. Keep source URLs and other external references clickable. A `docs/`
+folder is referential: it explains the repository's structure and mechanisms
+and routes to current owners. It should not mirror current claims, plans, or
+behavior already owned elsewhere.
+
 Prefer plain Markdown for durable context. Add structured data, code, or an
 application only when the work needs behavior that prose cannot own reliably.
 
@@ -51,9 +81,16 @@ When a new owner supersedes an old one, move the current claims and routes in
 the same change. Keep useful history in Git, dated evidence, or an earned
 decision record rather than leaving two current authorities.
 
-Read [growth patterns](references/growth-patterns.md) when deciding whether the
-project has earned more routing, planning, evidence, automation, state, or
-decision structure.
+Use an ADR when a choice is hard to reverse, surprising without its context,
+and contains a real trade-off. All three conditions should hold. Create the
+first ADR when the first qualifying decision appears, not an empty directory in
+anticipation.
+
+Read the [architecture pattern catalogue](references/growth-patterns.md) when
+deciding whether the project has earned more routing, planning, evidence,
+automation, state, or decision structure. It records patterns from Anders's
+existing repositories as a playbook to copy, combine, adapt, or reject, not as
+a template.
 
 ## Preserve continuity
 
