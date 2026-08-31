@@ -7,6 +7,8 @@ agents/skills/control-europa-desktop/** filter=git-crypt diff=git-crypt
 agents/skills/cycle-codex-account/** filter=git-crypt diff=git-crypt
 agents/skills/remarkable/** filter=git-crypt diff=git-crypt
 agents/skills/authorize-azure-cli/** filter=git-crypt diff=git-crypt
+agents/skills/project/** filter=git-crypt diff=git-crypt
+agents/skills/create-project/** filter=git-crypt diff=git-crypt
 scripts/.config/fleet/machines.tsv filter=git-crypt diff=git-crypt
 scripts/.config/fleet/known_hosts filter=git-crypt diff=git-crypt
 agents/in-progress/html/benchmark/cases/** filter=git-crypt diff=git-crypt

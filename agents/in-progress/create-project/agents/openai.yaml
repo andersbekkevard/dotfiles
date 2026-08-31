@@ -1,6 +1,0 @@
-interface:
-  display_name: "Create project"
-  short_description: "Interview, then scaffold a minimal project"
-  default_prompt: "Use $create-project to turn this goal into a minimal project."
-policy:
-  allow_implicit_invocation: false

@@ -27,10 +27,10 @@ preserve = [
 ]
 
 [skills.create-project]
-local_path = "agents/in-progress/create-project"
+local_path = "agents/skills/create-project"
 tracking = "local"
 notes = [
-  "Work-in-progress Anders-owned transition from an explained goal or accumulated conversation to a minimal private project scaffold.",
+  "Anders-owned transition from an explained goal or accumulated conversation to a minimal private project scaffold.",
   "Keep this user-invoked. An invocation with sufficient context, or Scaffold after an interview, authorizes repository creation, initial commit, and publication.",
 ]
 
@@ -404,10 +404,10 @@ notes = [
 ]
 
 [skills.project]
-local_path = "agents/in-progress/project"
+local_path = "agents/skills/project"
 tracking = "local"
 notes = [
-  "Work-in-progress Anders-owned stewardship contract for existing projects; new-project interviewing and scaffolding belong to create-project.",
+  "Anders-owned stewardship contract for existing projects; new-project interviewing and scaffolding belong to create-project.",
   "Durable principles are separated from a repository casebook so local architectures remain evidence rather than a shared folder template.",
   "Jobs and Server were reviewed but explicitly excluded as sources of general project rules until independent domains reproduce the same pressure.",
   "High-migration-cost source and application patterns require Anders's adoption; project use may propose global skill improvements but never edit them without authorization.",
