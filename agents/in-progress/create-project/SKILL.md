@@ -71,6 +71,12 @@ contains:
 - only the first real notes, sources, code, ignores, or harness routes that the
   current mental model has already earned.
 
+The agent contract must include the Git-continuity policy from
+[`project`](../project/SKILL.md). A private project defaults to pulling at the
+start of every turn and committing and pushing every turn that changes durable
+project state. A shared project keeps its branch and review rules while still
+pushing the active branch before the turn ends.
+
 Files may combine these jobs while the project is small. Do not create empty
 directories, speculative taxonomies, ADR collections, trackers, source tiers,
 applications, or duplicated harness instructions. If the project is an

@@ -411,6 +411,7 @@ notes = [
   "Durable principles are separated from a repository casebook so local architectures remain evidence rather than a shared folder template.",
   "Jobs and Server were reviewed but explicitly excluded as sources of general project rules until independent domains reproduce the same pressure.",
   "High-migration-cost source and application patterns require Anders's adoption; project use may propose global skill improvements but never edit them without authorization.",
+  "Each project owns an explicit Git-continuity contract; private projects default to pull at turn start and commit plus push after every changed turn.",
 ]
 
 [skills.html-1]

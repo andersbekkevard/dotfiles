@@ -142,6 +142,22 @@ A private single-owner project may work directly on `main`; a shared repository
 may require branches and review. Never replace local governance with a global
 habit.
 
+Every project must define Git continuity in its repository-owned agent
+instructions. Anders's private projects default to turn-level synchronization.
+At the start of every turn, inspect the working tree and branch; if the tree is
+clean, pull with `git pull --ff-only` before other repository work. If it is
+dirty or diverged, preserve the existing work and reconcile it without reset,
+overwrite, or an implicit stash.
+
+After every turn that changes durable project state, review the diff, run the
+relevant checks, stage only the task's files, commit, reconcile remote changes
+through the repository's normal workflow, and push before replying to Anders.
+Verify that the intended commit exists on the remote. Do not create empty
+commits. If synchronization fails, leave the work recoverable and report the
+local commit, branch, and exact failure. Shared projects may require a feature
+branch or review, but the agent still pushes its current branch before ending
+the turn.
+
 The project should become easier to resume and maintain through use without
 making every agent monitor concepts it has not yet needed. Keep a proposed file,
 folder, document type, tracker, or workflow only when it gives real material a
