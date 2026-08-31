@@ -8,6 +8,20 @@ Maintain a durable cross-platform dotfiles management CLI (`dotfiles.sh`) with e
 
 Operator invariant: `./dotfiles.sh` is the only root management entrypoint. Files under `setup/` are internal implementation files or maintenance helpers unless a doc explicitly says otherwise.
 
+## Git continuity
+
+This repository is the durable cross-machine project record. At the start of
+every turn, inspect the working tree and branch. When the tree is clean, pull
+the tracked branch with `git pull --ff-only` before other repository work. If it
+is dirty or diverged, preserve the existing work and reconcile it without
+reset, overwrite, or an implicit stash.
+
+After every turn that changes durable project state, review the diff, run the
+relevant checks, stage only the task's files, commit, reconcile remote changes,
+and push before replying to Anders. Verify that the intended commit exists on
+the remote. Do not create empty commits. If synchronization fails, leave the
+work recoverable and report the local commit, branch, and exact failure.
+
 ## Mandatory read order (before editing code)
 
 1. `README.md` (repo overview + quick start)
