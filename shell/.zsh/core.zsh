@@ -7,7 +7,11 @@ if [[ "$OSTYPE" == darwin* ]] && command -v brew >/dev/null 2>&1; then
 fi
 
 if [[ -o interactive ]]; then
-  if [[ -n "$NVIM" ]] || [[ -n "$VIM" ]]; then
+  if [[ ! -t 0 || ! -t 1 ]]; then
+    ZSH_THEME=""
+    PROMPT='%~%# '
+    RPROMPT=''
+  elif [[ -n "$NVIM" ]] || [[ -n "$VIM" ]]; then
     ZSH_THEME=""
     PROMPT='%~%# '
     RPROMPT=''

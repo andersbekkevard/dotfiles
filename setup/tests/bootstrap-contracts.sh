@@ -84,6 +84,27 @@ test_profile_contract() {
   rm -rf "$fake_home"
 }
 
+test_no_tty_prompt_contract() {
+  local fake_home instant_prompt
+  fake_home="$(mktemp -d)"
+  instant_prompt="$fake_home/cache/p10k-instant-prompt-$(id -un).zsh"
+  mkdir -p "${instant_prompt%/*}" "$fake_home/.scripts"
+  printf 'export DOTFILES_TEST_INSTANT_PROMPT_SOURCED=1\n' >"$instant_prompt"
+  printf ':\n' >"$fake_home/.scripts/noop.zsh"
+
+  HOME="$fake_home" XDG_CACHE_HOME="$fake_home/cache" \
+    zsh -fic 'source "$1"; [[ -z "${DOTFILES_TEST_INSTANT_PROMPT_SOURCED:-}" ]]' \
+    zsh "$REPO_ROOT/shell/.zshrc" </dev/null ||
+    fail "non-TTY interactive zsh sourced the instant prompt"
+
+  HOME="$fake_home" zsh -fic \
+    'source "$1"; [[ -z "$ZSH_THEME" && "$PROMPT" == "%~%# " && -z "$RPROMPT" ]]' \
+    zsh "$REPO_ROOT/shell/.zsh/core.zsh" </dev/null ||
+    fail "non-TTY interactive zsh enabled a terminal prompt theme"
+
+  rm -rf "$fake_home"
+}
+
 # Every tracked file that a login or interactive shell sources must address the
 # user's home through $HOME. A literal /Users/<name> or /home/<name> works on
 # exactly one machine and fails silently everywhere else. /home/linuxbrew is the
@@ -1402,6 +1423,7 @@ EOF
 
 test_runtime_path_defaults
 test_profile_contract
+test_no_tty_prompt_contract
 test_no_machine_specific_home_paths
 test_canonical_repo_path_contract
 test_homebrew_activation
