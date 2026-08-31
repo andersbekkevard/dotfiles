@@ -51,6 +51,26 @@ Bronze, Silver, and Gold are useful names when the project defines their exact
 guarantees. Interpretation does not automatically belong in Gold, and a
 Markdown-native source may need no duplicate layer.
 
+**A Unit can give a non-Markdown source a durable handle.** One compact Markdown
+Unit represents one received PDF, spreadsheet, recording, or other binary. It
+records provenance, paths, status, and a compact inventory without reproducing
+the source or interpreting it. Faithful derivatives belong separately;
+opinionated knowledge cites them. A Markdown-native source already provides its
+own handle and needs no Unit.
+
+For a PDF, the optional pattern is one raw binary, one Unit beside it, and a
+separate faithful, searchable Markdown edition. Preserve page or section
+coverage and unresolved extraction where fidelity matters. Keep synthesis and
+judgment in the knowledge owner rather than blending them into the faithful
+edition.
+
+**An application can remain downstream of the source record.** When software is
+built over tracked evidence, the repository may remain the recoverable origin
+while databases and applications consume rebuildable derived state. The
+application should not silently become the only owner of provenance or source
+history. Adopt this boundary only when the project needs it and Anders has
+approved the migration cost.
+
 **Provenance is more than a link.** When relevant, preserve origin, author or
 producer, date, revision or hash, transformation, uncertainty, and intentional
 divergence. The required depth follows the consequence of getting the claim

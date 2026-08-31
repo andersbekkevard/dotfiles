@@ -44,11 +44,12 @@ defaults.
 
 **Seatankers** is the clearest source of placement as the dual of search. It
 uses Maps for routes, Notes for claims, ADRs for consequential rationale,
-source records and tiers for evidence, planning surfaces for durable intent,
-and code for repeated exact behavior. Graph checks make objective routing rules
-visible. Its full information and ingest architecture would burden a small
-project; even here, named owners and checks have sometimes drifted from live
-practice.
+one Markdown Unit per non-Markdown Source, source tiers for faithful evidence,
+planning records for durable intent, and code for repeated exact behavior. Its
+database and applications are rebuildable projections over repository-owned
+source records. Graph checks make objective routing rules visible. The full
+information and ingest architecture would burden a small project; even here,
+named owners and checks have sometimes drifted from live practice.
 
 **Odin** separates a context graph from a research graph and gives research
 entities one physical home with several routes. Cases, Notes, Reports, source

@@ -97,6 +97,12 @@ and interpretation as far as the domain requires. Bronze, Silver, and Gold are
 a proven pattern, not universal semantics; if adopted, define their guarantees
 inside the project. Keep provenance and uncertainty close to the claim.
 
+Some structures become expensive to reverse after material accumulates. Before
+introducing a source hierarchy, one-Unit-per-source records, Bronze/Silver/Gold
+tiers, a database projection, or a durable application boundary, explain why the
+pattern fits this project and ask Anders whether he wants to adopt it. Once he
+does, apply the agreed pattern consistently without asking again for each item.
+
 Turn a repeated or consequential rule into a check when objective validation is
 possible. Keep policy, detection, and repair authority distinct: a checker
 provides evidence and does not silently grant itself permission to repair.
@@ -105,6 +111,24 @@ Read the [growth patterns](references/growth-patterns.md) when the project has
 earned a new layer. Read the [repository casebook](references/repository-cases.md)
 for the contexts in which Anders's existing patterns worked, drifted, or remain
 untested. They are material for judgment, not a folder template.
+
+## Improve the project method
+
+While working, notice when Anders states a project preference this skill does
+not encode, when its guidance leads toward the wrong structure, or when the
+project discovers a reusable method that reduces owner effort, improves
+placement, or gives later agents better context.
+
+If the lesson could improve other Anders projects, propose a narrow update to
+this skill or its casebook. State the observed evidence, what future behavior
+should change, and where the guidance belongs. Do not edit the global skill,
+casebook, or dotfiles unless Anders explicitly authorizes the revision.
+
+Keep domain-specific architecture in its project. One promising example
+normally earns a proposal or casebook entry, not a universal rule. An explicit
+Anders preference or recurrence across genuinely different projects can justify
+stronger guidance. If Anders authorizes the revision, follow
+[`anders-skill-writing`](../../skills/anders-skill-writing/SKILL.md).
 
 ## Preserve continuity
 
