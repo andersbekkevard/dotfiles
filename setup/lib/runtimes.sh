@@ -185,6 +185,72 @@ install_agent_browser() {
   fi
 }
 
+configure_agent_browser_mcp() {
+  if [[ "$OS_FAMILY" != "linux" ]]; then
+    return 0
+  fi
+
+  local pnpm_home pnpm_launcher config_path config_dir config_tmp mcp_json
+  pnpm_home="${PNPM_HOME:-$(dotfiles_default_pnpm_home)}"
+  pnpm_launcher="$pnpm_home/agent-browser"
+  config_dir="${CODEX_HOME:-$HOME/.codex}"
+  config_path="$config_dir/config.toml"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Configure agent-browser as an approved Codex MCP server"
+    return 0
+  fi
+  if ! command_exists codex || [[ ! -x "$pnpm_launcher" ]]; then
+    record_error "Cannot configure agent-browser MCP; Codex or the pnpm launcher is missing"
+    return 1
+  fi
+
+  if mcp_json="$(codex mcp get agent_browser --json 2>/dev/null)"; then
+    if ! jq -e --arg command "$pnpm_launcher" '
+      .transport.type == "stdio" and
+      .transport.command == $command and
+      .transport.args == ["mcp"]
+    ' <<< "$mcp_json" >/dev/null; then
+      run_cmd \
+        "Remove stale agent-browser Codex MCP server" \
+        codex mcp remove agent_browser || return $?
+      run_cmd \
+        "Register agent-browser Codex MCP server" \
+        codex mcp add agent_browser -- "$pnpm_launcher" mcp || return $?
+    fi
+  else
+    run_cmd \
+      "Register agent-browser Codex MCP server" \
+      codex mcp add agent_browser -- "$pnpm_launcher" mcp || return $?
+  fi
+
+  if awk '
+    $0 == "[mcp_servers.agent_browser]" { in_server = 1; next }
+    /^\[/ { in_server = 0 }
+    in_server && /^default_tools_approval_mode = "approve"$/ { found = 1 }
+    END { exit(found ? 0 : 1) }
+  ' "$config_path"; then
+    return 0
+  fi
+
+  config_tmp="$(mktemp "$config_dir/config.toml.agent-browser.XXXXXX")"
+  if ! awk '
+    $0 == "[mcp_servers.agent_browser]" {
+      print
+      print "default_tools_approval_mode = \"approve\""
+      next
+    }
+    { print }
+  ' "$config_path" > "$config_tmp"; then
+    rm -f "$config_tmp"
+    record_error "Could not prepare agent-browser MCP approval configuration"
+    return 1
+  fi
+  chmod 0600 "$config_tmp"
+  mv "$config_tmp" "$config_path"
+  log_info "Configured agent-browser as an approved Codex MCP server"
+}
+
 install_codex_cli() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0

@@ -909,6 +909,60 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_agent_browser_mcp_config() {
+  local fake_home fake_bin pnpm_home config_path
+  fake_home="$(mktemp -d)"
+  fake_bin="$fake_home/bin"
+  pnpm_home="$fake_home/pnpm"
+  config_path="$fake_home/.codex/config.toml"
+  mkdir -p "$fake_bin" "$pnpm_home" "${config_path%/*}"
+  printf '#!/bin/sh\nexit 0\n' > "$pnpm_home/agent-browser"
+  chmod +x "$pnpm_home/agent-browser"
+  printf 'model = "test"\n' > "$config_path"
+  cat > "$fake_bin/codex" <<'EOF'
+#!/bin/sh
+if [ "$1" = mcp ] && [ "$2" = get ]; then
+  if grep -Fq '[mcp_servers.agent_browser]' "$CODEX_HOME/config.toml"; then
+    printf '{"transport":{"type":"stdio","command":"%s","args":["mcp"]}}\n' \
+      "$PNPM_HOME/agent-browser"
+    exit 0
+  fi
+  exit 1
+fi
+if [ "$1" = mcp ] && [ "$2" = add ] && [ "$3" = agent_browser ]; then
+  printf '\n[mcp_servers.agent_browser]\ncommand = "%s"\nargs = ["mcp"]\n' \
+    "$5" >> "$CODEX_HOME/config.toml"
+  exit 0
+fi
+exit 1
+EOF
+  chmod +x "$fake_bin/codex"
+
+  (
+    HOME="$fake_home"
+    CODEX_HOME="$fake_home/.codex"
+    PNPM_HOME="$pnpm_home"
+    PATH="$fake_bin:/usr/bin:/bin"
+    export CODEX_HOME PNPM_HOME PATH
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    OS_FAMILY=linux
+    DRY_RUN=0
+    ERRORS=()
+    configure_agent_browser_mcp
+    configure_agent_browser_mcp
+  )
+
+  assert_eq "$(grep -Fc '[mcp_servers.agent_browser]' "$config_path")" 1
+  assert_eq "$(grep -Fc 'default_tools_approval_mode = "approve"' "$config_path")" 1
+  grep -Fq "command = \"$pnpm_home/agent-browser\"" "$config_path" ||
+    fail "agent-browser MCP did not use the pnpm-owned launcher"
+
+  rm -rf "$fake_home"
+}
+
 # A dry run on a machine that has none of the tools yet is the case --dry-run
 # exists for. Steps whose tool the same run would install must report intent,
 # not error. Regression guard: this once exited 1 with 13 errors on a bare
@@ -1484,6 +1538,7 @@ test_cliproxyapi_config_contract
 test_cliproxyapi_umask_containment
 test_fnm_entrypoint_stability
 test_agent_browser_sandbox_entrypoint
+test_agent_browser_mcp_config
 test_dry_run_privileged_plan
 test_install_update_package_selection
 test_installer_convergence_and_atomicity

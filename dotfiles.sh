@@ -98,6 +98,10 @@ if [[ "$DRY_RUN" -eq 0 ]]; then
   refresh_local_bin_entrypoints "$ACTIVE_PROFILE"
 fi
 
+if [[ "$OS_FAMILY" == "linux" && "$ACTIVE_PROFILE" == "linux-desktop" ]]; then
+  configure_agent_browser_mcp
+fi
+
 if [[ "$DRY_RUN" -eq 0 && "$SKIP_INSTALL" -eq 0 ]]; then
   check_required_commands "$ACTIVE_PROFILE"
 fi
