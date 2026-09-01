@@ -14,7 +14,7 @@ Adds macOS-only packages and config on top of `full`. This includes the `termina
 
 ## `linux-desktop`
 
-Adds Linux desktop packages and window-manager config on top of `full`. This includes the `terminals` and `linux-desktop` stow packages plus the verified desktop command set (`i3`, `rofi`, `polybar`, `alacritty`, `kitty`, `dex`, `feh`, `greenclip`, `i3lock`, `maim`, `nm-applet`, `pactl`, `picom`, `setxkbmap`, `xclip`, `xdotool`, `xinput`, `xrandr`, `xss-lock`, and `xcape`).
+Adds Linux desktop packages and window-manager config on top of `full`. This includes the `terminals` and `linux-desktop` stow packages, the pnpm-managed `agent-browser` CLI, and the verified desktop command set (`i3`, `rofi`, `polybar`, `alacritty`, `kitty`, `dex`, `feh`, `greenclip`, `i3lock`, `maim`, `nm-applet`, `pactl`, `picom`, `setxkbmap`, `xclip`, `xdotool`, `xinput`, `xrandr`, `xss-lock`, and `xcape`).
 
 ## Selection rule
 

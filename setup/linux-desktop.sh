@@ -10,5 +10,6 @@ run_linux_desktop_layer() {
   install_meslo_font_linux
   install_greenclip
   install_ghostty_snap
+  install_agent_browser
   stow_packages terminals linux-desktop
 }

@@ -57,7 +57,7 @@ install_provider_for_command() {
 
 command_has_safe_version_flag() {
   case "$1" in
-    git|zsh|stow|tmux|fzf|rg|fd|bat|zoxide|nvim|htop|btop|jq|ngrok|cloudflared|delta|sesh|gum|trufflehog|fleet|tree-sitter|fnm|node|pnpm|claude|codex|uv|cargo|rustc|bun|lazygit|lazydocker|gh|yazi|git-crypt|psql|typescript-language-server|brew|go|i3|rofi|polybar|alacritty|kitty|picom|xdotool)
+    git|zsh|stow|tmux|fzf|rg|fd|bat|zoxide|nvim|htop|btop|jq|ngrok|cloudflared|delta|sesh|gum|trufflehog|fleet|tree-sitter|fnm|node|pnpm|claude|codex|uv|cargo|rustc|bun|lazygit|lazydocker|gh|yazi|git-crypt|psql|typescript-language-server|agent-browser|brew|go|i3|rofi|polybar|alacritty|kitty|picom|xdotool)
       return 0
       ;;
   esac

@@ -52,7 +52,7 @@ profile_commands() {
       ;;
     linux-desktop)
       profile_commands full
-      printf '%s\n' i3 rofi polybar alacritty kitty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
+      printf '%s\n' agent-browser i3 rofi polybar alacritty kitty dex feh greenclip i3lock killall maim nm-applet pactl picom setxkbmap xclip xdotool xinput xrandr xss-lock xcape
       ;;
   esac
 }

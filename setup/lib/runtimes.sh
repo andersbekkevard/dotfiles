@@ -153,6 +153,38 @@ install_typescript_language_tools() {
   fi
 }
 
+install_agent_browser() {
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  local pnpm_home pnpm_launcher
+  pnpm_home="${PNPM_HOME:-$(dotfiles_default_pnpm_home)}"
+  pnpm_launcher="$pnpm_home/agent-browser"
+
+  if [[ "$UPGRADE_EXISTING" -eq 0 ]] && command_exists agent-browser &&
+     agent-browser --version >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ "$UPGRADE_EXISTING" -eq 1 ]] && command_exists agent-browser &&
+     [[ ! -x "$pnpm_launcher" ]]; then
+    log_warn "Skipping agent-browser update; the active command is not pnpm-owned ($(command -v agent-browser))."
+    return 0
+  fi
+
+  if command_exists pnpm; then
+    run_cmd_allow_failure \
+      "Install agent-browser with pnpm" \
+      pnpm add -g agent-browser@latest
+  elif command_exists npm; then
+    run_cmd_allow_failure \
+      "Install agent-browser with npm (pnpm unavailable)" \
+      npm install -g agent-browser@latest
+  elif [[ "$DRY_RUN" -eq 0 ]]; then
+    record_error "Neither pnpm nor npm available; agent-browser not installed"
+  fi
+}
+
 install_codex_cli() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0

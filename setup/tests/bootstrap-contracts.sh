@@ -411,6 +411,8 @@ test_agent_cli_profile_contract() {
     fail "full profile does not require Claude Code"
   profile_commands full | grep -Fxq codex ||
     fail "full profile does not require Codex"
+  profile_commands linux-desktop | grep -Fxq agent-browser ||
+    fail "linux-desktop profile does not require agent-browser"
   if profile_commands minimal | grep -Fxq claude; then
     fail "minimal profile unexpectedly requires Claude Code"
   fi
@@ -862,6 +864,47 @@ test_fnm_entrypoint_stability() {
 
   [[ ! -L "$fake_home/.local/bin/node" ]] ||
     fail "entrypoint refresh pinned an ephemeral fnm multishell path"
+
+  rm -rf "$fake_home"
+}
+
+test_agent_browser_sandbox_entrypoint() {
+  local fake_home launcher captured_socket
+  fake_home="$(mktemp -d)"
+  launcher="$fake_home/pnpm/agent-browser"
+  captured_socket="$fake_home/socket-dir"
+  mkdir -p "$(dirname "$launcher")"
+  cat > "$launcher" <<'EOF'
+#!/bin/sh
+printf '%s\n' "${AGENT_BROWSER_SOCKET_DIR:-missing}" > "$CAPTURED_SOCKET"
+EOF
+  chmod +x "$launcher"
+
+  (
+    HOME="$fake_home"
+    DOTFILES_DIR="$REPO_ROOT"
+    CAPTURED_SOCKET="$captured_socket"
+    export CAPTURED_SOCKET
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    profile_commands() { printf '%s\n' agent-browser; }
+    resolve_command_from_clean_login_shell_without_stable_path() {
+      printf '%s\n' "$launcher"
+    }
+    resolve_command_from_clean_login_shell() {
+      printf '%s\n' "$launcher"
+    }
+    DRY_RUN=0
+    refresh_local_bin_entrypoints linux-desktop
+    env -u AGENT_BROWSER_SOCKET_DIR "$fake_home/.local/bin/agent-browser"
+  )
+
+  assert_eq "$(cat "$captured_socket")" "/tmp/agent-browser-$(id -u)"
+
+  AGENT_BROWSER_SOCKET_DIR="$fake_home/custom-sockets" \
+    CAPTURED_SOCKET="$captured_socket" \
+    "$fake_home/.local/bin/agent-browser"
+  assert_eq "$(cat "$captured_socket")" "$fake_home/custom-sockets"
 
   rm -rf "$fake_home"
 }
@@ -1440,6 +1483,7 @@ test_codex_standalone_installer_contract
 test_cliproxyapi_config_contract
 test_cliproxyapi_umask_containment
 test_fnm_entrypoint_stability
+test_agent_browser_sandbox_entrypoint
 test_dry_run_privileged_plan
 test_install_update_package_selection
 test_installer_convergence_and_atomicity

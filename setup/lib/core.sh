@@ -250,7 +250,17 @@ refresh_local_bin_entrypoints() {
     if [[ "$(head -c 2 "$resolved" 2>/dev/null || true)" == "#!" ]]; then
       wrapper_path="$wrapper_dir/$cmd"
       printf -v quoted_resolved '%q' "$resolved"
-      printf '#!/bin/sh\nexec %s "$@"\n' "$quoted_resolved" > "$wrapper_path"
+      if [[ "$cmd" == "agent-browser" ]]; then
+        printf '%s\n' \
+          '#!/bin/sh' \
+          'if [ -z "${AGENT_BROWSER_SOCKET_DIR:-}" ]; then' \
+          '  AGENT_BROWSER_SOCKET_DIR="/tmp/agent-browser-$(id -u)"' \
+          '  export AGENT_BROWSER_SOCKET_DIR' \
+          'fi' \
+          "exec $quoted_resolved \"\$@\"" > "$wrapper_path"
+      else
+        printf '#!/bin/sh\nexec %s "$@"\n' "$quoted_resolved" > "$wrapper_path"
+      fi
       chmod 0755 "$wrapper_path"
       resolved="$wrapper_path"
     fi
