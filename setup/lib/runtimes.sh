@@ -251,6 +251,40 @@ configure_agent_browser_mcp() {
   log_info "Configured agent-browser as an approved Codex MCP server"
 }
 
+configure_codex_chrome_native_host_profile() {
+  if [[ "$OS_FAMILY" != "linux" ]]; then
+    return 0
+  fi
+
+  local source_manifest profile_dir destination_dir destination_manifest
+  source_manifest="${CODEX_CHROME_NATIVE_HOST_MANIFEST:-$HOME/.config/google-chrome/NativeMessagingHosts/com.openai.codexextension.json}"
+  profile_dir="${AGENT_DESKTOP_CHROME_PROFILE:-$HOME/.config/agent-desktop/chrome}"
+  destination_dir="$profile_dir/NativeMessagingHosts"
+  destination_manifest="$destination_dir/com.openai.codexextension.json"
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Link the Codex Chrome native host into the persistent agent desktop profile"
+    return 0
+  fi
+  if [[ ! -f "$source_manifest" ]]; then
+    log_warn "Skipping Codex Chrome native-host profile link; source manifest is absent ($source_manifest). Start the ChatGPT desktop app, then run ./dotfiles.sh refresh linux-desktop."
+    return 0
+  fi
+
+  mkdir -p "$destination_dir"
+  if [[ -e "$destination_manifest" || -L "$destination_manifest" ]]; then
+    if [[ "$(resolve_path_chain "$destination_manifest" 2>/dev/null || true)" == "$source_manifest" ]] ||
+       cmp -s "$source_manifest" "$destination_manifest"; then
+      return 0
+    fi
+    record_error "Refusing to replace conflicting Codex Chrome native-host manifest ($destination_manifest)"
+    return 1
+  fi
+
+  ln -s "$source_manifest" "$destination_manifest"
+  log_info "Linked the Codex Chrome native host into $profile_dir"
+}
+
 install_codex_cli() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0

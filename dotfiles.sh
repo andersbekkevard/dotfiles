@@ -100,6 +100,7 @@ fi
 
 if [[ "$OS_FAMILY" == "linux" && "$ACTIVE_PROFILE" == "linux-desktop" ]]; then
   configure_agent_browser_mcp
+  configure_codex_chrome_native_host_profile
 fi
 
 if [[ "$DRY_RUN" -eq 0 && "$SKIP_INSTALL" -eq 0 ]]; then

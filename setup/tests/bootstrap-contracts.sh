@@ -963,6 +963,53 @@ EOF
   rm -rf "$fake_home"
 }
 
+test_codex_chrome_native_host_profile() {
+  local fake_home source_manifest destination_manifest conflicting_manifest
+  fake_home="$(mktemp -d)"
+  source_manifest="$fake_home/.config/google-chrome/NativeMessagingHosts/com.openai.codexextension.json"
+  destination_manifest="$fake_home/.config/agent-desktop/chrome/NativeMessagingHosts/com.openai.codexextension.json"
+  mkdir -p "${source_manifest%/*}"
+  printf '{"name":"com.openai.codexextension"}\n' > "$source_manifest"
+
+  (
+    HOME="$fake_home"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    OS_FAMILY=linux
+    DRY_RUN=0
+    ERRORS=()
+    configure_codex_chrome_native_host_profile
+    configure_codex_chrome_native_host_profile
+  )
+
+  [[ -L "$destination_manifest" ]] ||
+    fail "Codex Chrome native-host manifest was not linked into the agent desktop profile"
+  assert_eq "$(readlink "$destination_manifest")" "$source_manifest"
+
+  rm "$destination_manifest"
+  conflicting_manifest="$destination_manifest"
+  printf '{"name":"different-host"}\n' > "$conflicting_manifest"
+  if (
+    HOME="$fake_home"
+    # shellcheck source=../lib/core.sh
+    source "$REPO_ROOT/setup/lib/core.sh"
+    # shellcheck source=../lib/runtimes.sh
+    source "$REPO_ROOT/setup/lib/runtimes.sh"
+    OS_FAMILY=linux
+    DRY_RUN=0
+    ERRORS=()
+    configure_codex_chrome_native_host_profile
+  ); then
+    fail "Codex Chrome native-host setup overwrote a conflicting manifest"
+  fi
+  grep -Fq 'different-host' "$conflicting_manifest" ||
+    fail "Codex Chrome native-host setup changed the conflicting manifest"
+
+  rm -rf "$fake_home"
+}
+
 # A dry run on a machine that has none of the tools yet is the case --dry-run
 # exists for. Steps whose tool the same run would install must report intent,
 # not error. Regression guard: this once exited 1 with 13 errors on a bare
@@ -1539,6 +1586,7 @@ test_cliproxyapi_umask_containment
 test_fnm_entrypoint_stability
 test_agent_browser_sandbox_entrypoint
 test_agent_browser_mcp_config
+test_codex_chrome_native_host_profile
 test_dry_run_privileged_plan
 test_install_update_package_selection
 test_installer_convergence_and_atomicity
