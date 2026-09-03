@@ -599,6 +599,39 @@ install_cliproxyapi() {
   log_info "Installed CLIProxyAPI ${version#v}"
 }
 
+# Google Workspace CLI (gws): the shared Gmail, Calendar, and Tasks path for every agent
+# machine. Pinned because the project is pre-1.0. Client and keyring settings come from
+# shell/.secrets; the login procedure is owned by Hub/docs/google-workspace-cli.md.
+readonly GWS_VERSION="${GWS_VERSION:-0.22.5}"
+
+install_gws() {
+  if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+    return 0
+  fi
+
+  if command_exists gws && [[ "$UPGRADE_EXISTING" -eq 0 ]] &&
+     [[ "$(gws --version 2>/dev/null | head -1)" == "gws $GWS_VERSION" ]]; then
+    return 0
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_info "[dry-run] Install Google Workspace CLI $GWS_VERSION"
+    return 0
+  fi
+
+  if command_exists pnpm; then
+    run_cmd_allow_failure \
+      "Install Google Workspace CLI $GWS_VERSION with pnpm" \
+      pnpm add -g "@googleworkspace/cli@$GWS_VERSION"
+  elif command_exists npm; then
+    run_cmd_allow_failure \
+      "Install Google Workspace CLI $GWS_VERSION with npm (pnpm unavailable)" \
+      npm install -g "@googleworkspace/cli@$GWS_VERSION"
+  else
+    record_error "Neither pnpm nor npm available; Google Workspace CLI not installed"
+  fi
+}
+
 install_shared_runtimes() {
   if [[ "$SKIP_INSTALL" -eq 1 ]]; then
     return 0
@@ -648,6 +681,7 @@ install_shared_runtimes() {
   install_codex_cli
   install_cliproxyapi
   install_typescript_language_tools
+  install_gws
 }
 
 install_go_linux() {

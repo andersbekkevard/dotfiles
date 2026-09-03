@@ -44,7 +44,7 @@ profile_commands() {
       ;;
     full)
       profile_commands minimal
-      printf '%s\n' claude claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server
+      printf '%s\n' claude claudex claudex-proxy cli-proxy-api tree-sitter fnm node pnpm codex uv cargo rustc bun lazygit lazydocker gh yazi git-crypt psql typescript-language-server gws
       ;;
     macos)
       profile_commands full

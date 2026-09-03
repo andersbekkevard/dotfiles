@@ -29,6 +29,16 @@ Export a symmetric key from an already-authorized clone when onboarding a new ma
 git-crypt export-key /secure/location/dotfiles-git-crypt.key
 ```
 
+## Google Workspace CLI
+
+`shell/.secrets` exports `GOOGLE_WORKSPACE_CLI_CLIENT_ID`,
+`GOOGLE_WORKSPACE_CLI_CLIENT_SECRET`, and `GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file`
+for the `gws` CLI. The client secret alone grants nothing; each machine still
+performs one browser login, and its refresh token stays in that machine's
+`~/.config/gws` and never enters Git. The backend export is duplicated in
+`shell/.zshenv` so no shell can run `gws` against an unreachable OS keychain,
+which makes the CLI delete its stored credential.
+
 ## Application Cloudflare services
 
 The `publish-web` and `application-email` workflows use the account-owned

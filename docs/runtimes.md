@@ -11,6 +11,7 @@
 - Codex CLI: official standalone installer (`https://chatgpt.com/codex/install.sh`), installed under `~/.codex/packages/standalone` with a stable `~/.local/bin/codex` entrypoint
 - agent-browser: latest pnpm global release for the Linux desktop profile. The profile registers its core MCP server with Codex so app-server can host browser tools outside the per-command Linux sandbox. Its stable `~/.local/bin/agent-browser` launcher puts daemon sockets under `/tmp/agent-browser-<uid>` for ordinary shell use.
 - CLIProxyAPI: latest checksummed GitHub release for the active OS/architecture, installed under `~/.local/share/cliproxyapi/<version>` with a stable `~/.local/bin/cli-proxy-api` entrypoint. Setup creates a private, localhost-only configuration under `~/.config/cliproxyapi`; Codex OAuth credentials remain machine-local under `~/.cli-proxy-api`.
+- Google Workspace CLI (`gws`): pinned `@googleworkspace/cli` release installed globally with pnpm (or npm) in the full profile. It is the one path every agent uses for Gmail, Calendar, and Tasks. The OAuth client and file keyring backend come from `shell/.secrets`; each machine performs one browser login, and the procedure lives in the Hub note `docs/google-workspace-cli.md`.
 - TypeScript LSP: global `typescript` plus `typescript-language-server` for Neovim `ts_ls`
 - Bun: official install script
 - Go: Homebrew on macOS, official tarball on Linux
