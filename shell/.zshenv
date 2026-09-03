@@ -8,3 +8,6 @@ export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 
 # Bun completions (must be in fpath before compinit)
 [[ -d "$HOME/.bun" ]] && fpath=("$HOME/.bun" $fpath)
+
+# Google Workspace CLI: keep the credential key in ~/.config/gws so SSH and agent shells never hit the OS keychain and wipe credentials
+export GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file
