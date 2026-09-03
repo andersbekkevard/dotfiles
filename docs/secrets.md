@@ -33,11 +33,15 @@ git-crypt export-key /secure/location/dotfiles-git-crypt.key
 
 `shell/.secrets` exports `GOOGLE_WORKSPACE_CLI_CLIENT_ID`,
 `GOOGLE_WORKSPACE_CLI_CLIENT_SECRET`, and `GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND=file`
-for the `gws` CLI. The client secret alone grants nothing; each machine still
-performs one browser login, and its refresh token stays in that machine's
-`~/.config/gws` and never enters Git. The backend export is duplicated in
-`shell/.zshenv` so no shell can run `gws` against an unreachable OS keychain,
-which makes the CLI delete its stored credential.
+for the `gws` CLI, and `GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE` pointing at
+`secrets/gws/credentials.json`, the git-crypt-protected authorized-user token
+shared by every machine. Anders chose one shared token on 2026-09-03 so that
+`git-crypt unlock` alone completes Google onboarding with no browser step. The
+trade is that revoking the token revokes every machine at once; recreate it with
+`gws auth login` on any machine followed by `gws auth export --unmasked` into
+that file. The backend export is duplicated in `shell/.zshenv` so no shell can
+run `gws` against an unreachable OS keychain, which makes the CLI delete its
+stored credential.
 
 ## Application Cloudflare services
 

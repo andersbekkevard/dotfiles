@@ -43,7 +43,8 @@ Anders-private repository content includes:
 - private MCP registries;
 - complete Anders-specific operational skills;
 - private skill snapshots;
-- machine registries and verified host identities; and
+- machine registries and verified host identities;
+- shared agent service credentials under `secrets/`, such as the Google Workspace CLI token; and
 - benchmark cases reconstructed from Anders's real sessions.
 
 `.gitattributes` is the authoritative exact path list. Reusable procedures,

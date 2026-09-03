@@ -35,6 +35,7 @@ class PrivateContentPolicyTest(unittest.TestCase):
             "agents/private-skill-snapshots/2026-08-26/chief-of-staff.md",
             "scripts/.config/fleet/machines.tsv",
             "scripts/.config/fleet/known_hosts",
+            "secrets/gws/credentials.json",
             "agents/in-progress/html/benchmark/cases/01-case/context.md",
             "agents/in-progress/html/benchmark/manifest.json",
         )
