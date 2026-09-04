@@ -30,6 +30,7 @@ class PrivateContentPolicyTest(unittest.TestCase):
             "agents/skills/cycle-codex-account/SKILL.md",
             "agents/skills/remarkable/SKILL.md",
             "agents/skills/authorize-azure-cli/SKILL.md",
+            "agents/skills/create-alarm/SKILL.md",
             "agents/skills/project/SKILL.md",
             "agents/skills/create-project/SKILL.md",
             "agents/private-skill-snapshots/2026-08-26/chief-of-staff.md",

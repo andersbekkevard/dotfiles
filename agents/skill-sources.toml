@@ -752,3 +752,10 @@ notes = [
   "Blind-run-tested revision of html-fable (2026-08-21 skill-creator loop): Mermaid-safe svg.flow selector scoping and min-width narrow-screen legibility in page.css.",
   "Evaluation workspace with graded artifacts lives in the session scratchpad; with-skill runs passed 34/34 objective house-style checks vs 18/34 baseline.",
 ]
+
+[skills.create-alarm]
+local_path = "agents/skills/create-alarm"
+tracking = "local"
+notes = [
+  "Anders-specific: hard iPhone alarms through his iCloud ALARMS calendar over CalDAV.",
+]
