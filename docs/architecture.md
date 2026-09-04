@@ -92,6 +92,11 @@ Shell startup is split by responsibility:
 - `shell/.zshrc` owns interactive zsh behavior, backfills `~/.profile` for interactive non-login zsh when needed, and delegates to focused files under `shell/.zsh/`.
 - `shell/.zshenv` is kept minimal for zsh-wide XDG defaults only.
 
+Interactive shells without terminal descriptors use a plain prompt so remote
+automation does not initialize Powerlevel10k. Ghostty is identified by its
+`TERM_PROGRAM=ghostty` environment while opening a new tab because its pty
+descriptors can become visible a moment after zsh startup.
+
 Machine-specific runtime behavior belongs in `~/.profile.local`; interactive-only shell behavior belongs in `~/.zshrc.local`. Profile-wide `install` and `refresh` operations update the latest reference template in `~/.config/zsh/local.example.zsh` and only rewrite `~/.zshrc.local` when it still exactly matches a managed template.
 
 For the full contract on machine-local shell tweaks vs automation-visible command overrides, see `docs/local-overrides.md`.

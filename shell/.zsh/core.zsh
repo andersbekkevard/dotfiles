@@ -7,7 +7,10 @@ if [[ "$OSTYPE" == darwin* ]] && command -v brew >/dev/null 2>&1; then
 fi
 
 if [[ -o interactive ]]; then
-  if [[ ! -t 0 || ! -t 1 ]]; then
+  # Ghostty can exec a new tab's shell just before its pty descriptors report
+  # as terminals. TERM_PROGRAM is already set, so do not permanently select
+  # the headless fallback during that short startup race.
+  if [[ "${TERM_PROGRAM:-}" != "ghostty" ]] && { [[ ! -t 0 ]] || [[ ! -t 1 ]]; }; then
     ZSH_THEME=""
     PROMPT='%~%# '
     RPROMPT=''

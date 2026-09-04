@@ -88,7 +88,8 @@ test_no_tty_prompt_contract() {
   local fake_home instant_prompt
   fake_home="$(mktemp -d)"
   instant_prompt="$fake_home/cache/p10k-instant-prompt-$(id -un).zsh"
-  mkdir -p "${instant_prompt%/*}" "$fake_home/.scripts"
+  mkdir -p "${instant_prompt%/*}" "$fake_home/.scripts" \
+    "$fake_home/.oh-my-zsh/custom/themes/powerlevel10k"
   printf 'export DOTFILES_TEST_INSTANT_PROMPT_SOURCED=1\n' >"$instant_prompt"
   printf ':\n' >"$fake_home/.scripts/noop.zsh"
 
@@ -101,6 +102,11 @@ test_no_tty_prompt_contract() {
     'source "$1"; [[ -z "$ZSH_THEME" && "$PROMPT" == "%~%# " && -z "$RPROMPT" ]]' \
     zsh "$REPO_ROOT/shell/.zsh/core.zsh" </dev/null ||
     fail "non-TTY interactive zsh enabled a terminal prompt theme"
+
+  HOME="$fake_home" TERM_PROGRAM=ghostty TERM=xterm-ghostty zsh -fic \
+    'source "$1"; [[ "$ZSH_THEME" == "powerlevel10k/powerlevel10k" ]]' \
+    zsh "$REPO_ROOT/shell/.zsh/core.zsh" </dev/null ||
+    fail "Ghostty startup fd race disabled the terminal prompt theme"
 
   rm -rf "$fake_home"
 }
